@@ -1,14 +1,14 @@
 {
   "name": "One Stop Heating and Cooling",
   "short_name": "One Stop",
-  "description": "Sistema de gestión: clientes, catálogo, cotizaciones y proyectos.",
+  "description": "Field service management: clients, catalog, quotes and projects.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#F3F6FA",
   "theme_color": "#0B2A47",
-  "lang": "es",
+  "lang": "en",
   "icons": [
     { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

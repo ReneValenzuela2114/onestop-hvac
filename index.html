@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -471,7 +471,7 @@
         </div>
       </div>
       <div class="field">
-        <label data-i18n="form_direccion">Dirección del cliente</label>
+        <label data-i18n="form_direccion">Home address</label>
         <div class="field-with-btn">
           <input type="text" id="clienteDireccion" data-i18n-ph="form_direccion_ph" autocomplete="off">
           <button class="btn sm" id="btnAbrirMapa" type="button">
@@ -482,14 +482,14 @@
         <input type="hidden" id="clienteLat"><input type="hidden" id="clienteLng">
       </div>
       <div class="field">
-        <input type="text" id="clienteDireccion2" data-i18n-ph="form_direccion_2_ph" placeholder="Piso, apartamento, suite, etc.">
+        <input type="text" id="clienteDireccion2" data-i18n-ph="form_direccion_2_ph" placeholder="Floor, Apartment, Suite, etc">
       </div>
 
       <div class="field">
-        <label data-i18n="form_fact">Dirección de facturación</label>
+        <label data-i18n="form_fact">Billing address</label>
         <label class="check-row">
           <input type="checkbox" id="clienteFactIgual" checked>
-          <span data-i18n="form_fact_misma">Usar la misma dirección del cliente</span>
+          <span data-i18n="form_fact_misma">Use the same address as the home address</span>
         </label>
       </div>
       <div id="grupoFacturacion" style="display:none">
@@ -497,7 +497,7 @@
           <input type="text" id="clienteDireccionFact" data-i18n-ph="form_fact_ph" autocomplete="off">
         </div>
         <div class="field">
-          <input type="text" id="clienteDireccionFact2" data-i18n-ph="form_direccion_2_ph" placeholder="Piso, apartamento, suite, etc.">
+          <input type="text" id="clienteDireccionFact2" data-i18n-ph="form_direccion_2_ph" placeholder="Floor, Apartment, Suite, etc">
         </div>
       </div>
 
@@ -582,7 +582,7 @@
    ========================================================================= */
 
 /* ---------- Idioma ---------- */
-window.CFG_LANG = DB.config.get("idioma", "es");
+window.CFG_LANG = DB.config.get("idioma", "en"); // inglés por defecto (app para California)
 function setLang(lang){
   window.CFG_LANG = lang;
   DB.config.set("idioma", lang);

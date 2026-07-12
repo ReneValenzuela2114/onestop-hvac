@@ -45,19 +45,19 @@ const I18N = {
     form_nuevo_titulo: "Nuevo cliente",
     form_editar_titulo: "Editar cliente",
     form_nombre: "Nombre completo",
-    form_nombre_ph: "Ej: Marcus Whitfield",
+    form_nombre_ph: "Nombre y apellido",
     form_empresa: "Empresa (opcional)",
-    form_empresa_ph: "Ej: Whitfield Properties LLC",
+    form_empresa_ph: "Nombre de la empresa",
     form_telefono: "Teléfono",
-    form_telefono_ph: "(555) 123-4567",
+    form_telefono_ph: "(555) 555-5555",
     form_email: "Correo electrónico",
-    form_email_ph: "cliente@correo.com",
-    form_direccion: "Dirección del cliente",
-    form_direccion_ph: "Buscá una dirección…",
+    form_email_ph: "nombre@ejemplo.com",
+    form_direccion: "Domicilio",
+    form_direccion_ph: "Buscar una dirección",
     form_direccion_2_ph: "Piso, apartamento, suite, etc.",
     form_fact: "Dirección de facturación",
-    form_fact_misma: "Usar la misma dirección del cliente",
-    form_fact_ph: "Buscá la dirección de facturación…",
+    form_fact_misma: "Usar la misma dirección del domicilio",
+    form_fact_ph: "Buscar una dirección",
     form_direccion_mapa: "Ubicar en mapa",
     form_direccion_cambiar: "Cambiar ubicación",
     form_categoria: "Categoría",
@@ -157,19 +157,19 @@ const I18N = {
     form_nuevo_titulo: "New client",
     form_editar_titulo: "Edit client",
     form_nombre: "Full name",
-    form_nombre_ph: "E.g: Marcus Whitfield",
+    form_nombre_ph: "First and last name",
     form_empresa: "Company (optional)",
-    form_empresa_ph: "E.g: Whitfield Properties LLC",
+    form_empresa_ph: "Company name",
     form_telefono: "Phone",
-    form_telefono_ph: "(555) 123-4567",
+    form_telefono_ph: "(555) 555-5555",
     form_email: "Email",
-    form_email_ph: "client@email.com",
-    form_direccion: "Client address",
-    form_direccion_ph: "Search for an address…",
-    form_direccion_2_ph: "Floor, apartment, suite, etc.",
+    form_email_ph: "name@example.com",
+    form_direccion: "Home address",
+    form_direccion_ph: "Search for an address",
+    form_direccion_2_ph: "Floor, Apartment, Suite, etc",
     form_fact: "Billing address",
-    form_fact_misma: "Use the same address as the client",
-    form_fact_ph: "Search for the billing address…",
+    form_fact_misma: "Use the same address as the home address",
+    form_fact_ph: "Search for an address",
     form_direccion_mapa: "Locate on map",
     form_direccion_cambiar: "Change location",
     form_categoria: "Category",
@@ -233,12 +233,12 @@ const I18N = {
   },
 };
 
-const I18N_DEFAULT_LANG = "es";
+const I18N_DEFAULT_LANG = "en"; // inglés primero: la app es para California; el español traduce
 
 function t(key) {
   const lang = (window.CFG_LANG) || I18N_DEFAULT_LANG;
-  const dict = I18N[lang] || I18N.es;
-  return dict[key] ?? I18N.es[key] ?? key;
+  const dict = I18N[lang] || I18N.en;
+  return dict[key] ?? I18N.en[key] ?? key;
 }
 
 /** Recorre el DOM y aplica t() a todo lo marcado con data-i18n / data-i18n-ph. */
