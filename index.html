@@ -175,6 +175,10 @@
   .field-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3)}
   .field-with-btn{display:flex;gap:8px}
   .field-with-btn input{flex:1}
+  label.check-row{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:500;color:var(--ink);cursor:pointer;user-select:none;margin-top:8px}
+  .check-row input[type=checkbox]{width:17px;height:17px;accent-color:var(--frio-600);cursor:pointer;flex-shrink:0;margin:0}
+  /* El menú de sugerencias de Google Places debe verse por encima del modal */
+  .pac-container{z-index:300;border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);border:1px solid var(--line);font-family:var(--font-body)}
 
   .estado-toggle{display:flex;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;width:fit-content}
   .estado-toggle button{padding:8px 16px;border:none;background:var(--panel);font-size:13px;font-weight:600;color:var(--muted)}
@@ -466,18 +470,35 @@
           <input type="email" id="clienteEmail" data-i18n-ph="form_email_ph">
         </div>
       </div>
-      <p class="error-msg" id="errorContacto" style="display:none" data-i18n="form_error_contacto"></p>
-
       <div class="field">
-        <label data-i18n="form_direccion">Dirección</label>
+        <label data-i18n="form_direccion">Dirección del cliente</label>
         <div class="field-with-btn">
-          <input type="text" id="clienteDireccion" data-i18n-ph="form_direccion_ph">
+          <input type="text" id="clienteDireccion" data-i18n-ph="form_direccion_ph" autocomplete="off">
           <button class="btn sm" id="btnAbrirMapa" type="button">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
             <span id="btnAbrirMapaLabel" data-i18n="form_direccion_mapa">Ubicar en mapa</span>
           </button>
         </div>
         <input type="hidden" id="clienteLat"><input type="hidden" id="clienteLng">
+      </div>
+      <div class="field">
+        <input type="text" id="clienteDireccion2" data-i18n-ph="form_direccion_2_ph" placeholder="Piso, apartamento, suite, etc.">
+      </div>
+
+      <div class="field">
+        <label data-i18n="form_fact">Dirección de facturación</label>
+        <label class="check-row">
+          <input type="checkbox" id="clienteFactIgual" checked>
+          <span data-i18n="form_fact_misma">Usar la misma dirección del cliente</span>
+        </label>
+      </div>
+      <div id="grupoFacturacion" style="display:none">
+        <div class="field">
+          <input type="text" id="clienteDireccionFact" data-i18n-ph="form_fact_ph" autocomplete="off">
+        </div>
+        <div class="field">
+          <input type="text" id="clienteDireccionFact2" data-i18n-ph="form_direccion_2_ph" placeholder="Piso, apartamento, suite, etc.">
+        </div>
       </div>
 
       <div class="field">
@@ -633,6 +654,12 @@ function iniciales(nombre){
   return nombre.trim().split(/\s+/).slice(0,2).map(p => p[0]?.toUpperCase() || "").join("");
 }
 
+/** Dirección + unidad (apto/suite) en una sola línea para mostrar. */
+function direccionCompleta(c){
+  if (!c.direccion) return "";
+  return c.direccion + (c.direccion_2 ? `, ${c.direccion_2}` : "");
+}
+
 function filtrarClientes(){
   const q = document.getElementById("buscarCliente").value.trim().toLowerCase();
   const cat = document.getElementById("filtroCategoria").value;
@@ -663,7 +690,7 @@ function renderClientes(){
         ${c.telefono ? `<a href="tel:${esc(c.telefono)}">${iconTel()}${esc(c.telefono)}</a>` : `<span class="cell-muted">${t("clientes_sin_telefono")}</span>`}
         ${c.email ? `<a href="mailto:${esc(c.email)}">${iconMail()}${esc(c.email)}</a>` : ""}
       </td>
-      <td class="cell-muted">${c.direccion ? esc(c.direccion) : t("clientes_sin_direccion")}</td>
+      <td class="cell-muted">${c.direccion ? esc(direccionCompleta(c)) : t("clientes_sin_direccion")}</td>
       <td>${cat ? `<span class="badge" style="background:${cat.color}22;color:${cat.color}"><span class="dot" style="background:${cat.color}"></span>${esc(cat.nombre)}</span>` : `<span class="cell-muted">${t("clientes_sin_categoria")}</span>`}</td>
       <td><span class="badge estado-${c.estado}"><span class="dot" style="background:currentColor"></span>${t(c.estado === "activo" ? "clientes_activo" : "clientes_inactivo")}</span></td>
       <td><div class="row-actions">
@@ -681,7 +708,7 @@ function renderClientes(){
         <span class="badge estado-${c.estado}">${t(c.estado === "activo" ? "clientes_activo" : "clientes_inactivo")}</span>
       </div>
       ${c.telefono ? `<a class="client-card-row" href="tel:${esc(c.telefono)}">${iconTel()}${esc(c.telefono)}</a>` : ""}
-      ${c.direccion ? `<div class="client-card-row" style="color:var(--muted)">${iconPin()}${esc(c.direccion)}</div>` : ""}
+      ${c.direccion ? `<div class="client-card-row" style="color:var(--muted)">${iconPin()}${esc(direccionCompleta(c))}</div>` : ""}
       <div class="client-card-foot">
         ${cat ? `<span class="badge" style="background:${cat.color}22;color:${cat.color}"><span class="dot" style="background:${cat.color}"></span>${esc(cat.nombre)}</span>` : "<span></span>"}
         <div class="row-actions">
@@ -712,14 +739,24 @@ function limpiarFormularioCliente(){
   document.getElementById("clienteTelefono").value = "";
   document.getElementById("clienteEmail").value = "";
   document.getElementById("clienteDireccion").value = "";
+  document.getElementById("clienteDireccion2").value = "";
   document.getElementById("clienteLat").value = "";
   document.getElementById("clienteLng").value = "";
+  document.getElementById("clienteFactIgual").checked = true;
+  document.getElementById("clienteDireccionFact").value = "";
+  document.getElementById("clienteDireccionFact2").value = "";
+  actualizarGrupoFacturacion();
   document.getElementById("clienteNotas").value = "";
   document.getElementById("clienteCategoria").value = "";
   setEstadoToggle("activo");
   document.getElementById("fieldNombre").classList.remove("error");
-  document.getElementById("errorContacto").style.display = "none";
 }
+
+function actualizarGrupoFacturacion(){
+  const igual = document.getElementById("clienteFactIgual").checked;
+  document.getElementById("grupoFacturacion").style.display = igual ? "none" : "block";
+}
+document.getElementById("clienteFactIgual").addEventListener("change", actualizarGrupoFacturacion);
 
 function setEstadoToggle(v){
   document.querySelectorAll("#clienteEstadoToggle button").forEach(b => b.classList.toggle("active", b.dataset.v === v));
@@ -736,6 +773,7 @@ function abrirNuevoCliente(){
   document.getElementById("modalClienteTitulo").textContent = t("form_nuevo_titulo");
   document.getElementById("btnGuardarCliente").querySelector("span").textContent = t("form_guardar");
   abrirModal("modalCliente");
+  activarAutocompletadoDireccion();
 }
 
 function abrirEdicionCliente(id){
@@ -747,36 +785,41 @@ function abrirEdicionCliente(id){
   document.getElementById("clienteTelefono").value = c.telefono || "";
   document.getElementById("clienteEmail").value = c.email || "";
   document.getElementById("clienteDireccion").value = c.direccion || "";
+  document.getElementById("clienteDireccion2").value = c.direccion_2 || "";
   document.getElementById("clienteLat").value = c.lat ?? "";
   document.getElementById("clienteLng").value = c.lng ?? "";
+  document.getElementById("clienteFactIgual").checked = c.fact_igual !== false;
+  document.getElementById("clienteDireccionFact").value = c.direccion_fact || "";
+  document.getElementById("clienteDireccionFact2").value = c.direccion_fact_2 || "";
+  actualizarGrupoFacturacion();
   document.getElementById("clienteNotas").value = c.notas || "";
   document.getElementById("clienteCategoria").value = c.categoria_id || "";
   setEstadoToggle(c.estado);
   document.getElementById("fieldNombre").classList.remove("error");
-  document.getElementById("errorContacto").style.display = "none";
   document.getElementById("modalClienteTitulo").textContent = t("form_editar_titulo");
   document.getElementById("btnGuardarCliente").querySelector("span").textContent = t("form_guardar_cambios");
   abrirModal("modalCliente");
+  activarAutocompletadoDireccion();
 }
 
 document.getElementById("btnGuardarCliente").addEventListener("click", () => {
   const nombre = document.getElementById("clienteNombre").value.trim();
-  const telefono = document.getElementById("clienteTelefono").value.trim();
-  const email = document.getElementById("clienteEmail").value.trim();
-  let valido = true;
   document.getElementById("fieldNombre").classList.toggle("error", !nombre);
-  if (!nombre) valido = false;
-  const sinContacto = !telefono && !email;
-  document.getElementById("errorContacto").style.display = sinContacto ? "block" : "none";
-  if (sinContacto) valido = false;
-  if (!valido) return;
+  if (!nombre) return; // único campo obligatorio
 
+  const factIgual = document.getElementById("clienteFactIgual").checked;
   const datos = {
-    nombre, telefono, email,
+    nombre,
+    telefono: document.getElementById("clienteTelefono").value,
+    email: document.getElementById("clienteEmail").value,
     empresa: document.getElementById("clienteEmpresa").value,
     direccion: document.getElementById("clienteDireccion").value,
+    direccion_2: document.getElementById("clienteDireccion2").value,
     lat: document.getElementById("clienteLat").value ? parseFloat(document.getElementById("clienteLat").value) : null,
     lng: document.getElementById("clienteLng").value ? parseFloat(document.getElementById("clienteLng").value) : null,
+    fact_igual: factIgual,
+    direccion_fact: factIgual ? "" : document.getElementById("clienteDireccionFact").value,
+    direccion_fact_2: factIgual ? "" : document.getElementById("clienteDireccionFact2").value,
     categoria_id: document.getElementById("clienteCategoria").value || null,
     notas: document.getElementById("clienteNotas").value,
     estado: document.getElementById("clienteEstadoToggle").dataset.value || "activo",
@@ -912,6 +955,38 @@ document.getElementById("btnUsarUbicacion").addEventListener("click", () => {
   document.getElementById("clienteLng").value = mapaLatLngTemp.lng;
   cerrarModal("modalMapa");
 });
+
+/* ---------- Autocompletado al escribir en los campos de dirección ----------
+   Si hay clave de Google Maps configurada, los campos de dirección sugieren
+   direcciones reales mientras se escribe (como Housecall Pro). Sin clave,
+   quedan como texto libre y no pasa nada. */
+let autocompleteDireccionListo = false;
+async function activarAutocompletadoDireccion(){
+  if (autocompleteDireccionListo) return;
+  const apiKey = DB.config.get("maps_api_key", "");
+  if (!apiKey) return;
+  try { await cargarGoogleMaps(apiKey); } catch (e) { return; }
+  if (autocompleteDireccionListo) return; // por si se llamó dos veces en paralelo
+  autocompleteDireccionListo = true;
+
+  const opciones = { fields: ["formatted_address", "geometry"], componentRestrictions: { country: "us" }, types: ["address"] };
+
+  const acPrincipal = new google.maps.places.Autocomplete(document.getElementById("clienteDireccion"), opciones);
+  acPrincipal.addListener("place_changed", () => {
+    const place = acPrincipal.getPlace();
+    if (!place.geometry) return;
+    document.getElementById("clienteDireccion").value = place.formatted_address;
+    document.getElementById("clienteLat").value = place.geometry.location.lat();
+    document.getElementById("clienteLng").value = place.geometry.location.lng();
+  });
+
+  const acFact = new google.maps.places.Autocomplete(document.getElementById("clienteDireccionFact"), opciones);
+  acFact.addListener("place_changed", () => {
+    const place = acFact.getPlace();
+    if (!place.geometry) return;
+    document.getElementById("clienteDireccionFact").value = place.formatted_address;
+  });
+}
 
 /* =========================================================================
    CONFIGURACIÓN
