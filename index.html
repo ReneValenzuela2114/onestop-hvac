@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>One Stop Heating and Cooling</title>
+
+<!-- ============ PWA ============ -->
+<meta name="theme-color" content="#0B2A47">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="One Stop">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --calor-500:#E8622C; --calor-600:#D14E1C; --calor-soft:#FCE8DE;
+    --frio-500:#2E8FD9; --frio-600:#1C6DB6; --frio-700:#123C66; --frio-900:#0B2A47;
+    --ink:#1B2733; --muted:#64748B; --line:#E2E8F0; --line-soft:#EEF2F7;
+    --bg:#F3F6FA; --panel:#FFFFFF;
+    --success:#2E9E64; --success-soft:#E4F6EC;
+    --danger:#D0422A; --danger-soft:#FBEAE6;
+    --radius:14px; --radius-sm:10px;
+    --shadow:0 1px 2px rgba(15,23,42,.05), 0 10px 28px -14px rgba(15,23,42,.18);
+    --shadow-lg:0 20px 60px -20px rgba(11,42,71,.35);
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px;
+    --font-head:'Poppins',system-ui,-apple-system,sans-serif;
+    --font-body:'Inter',system-ui,-apple-system,sans-serif;
+    --sidebar-w:248px; --topbar-h:60px; --bottomnav-h:64px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%}
+  body{
+    font-family:var(--font-body);background:var(--bg);color:var(--ink);
+    -webkit-font-smoothing:antialiased;font-size:14.5px;line-height:1.5;
+  }
+  h1,h2,h3,h4{font-family:var(--font-head);margin:0;letter-spacing:-.01em}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit}
+  a{color:inherit}
+  ::selection{background:var(--frio-500);color:#fff}
+  :focus-visible{outline:2px solid var(--frio-500);outline-offset:2px}
+
+  /* ---------- Layout shell ---------- */
+  #shell{display:flex;min-height:100%}
+
+  #sidebar{
+    width:var(--sidebar-w);flex-shrink:0;background:linear-gradient(180deg,var(--frio-900),#082138);
+    color:#fff;display:flex;flex-direction:column;padding:var(--sp-5) var(--sp-3);position:fixed;
+    top:0;left:0;bottom:0;z-index:40;
+  }
+  .brand{display:flex;align-items:center;gap:var(--sp-2);padding:0 var(--sp-2) var(--sp-5);border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:var(--sp-4)}
+  .brand svg{flex-shrink:0}
+  .brand-text{line-height:1.2}
+  .brand-text b{display:block;font-family:var(--font-head);font-weight:700;font-size:14.5px}
+  .brand-text span{display:block;font-size:10.5px;color:#9FB4CB;letter-spacing:.03em;text-transform:uppercase}
+
+  nav.mainnav{display:flex;flex-direction:column;gap:2px;flex:1}
+  .navitem{
+    display:flex;align-items:center;gap:var(--sp-3);padding:11px var(--sp-3);border-radius:var(--radius-sm);
+    color:#C7D6E7;text-decoration:none;font-size:13.5px;font-weight:500;background:none;border:none;width:100%;text-align:left;
+    transition:background .15s,color .15s;
+  }
+  .navitem svg{flex-shrink:0;opacity:.85}
+  .navitem:hover{background:rgba(255,255,255,.06);color:#fff}
+  .navitem.active{background:var(--frio-600);color:#fff}
+  .navitem.active svg{opacity:1}
+
+  .sidebar-foot{display:flex;flex-direction:column;gap:2px;padding-top:var(--sp-3);border-top:1px solid rgba(255,255,255,.1)}
+
+  #main{flex:1;margin-left:var(--sidebar-w);min-width:0}
+  .topbar{
+    display:none;align-items:center;justify-content:space-between;height:var(--topbar-h);
+    padding:0 var(--sp-4);background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;
+  }
+  .content{padding:var(--sp-5) var(--sp-6);max-width:1320px}
+
+  /* ---------- Reusable bits ---------- */
+  .page-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--sp-4);margin-bottom:var(--sp-5)}
+  .page-head h1{font-size:22px;color:var(--frio-900)}
+  .page-head p{margin:4px 0 0;color:var(--muted);font-size:13px}
+
+  .btn{
+    display:inline-flex;align-items:center;gap:7px;padding:10px 16px;border-radius:var(--radius-sm);
+    border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13.5px;font-weight:600;
+    transition:background .15s,border-color .15s,transform .1s;
+  }
+  .btn:active{transform:scale(.98)}
+  .btn.primary{background:var(--frio-600);border-color:var(--frio-600);color:#fff}
+  .btn.primary:hover{background:var(--frio-700)}
+  .btn.ghost{background:transparent}
+  .btn.ghost:hover{background:var(--line-soft)}
+  .btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+  .btn.danger:hover{background:#B33520}
+  .btn.sm{padding:7px 12px;font-size:12.5px}
+  .btn.icon{padding:9px;width:38px;height:38px;justify-content:center}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:center;margin-bottom:var(--sp-4)}
+  .search-box{position:relative;flex:1;min-width:220px}
+  .search-box svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
+  .search-box input{width:100%;padding:10px 12px 10px 36px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);font-size:13.5px}
+  select.filter{padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);font-size:13.5px;color:var(--ink)}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+
+  /* ---------- Tabla clientes (desktop) ---------- */
+  table.data{width:100%;border-collapse:collapse}
+  table.data thead th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;padding:12px 16px;border-bottom:1px solid var(--line)}
+  table.data tbody td{padding:13px 16px;border-bottom:1px solid var(--line-soft);font-size:13.5px;vertical-align:middle}
+  table.data tbody tr:last-child td{border-bottom:none}
+  table.data tbody tr:hover{background:#FAFBFD}
+  .cell-nombre b{display:block;color:var(--ink);font-weight:600}
+  .cell-nombre span{display:block;font-size:12px;color:var(--muted)}
+  .cell-contacto a{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--frio-600);text-decoration:none;margin-bottom:2px}
+  .cell-contacto a:hover{text-decoration:underline}
+  .cell-muted{color:var(--muted);font-size:12.5px}
+
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:600}
+  .badge .dot{width:7px;height:7px;border-radius:50%}
+  .badge.estado-activo{background:var(--success-soft);color:var(--success)}
+  .badge.estado-inactivo{background:var(--line-soft);color:var(--muted)}
+
+  .row-actions{display:flex;gap:6px}
+
+  /* ---------- Cards clientes (mobile) ---------- */
+  .client-cards{display:none;flex-direction:column;gap:var(--sp-3)}
+  .client-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:var(--sp-4)}
+  .client-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--sp-2);margin-bottom:8px}
+  .client-card-top b{font-size:14.5px}
+  .client-card-top span{display:block;font-size:12px;color:var(--muted)}
+  .client-card-row{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--frio-600);margin-top:6px;text-decoration:none}
+  .client-card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)}
+
+  /* ---------- Estado vacío ---------- */
+  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:var(--sp-6) var(--sp-4);color:var(--muted)}
+  .empty-state svg{color:var(--line);margin-bottom:var(--sp-3)}
+  .empty-state h3{color:var(--ink);font-size:15.5px;margin-bottom:4px}
+  .empty-state p{font-size:13px;margin:0 0 var(--sp-4);max-width:320px}
+
+  /* ---------- Próximamente ---------- */
+  .placeholder-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:80px var(--sp-4);color:var(--muted)}
+  .placeholder-tab svg{color:var(--line);margin-bottom:var(--sp-3)}
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(11,20,32,.5);backdrop-filter:blur(2px);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:5vh 16px;overflow-y:auto}
+  .modal-backdrop.open{display:flex}
+  .modal{background:var(--panel);border-radius:var(--radius);width:100%;max-width:560px;box-shadow:var(--shadow-lg);animation:pop .18s ease}
+  .modal.wide{max-width:640px}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--line)}
+  .modal-head h3{font-size:16px;color:var(--frio-900)}
+  .modal-body{padding:var(--sp-5)}
+  .modal-foot{display:flex;justify-content:flex-end;gap:var(--sp-2);padding:var(--sp-4) var(--sp-5);border-top:1px solid var(--line)}
+
+  .field{margin-bottom:var(--sp-4)}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  .field .hint{font-size:11.5px;color:var(--muted);margin-top:5px}
+  .field input[type=text],.field input[type=tel],.field input[type=email],.field select,.field textarea{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#FBFCFE;font-size:13.5px;color:var(--ink);
+    transition:border-color .15s,box-shadow .15s;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--frio-500);box-shadow:0 0 0 3px rgba(46,143,217,.15);outline:none;background:#fff}
+  .field textarea{resize:vertical;min-height:70px}
+  .field.error input,.field.error textarea{border-color:var(--danger);background:var(--danger-soft)}
+  .field .error-msg{color:var(--danger);font-size:12px;margin-top:5px;display:none}
+  .field.error .error-msg{display:block}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3)}
+  .field-with-btn{display:flex;gap:8px}
+  .field-with-btn input{flex:1}
+
+  .estado-toggle{display:flex;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;width:fit-content}
+  .estado-toggle button{padding:8px 16px;border:none;background:var(--panel);font-size:13px;font-weight:600;color:var(--muted)}
+  .estado-toggle button.active[data-v=activo]{background:var(--success-soft);color:var(--success)}
+  .estado-toggle button.active[data-v=inactivo]{background:var(--line-soft);color:var(--ink)}
+
+  /* ---------- Mapa ---------- */
+  #mapaCanvas{width:100%;height:340px;border-radius:var(--radius-sm);background:var(--line-soft)}
+  .mapa-search{margin-bottom:var(--sp-3)}
+  .mapa-info{display:flex;align-items:flex-start;gap:8px;margin-top:var(--sp-3);font-size:12.5px;color:var(--muted)}
+  .mapa-sin-clave{display:flex;flex-direction:column;align-items:center;text-align:center;padding:var(--sp-6) var(--sp-4);background:var(--line-soft);border-radius:var(--radius-sm)}
+  .mapa-sin-clave svg{color:var(--calor-500);margin-bottom:var(--sp-3)}
+  .mapa-sin-clave h4{font-size:14.5px;margin-bottom:6px}
+  .mapa-sin-clave p{font-size:12.5px;color:var(--muted);max-width:340px;margin:0 0 var(--sp-4)}
+
+  /* ---------- Config ---------- */
+  .config-section{padding:var(--sp-5);border-bottom:1px solid var(--line)}
+  .config-section:last-child{border-bottom:none}
+  .config-section h3{font-size:14.5px;margin-bottom:2px}
+  .config-section .desc{color:var(--muted);font-size:12.5px;margin:0 0 var(--sp-4)}
+  .lang-switch{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--line-soft)}
+  .lang-switch button{border:none;background:none;padding:7px 16px;border-radius:999px;font-size:12.5px;font-weight:700;color:var(--muted)}
+  .lang-switch button.active{background:var(--panel);color:var(--frio-700);box-shadow:var(--shadow)}
+  .logo-preview-row{display:flex;align-items:center;gap:var(--sp-5)}
+  .logo-preview-box{width:96px;height:96px;border-radius:var(--radius-sm);background:var(--frio-900);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+  .slider-row{flex:1}
+  .slider-row input[type=range]{width:100%}
+  .chip-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:var(--sp-4)}
+  .chip{display:flex;align-items:center;gap:7px;padding:6px 8px 6px 12px;border-radius:999px;border:1px solid var(--line);font-size:12.5px;font-weight:600}
+  .chip .dot{width:9px;height:9px;border-radius:50%}
+  .chip button{border:none;background:none;padding:3px;display:flex;color:var(--muted)}
+  .chip button:hover{color:var(--danger)}
+  .add-row{display:flex;gap:8px}
+  .add-row input{flex:1;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px}
+  .user-row{display:flex;align-items:center;gap:var(--sp-3);padding:11px 0;border-bottom:1px solid var(--line-soft)}
+  .user-row:last-child{border-bottom:none}
+  .user-avatar{width:36px;height:36px;border-radius:50%;background:var(--frio-100,#DCEAF7);color:var(--frio-700);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+  .user-row .info{flex:1;min-width:0}
+  .user-row .info b{display:block;font-size:13.5px}
+  .user-row .info span{display:block;font-size:12px;color:var(--muted)}
+  select.rol-select{padding:7px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:12.5px}
+
+  /* ---------- Toasts ---------- */
+  #toasts{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px}
+  .toast{display:flex;align-items:center;gap:10px;background:var(--frio-900);color:#fff;padding:12px 18px;border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);font-size:13px;font-weight:500;animation:toastin .2s ease}
+  .toast.error{background:var(--danger)}
+  @keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* ---------- Bottom nav mobile ---------- */
+  .bottomnav{display:none;position:fixed;bottom:0;left:0;right:0;height:var(--bottomnav-h);background:var(--panel);border-top:1px solid var(--line);z-index:40;padding-bottom:env(safe-area-inset-bottom)}
+  .bottomnav-inner{display:flex;height:100%}
+  .bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;color:var(--muted);font-size:10.5px;font-weight:600}
+  .bn-item.active{color:var(--frio-600)}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 960px){
+    #sidebar{display:none}
+    #main{margin-left:0}
+    .topbar{display:flex}
+    .content{padding:var(--sp-4);padding-bottom:calc(var(--bottomnav-h) + var(--sp-4))}
+    .bottomnav{display:block}
+    table.data{display:none}
+    .client-cards{display:flex}
+    .field-row{grid-template-columns:1fr}
+    .page-head{align-items:flex-start}
+  }
+  .hide-desktop{display:none}
+  @media (max-width: 960px){.hide-desktop{display:inline-flex}.hide-mobile{display:none}}
+</style>
+</head>
+<body>
+
+<div id="shell">
+  <!-- ============ Sidebar (desktop) ============ -->
+  <aside id="sidebar">
+    <div class="brand" id="brandBox">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M3 20 L9 8 L12 13 L15 6 L21 20 Z" fill="url(#gradSide)"/><defs><linearGradient id="gradSide" x1="3" y1="20" x2="21" y2="6"><stop offset="0" stop-color="#E8622C"/><stop offset="1" stop-color="#2E8FD9"/></linearGradient></defs></svg>
+      <div class="brand-text"><b>One Stop</b><span data-i18n="app_name" style="text-transform:none;font-size:9.5px">Heating &amp; Cooling</span></div>
+    </div>
+    <nav class="mainnav" id="mainNav">
+      <button class="navitem" data-tab="clientes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span data-i18n="nav_clientes">Clientes</span></button>
+      <button class="navitem" data-tab="catalogo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"/><circle cx="7" cy="7" r="1.4" fill="currentColor" stroke="none"/></svg><span data-i18n="nav_catalogo">Catálogo</span></button>
+      <button class="navitem" data-tab="cotizaciones"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h3"/></svg><span data-i18n="nav_cotizaciones">Cotizaciones</span></button>
+      <button class="navitem" data-tab="proyectos"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.7 6.3-1.4-1.4a2 2 0 0 0-2.83 0l-.71.71 4.24 4.24.71-.71a2 2 0 0 0 0-2.83Z"/><path d="m2 22 5-1.5L20.5 7 17 3.5 3.5 17 2 22Z"/></svg><span data-i18n="nav_proyectos">Proyectos</span></button>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="navitem" id="langBtnDesktop"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20Z"/></svg><span id="langBtnLabelDesktop">English</span></button>
+      <button class="navitem" data-tab="config"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg><span data-i18n="nav_config">Configuración</span></button>
+    </div>
+  </aside>
+
+  <!-- ============ Main ============ -->
+  <div id="main">
+    <header class="topbar">
+      <div class="brand" style="padding:0;border:none;margin:0">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M3 20 L9 8 L12 13 L15 6 L21 20 Z" fill="url(#gradTop)"/><defs><linearGradient id="gradTop" x1="3" y1="20" x2="21" y2="6"><stop offset="0" stop-color="#E8622C"/><stop offset="1" stop-color="#2E8FD9"/></linearGradient></defs></svg>
+        <div class="brand-text"><b style="color:var(--frio-900)">One Stop</b></div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn icon ghost" id="langBtnMobile" title="Language"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20Z"/></svg></button>
+        <button class="btn icon ghost" data-tab="config" title="Config"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ============ TAB: Clientes ============ -->
+      <section id="tab-clientes" class="tabpanel">
+        <div class="page-head">
+          <div>
+            <h1 data-i18n="clientes_titulo">Clientes</h1>
+            <p data-i18n="clientes_subtitulo">Directorio de clientes de la empresa</p>
+          </div>
+          <button class="btn primary" id="btnNuevoCliente">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <span data-i18n="clientes_nuevo">Nuevo cliente</span>
+          </button>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="buscarCliente" data-i18n-ph="clientes_buscar" placeholder="Buscar…">
+          </div>
+          <select class="filter" id="filtroCategoria"></select>
+          <select class="filter" id="filtroEstado"></select>
+        </div>
+
+        <div class="card" id="clientesTableWrap" style="overflow:auto">
+          <table class="data" id="clientesTabla">
+            <thead>
+              <tr>
+                <th data-i18n="clientes_col_nombre">Nombre</th>
+                <th data-i18n="clientes_col_contacto">Contacto</th>
+                <th data-i18n="clientes_col_direccion">Dirección</th>
+                <th data-i18n="clientes_col_categoria">Categoría</th>
+                <th data-i18n="clientes_col_estado">Estado</th>
+                <th style="width:90px"></th>
+              </tr>
+            </thead>
+            <tbody id="clientesTbody"></tbody>
+          </table>
+        </div>
+        <div class="client-cards" id="clientesCards"></div>
+
+        <div class="empty-state" id="clientesEmpty" style="display:none">
+          <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <h3 data-i18n="clientes_vacio_titulo">Todavía no hay clientes</h3>
+          <p data-i18n="clientes_vacio_texto">Agregá el primero para empezar.</p>
+          <button class="btn primary sm" id="btnNuevoClienteVacio"><span data-i18n="clientes_vacio_cta">Agregar cliente</span></button>
+        </div>
+        <div class="empty-state" id="clientesSinResultados" style="display:none">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+          <p data-i18n="clientes_sin_resultados">Ningún cliente coincide con la búsqueda</p>
+        </div>
+      </section>
+
+      <!-- ============ TAB: Catálogo / Cotizaciones / Proyectos (placeholders) ============ -->
+      <section id="tab-catalogo" class="tabpanel" style="display:none">
+        <div class="placeholder-tab">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"/></svg>
+          <h3 data-i18n="proximamente_titulo">Próximamente</h3>
+          <p data-i18n="proximamente_texto">Esta pestaña se termina en la siguiente etapa.</p>
+        </div>
+      </section>
+      <section id="tab-cotizaciones" class="tabpanel" style="display:none">
+        <div class="placeholder-tab">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+          <h3 data-i18n="proximamente_titulo">Próximamente</h3>
+          <p data-i18n="proximamente_texto">Esta pestaña se termina en la siguiente etapa.</p>
+        </div>
+      </section>
+      <section id="tab-proyectos" class="tabpanel" style="display:none">
+        <div class="placeholder-tab">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m2 22 5-1.5L20.5 7 17 3.5 3.5 17 2 22Z"/></svg>
+          <h3 data-i18n="proximamente_titulo">Próximamente</h3>
+          <p data-i18n="proximamente_texto">Esta pestaña se termina en la siguiente etapa.</p>
+        </div>
+      </section>
+
+      <!-- ============ TAB: Configuración ============ -->
+      <section id="tab-config" class="tabpanel" style="display:none">
+        <div class="page-head"><div><h1 data-i18n="config_titulo">Configuración</h1></div></div>
+        <div class="card">
+
+          <div class="config-section">
+            <h3 data-i18n="config_idioma">Idioma</h3>
+            <p class="desc" data-i18n="config_idioma_texto">Cambia el idioma de toda la aplicación.</p>
+            <div class="lang-switch" id="langSwitch">
+              <button data-lang="es">Español</button>
+              <button data-lang="en">English</button>
+            </div>
+          </div>
+
+          <div class="config-section">
+            <h3 data-i18n="config_apariencia">Apariencia</h3>
+            <p class="desc" data-i18n="config_apariencia_texto">Logo de la empresa y su tamaño en el encabezado.</p>
+            <div class="logo-preview-row">
+              <div class="logo-preview-box" id="logoPreviewBox">
+                <svg width="52" height="52" viewBox="0 0 24 24" fill="none"><path d="M3 20 L9 8 L12 13 L15 6 L21 20 Z" fill="url(#gradCfg)"/><defs><linearGradient id="gradCfg" x1="3" y1="20" x2="21" y2="6"><stop offset="0" stop-color="#E8622C"/><stop offset="1" stop-color="#2E8FD9"/></linearGradient></defs></svg>
+              </div>
+              <div class="slider-row">
+                <label data-i18n="config_logo_tamano" style="font-size:12.5px;font-weight:600;display:block;margin-bottom:6px">Tamaño del logo</label>
+                <input type="range" id="logoTamanoSlider" min="20" max="52" value="30">
+              </div>
+            </div>
+          </div>
+
+          <div class="config-section">
+            <h3 data-i18n="config_integraciones">Integraciones</h3>
+            <p class="desc" data-i18n="config_integraciones_texto">Claves de servicios externos que usa la app.</p>
+            <div class="field" style="margin-bottom:var(--sp-3)">
+              <label data-i18n="config_maps_key">Clave de Google Maps</label>
+              <input type="text" id="mapsApiKeyInput" data-i18n-ph="config_maps_key_ph" placeholder="Pegá tu clave…">
+              <p class="hint" data-i18n="config_maps_ayuda">Se usa para mostrar el mapa al elegir la dirección de un cliente.</p>
+            </div>
+            <button class="btn primary sm" id="btnGuardarMapsKey"><span data-i18n="config_guardar">Guardar</span></button>
+          </div>
+
+          <div class="config-section">
+            <h3 data-i18n="config_categorias">Categorías de clientes</h3>
+            <p class="desc" data-i18n="config_categorias_texto">Creá, renombrá o eliminá las categorías.</p>
+            <div class="chip-list" id="categoriasChipList"></div>
+            <div class="add-row">
+              <input type="text" id="nuevaCategoriaInput" data-i18n-ph="config_categoria_nueva_ph" placeholder="Nueva categoría…">
+              <input type="color" id="nuevaCategoriaColor" value="#2E8FD9" style="width:44px;padding:2px;border:1px solid var(--line);border-radius:var(--radius-sm)">
+              <button class="btn sm" id="btnAgregarCategoria"><span data-i18n="config_categoria_agregar">Agregar</span></button>
+            </div>
+          </div>
+
+          <div class="config-section">
+            <h3 data-i18n="config_usuarios">Usuarios</h3>
+            <p class="desc" data-i18n="config_usuarios_texto">Directorio y rol. El login real llega con la base en la nube.</p>
+            <div id="usuariosList"></div>
+            <div class="add-row" style="margin-top:var(--sp-3)">
+              <input type="text" id="nuevoUsuarioNombre" data-i18n-ph="config_usuario_nombre_ph" placeholder="Nombre">
+              <input type="text" id="nuevoUsuarioEmail" data-i18n-ph="config_usuario_email_ph" placeholder="Correo">
+              <select id="nuevoUsuarioRol" class="rol-select">
+                <option value="dueno" data-i18n="rol_dueno">Dueño</option>
+                <option value="administrador" data-i18n="rol_administrador">Administrador</option>
+                <option value="tecnico" selected data-i18n="rol_tecnico">Técnico</option>
+              </select>
+              <button class="btn sm" id="btnAgregarUsuario"><span data-i18n="config_usuario_nuevo">Nuevo</span></button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============ Bottom nav (mobile) ============ -->
+<nav class="bottomnav">
+  <div class="bottomnav-inner">
+    <button class="bn-item" data-tab="clientes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span data-i18n="nav_clientes">Clientes</span></button>
+    <button class="bn-item" data-tab="catalogo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"/></svg><span data-i18n="nav_catalogo">Catálogo</span></button>
+    <button class="bn-item" data-tab="cotizaciones"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg><span data-i18n="nav_cotizaciones">Cotizaciones</span></button>
+    <button class="bn-item" data-tab="proyectos"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 5-1.5L20.5 7 17 3.5 3.5 17 2 22Z"/></svg><span data-i18n="nav_proyectos">Proyectos</span></button>
+  </div>
+</nav>
+
+<!-- ============ Modal: Cliente (nuevo/editar) ============ -->
+<div class="modal-backdrop" id="modalCliente">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalClienteTitulo" data-i18n="form_nuevo_titulo">Nuevo cliente</h3>
+      <button class="btn icon ghost" data-close-modal="modalCliente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="clienteId">
+      <div class="field" id="fieldNombre">
+        <label data-i18n="form_nombre">Nombre completo</label>
+        <input type="text" id="clienteNombre" data-i18n-ph="form_nombre_ph">
+        <p class="error-msg" data-i18n="form_error_nombre">El nombre es obligatorio</p>
+      </div>
+      <div class="field">
+        <label data-i18n="form_empresa">Empresa (opcional)</label>
+        <input type="text" id="clienteEmpresa" data-i18n-ph="form_empresa_ph">
+      </div>
+      <div class="field-row">
+        <div class="field" id="fieldContacto1">
+          <label data-i18n="form_telefono">Teléfono</label>
+          <input type="tel" id="clienteTelefono" data-i18n-ph="form_telefono_ph">
+        </div>
+        <div class="field">
+          <label data-i18n="form_email">Correo electrónico</label>
+          <input type="email" id="clienteEmail" data-i18n-ph="form_email_ph">
+        </div>
+      </div>
+      <p class="error-msg" id="errorContacto" style="display:none" data-i18n="form_error_contacto"></p>
+
+      <div class="field">
+        <label data-i18n="form_direccion">Dirección</label>
+        <div class="field-with-btn">
+          <input type="text" id="clienteDireccion" data-i18n-ph="form_direccion_ph">
+          <button class="btn sm" id="btnAbrirMapa" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span id="btnAbrirMapaLabel" data-i18n="form_direccion_mapa">Ubicar en mapa</span>
+          </button>
+        </div>
+        <input type="hidden" id="clienteLat"><input type="hidden" id="clienteLng">
+      </div>
+
+      <div class="field">
+        <label data-i18n="form_categoria">Categoría</label>
+        <select id="clienteCategoria"></select>
+      </div>
+
+      <div class="field">
+        <label data-i18n="form_estado">Estado del cliente</label>
+        <div class="estado-toggle" id="clienteEstadoToggle">
+          <button type="button" data-v="activo" data-i18n="clientes_activo">Activo</button>
+          <button type="button" data-v="inactivo" data-i18n="clientes_inactivo">Inactivo</button>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:0">
+        <label data-i18n="form_notas">Notas internas</label>
+        <textarea id="clienteNotas" data-i18n-ph="form_notas_ph"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" data-close-modal="modalCliente"><span data-i18n="form_cancelar">Cancelar</span></button>
+      <button class="btn primary" id="btnGuardarCliente"><span data-i18n="form_guardar">Guardar cliente</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Modal: Mapa ============ -->
+<div class="modal-backdrop" id="modalMapa">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3 data-i18n="mapa_titulo">Ubicar dirección</h3>
+      <button class="btn icon ghost" data-close-modal="modalMapa"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div id="mapaSinClave" class="mapa-sin-clave" style="display:none">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <h4 data-i18n="mapa_sin_clave_titulo">Falta activar Google Maps</h4>
+        <p data-i18n="mapa_sin_clave_texto">Configurá tu clave en Configuración → Integraciones.</p>
+        <button class="btn primary sm" id="btnIrConfigMaps"><span data-i18n="mapa_ir_config">Ir a Configuración</span></button>
+      </div>
+      <div id="mapaConClave" style="display:none">
+        <div class="mapa-search">
+          <input type="text" id="mapaAutocompleteInput" data-i18n-ph="mapa_buscar_ph" style="width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13.5px">
+        </div>
+        <div id="mapaCanvas"></div>
+        <div class="mapa-info">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <span data-i18n="mapa_ayuda">Arrastrá el pin para ajustar la ubicación exacta</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" data-close-modal="modalMapa"><span data-i18n="form_cancelar">Cancelar</span></button>
+      <button class="btn primary" id="btnUsarUbicacion" disabled><span data-i18n="mapa_usar">Usar esta ubicación</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Modal: Confirmar eliminar ============ -->
+<div class="modal-backdrop" id="modalConfirmar">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-body" style="padding-top:var(--sp-5)">
+      <h3 data-i18n="confirmar_eliminar_titulo" style="margin-bottom:8px">¿Eliminar este cliente?</h3>
+      <p style="color:var(--muted);font-size:13.5px;margin:0" data-i18n="confirmar_eliminar_texto">Esta acción no se puede deshacer.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" data-close-modal="modalConfirmar"><span data-i18n="confirmar_cancelar_btn">Cancelar</span></button>
+      <button class="btn danger" id="btnConfirmarEliminar"><span data-i18n="confirmar_eliminar_btn">Sí, eliminar</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script src="i18n.js"></script>
+<script src="data.js"></script>
+<script>
+/* =========================================================================
+   One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
+   ========================================================================= */
+
+/* ---------- Idioma ---------- */
+window.CFG_LANG = DB.config.get("idioma", "es");
+function setLang(lang){
+  window.CFG_LANG = lang;
+  DB.config.set("idioma", lang);
+  aplicarTraducciones();
+  document.querySelectorAll("#langSwitch button").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
+  const label = lang === "es" ? "English" : "Español";
+  document.getElementById("langBtnLabelDesktop").textContent = label;
+  renderFiltros(); renderClientes();
+}
+document.querySelectorAll("#langSwitch button[data-lang]").forEach(b=>{
+  b.addEventListener("click", ()=> setLang(b.dataset.lang));
+});
+document.getElementById("langBtnDesktop").addEventListener("click", () => setLang(window.CFG_LANG === "es" ? "en" : "es"));
+document.getElementById("langBtnMobile").addEventListener("click", () => setLang(window.CFG_LANG === "es" ? "en" : "es"));
+
+/* ---------- Navegación entre pestañas ---------- */
+function irATab(tab){
+  document.querySelectorAll(".tabpanel").forEach(p => p.style.display = "none");
+  document.getElementById("tab-" + tab).style.display = "block";
+  document.querySelectorAll(".navitem[data-tab], .bn-item[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  window.scrollTo(0,0);
+}
+document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => irATab(b.dataset.tab)));
+
+/* ---------- Toasts ---------- */
+function toast(msg, isError=false){
+  const el = document.createElement("div");
+  el.className = "toast" + (isError ? " error" : "");
+  el.textContent = msg;
+  document.getElementById("toasts").appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+/* ---------- Modales ---------- */
+function abrirModal(id){ document.getElementById(id).classList.add("open"); }
+function cerrarModal(id){ document.getElementById(id).classList.remove("open"); }
+document.querySelectorAll("[data-close-modal]").forEach(b => b.addEventListener("click", () => cerrarModal(b.dataset.closeModal)));
+document.querySelectorAll(".modal-backdrop").forEach(bd => bd.addEventListener("click", (e) => { if (e.target === bd) bd.classList.remove("open"); }));
+
+/* =========================================================================
+   CLIENTES
+   ========================================================================= */
+let clienteEditandoId = null;
+let clienteAEliminar = null;
+let mapaLatLngTemp = null; // {lat,lng,direccion}
+
+function renderFiltros(){
+  const cats = DB.categoriasClientes.getAll();
+  const selCat = document.getElementById("filtroCategoria");
+  const actualCat = selCat.value;
+  selCat.innerHTML = `<option value="">${t("clientes_filtro_categoria")}</option>` +
+    cats.map(c => `<option value="${c.id}">${c.nombre}</option>`).join("");
+  selCat.value = actualCat;
+
+  const selEstado = document.getElementById("filtroEstado");
+  const actualEstado = selEstado.value;
+  selEstado.innerHTML = `<option value="">${t("clientes_filtro_estado")}</option>` +
+    `<option value="activo">${t("clientes_activo")}</option><option value="inactivo">${t("clientes_inactivo")}</option>`;
+  selEstado.value = actualEstado;
+
+  const selForm = document.getElementById("clienteCategoria");
+  selForm.innerHTML = cats.map(c => `<option value="${c.id}">${c.nombre}</option>`).join("") +
+    `<option value="">${t("clientes_sin_categoria")}</option>`;
+}
+
+function categoriaDe(id){ return DB.categoriasClientes.getAll().find(c => c.id === id) || null; }
+
+function iniciales(nombre){
+  return nombre.trim().split(/\s+/).slice(0,2).map(p => p[0]?.toUpperCase() || "").join("");
+}
+
+function filtrarClientes(){
+  const q = document.getElementById("buscarCliente").value.trim().toLowerCase();
+  const cat = document.getElementById("filtroCategoria").value;
+  const estado = document.getElementById("filtroEstado").value;
+  return DB.clientes.getAll().filter(c => {
+    if (cat && c.categoria_id !== cat) return false;
+    if (estado && c.estado !== estado) return false;
+    if (q && !(`${c.nombre} ${c.empresa} ${c.telefono}`.toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+
+function renderClientes(){
+  const lista = filtrarClientes();
+  const hayClientesTotal = DB.clientes.getAll().length > 0;
+  const tbody = document.getElementById("clientesTbody");
+  const cards = document.getElementById("clientesCards");
+  document.getElementById("clientesEmpty").style.display = (!hayClientesTotal) ? "flex" : "none";
+  document.getElementById("clientesSinResultados").style.display = (hayClientesTotal && lista.length === 0) ? "flex" : "none";
+  document.getElementById("clientesTableWrap").style.display = lista.length ? "" : "none";
+  cards.style.display = lista.length ? "" : "none";
+
+  tbody.innerHTML = lista.map(c => {
+    const cat = categoriaDe(c.categoria_id);
+    return `<tr>
+      <td class="cell-nombre"><b>${esc(c.nombre)}</b>${c.empresa ? `<span>${esc(c.empresa)}</span>` : ""}</td>
+      <td class="cell-contacto">
+        ${c.telefono ? `<a href="tel:${esc(c.telefono)}">${iconTel()}${esc(c.telefono)}</a>` : `<span class="cell-muted">${t("clientes_sin_telefono")}</span>`}
+        ${c.email ? `<a href="mailto:${esc(c.email)}">${iconMail()}${esc(c.email)}</a>` : ""}
+      </td>
+      <td class="cell-muted">${c.direccion ? esc(c.direccion) : t("clientes_sin_direccion")}</td>
+      <td>${cat ? `<span class="badge" style="background:${cat.color}22;color:${cat.color}"><span class="dot" style="background:${cat.color}"></span>${esc(cat.nombre)}</span>` : `<span class="cell-muted">${t("clientes_sin_categoria")}</span>`}</td>
+      <td><span class="badge estado-${c.estado}"><span class="dot" style="background:currentColor"></span>${t(c.estado === "activo" ? "clientes_activo" : "clientes_inactivo")}</span></td>
+      <td><div class="row-actions">
+        <button class="btn icon ghost sm" onclick="abrirEdicionCliente('${c.id}')">${iconEdit()}</button>
+        <button class="btn icon ghost sm" onclick="pedirEliminarCliente('${c.id}')">${iconTrash()}</button>
+      </div></td>
+    </tr>`;
+  }).join("");
+
+  cards.innerHTML = lista.map(c => {
+    const cat = categoriaDe(c.categoria_id);
+    return `<div class="client-card">
+      <div class="client-card-top">
+        <div><b>${esc(c.nombre)}</b>${c.empresa ? `<span>${esc(c.empresa)}</span>` : ""}</div>
+        <span class="badge estado-${c.estado}">${t(c.estado === "activo" ? "clientes_activo" : "clientes_inactivo")}</span>
+      </div>
+      ${c.telefono ? `<a class="client-card-row" href="tel:${esc(c.telefono)}">${iconTel()}${esc(c.telefono)}</a>` : ""}
+      ${c.direccion ? `<div class="client-card-row" style="color:var(--muted)">${iconPin()}${esc(c.direccion)}</div>` : ""}
+      <div class="client-card-foot">
+        ${cat ? `<span class="badge" style="background:${cat.color}22;color:${cat.color}"><span class="dot" style="background:${cat.color}"></span>${esc(cat.nombre)}</span>` : "<span></span>"}
+        <div class="row-actions">
+          <button class="btn icon ghost sm" onclick="abrirEdicionCliente('${c.id}')">${iconEdit()}</button>
+          <button class="btn icon ghost sm" onclick="pedirEliminarCliente('${c.id}')">${iconTrash()}</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
+function iconTel(){ return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`; }
+function iconMail(){ return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="m22 6-10 7L2 6"/></svg>`; }
+function iconPin(){ return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>`; }
+function iconEdit(){ return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>`; }
+function iconTrash(){ return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>`; }
+
+document.getElementById("buscarCliente").addEventListener("input", renderClientes);
+document.getElementById("filtroCategoria").addEventListener("change", renderClientes);
+document.getElementById("filtroEstado").addEventListener("change", renderClientes);
+
+function limpiarFormularioCliente(){
+  clienteEditandoId = null;
+  document.getElementById("clienteId").value = "";
+  document.getElementById("clienteNombre").value = "";
+  document.getElementById("clienteEmpresa").value = "";
+  document.getElementById("clienteTelefono").value = "";
+  document.getElementById("clienteEmail").value = "";
+  document.getElementById("clienteDireccion").value = "";
+  document.getElementById("clienteLat").value = "";
+  document.getElementById("clienteLng").value = "";
+  document.getElementById("clienteNotas").value = "";
+  document.getElementById("clienteCategoria").value = "";
+  setEstadoToggle("activo");
+  document.getElementById("fieldNombre").classList.remove("error");
+  document.getElementById("errorContacto").style.display = "none";
+}
+
+function setEstadoToggle(v){
+  document.querySelectorAll("#clienteEstadoToggle button").forEach(b => b.classList.toggle("active", b.dataset.v === v));
+  document.getElementById("clienteEstadoToggle").dataset.value = v;
+}
+document.getElementById("clienteEstadoToggle").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return; setEstadoToggle(b.dataset.v);
+});
+
+document.getElementById("btnNuevoCliente").addEventListener("click", abrirNuevoCliente);
+document.getElementById("btnNuevoClienteVacio").addEventListener("click", abrirNuevoCliente);
+function abrirNuevoCliente(){
+  limpiarFormularioCliente();
+  document.getElementById("modalClienteTitulo").textContent = t("form_nuevo_titulo");
+  document.getElementById("btnGuardarCliente").querySelector("span").textContent = t("form_guardar");
+  abrirModal("modalCliente");
+}
+
+function abrirEdicionCliente(id){
+  const c = DB.clientes.get(id); if (!c) return;
+  clienteEditandoId = id;
+  document.getElementById("clienteId").value = c.id;
+  document.getElementById("clienteNombre").value = c.nombre;
+  document.getElementById("clienteEmpresa").value = c.empresa || "";
+  document.getElementById("clienteTelefono").value = c.telefono || "";
+  document.getElementById("clienteEmail").value = c.email || "";
+  document.getElementById("clienteDireccion").value = c.direccion || "";
+  document.getElementById("clienteLat").value = c.lat ?? "";
+  document.getElementById("clienteLng").value = c.lng ?? "";
+  document.getElementById("clienteNotas").value = c.notas || "";
+  document.getElementById("clienteCategoria").value = c.categoria_id || "";
+  setEstadoToggle(c.estado);
+  document.getElementById("fieldNombre").classList.remove("error");
+  document.getElementById("errorContacto").style.display = "none";
+  document.getElementById("modalClienteTitulo").textContent = t("form_editar_titulo");
+  document.getElementById("btnGuardarCliente").querySelector("span").textContent = t("form_guardar_cambios");
+  abrirModal("modalCliente");
+}
+
+document.getElementById("btnGuardarCliente").addEventListener("click", () => {
+  const nombre = document.getElementById("clienteNombre").value.trim();
+  const telefono = document.getElementById("clienteTelefono").value.trim();
+  const email = document.getElementById("clienteEmail").value.trim();
+  let valido = true;
+  document.getElementById("fieldNombre").classList.toggle("error", !nombre);
+  if (!nombre) valido = false;
+  const sinContacto = !telefono && !email;
+  document.getElementById("errorContacto").style.display = sinContacto ? "block" : "none";
+  if (sinContacto) valido = false;
+  if (!valido) return;
+
+  const datos = {
+    nombre, telefono, email,
+    empresa: document.getElementById("clienteEmpresa").value,
+    direccion: document.getElementById("clienteDireccion").value,
+    lat: document.getElementById("clienteLat").value ? parseFloat(document.getElementById("clienteLat").value) : null,
+    lng: document.getElementById("clienteLng").value ? parseFloat(document.getElementById("clienteLng").value) : null,
+    categoria_id: document.getElementById("clienteCategoria").value || null,
+    notas: document.getElementById("clienteNotas").value,
+    estado: document.getElementById("clienteEstadoToggle").dataset.value || "activo",
+  };
+
+  if (clienteEditandoId) {
+    DB.clientes.update(clienteEditandoId, datos);
+    toast(t("toast_cliente_actualizado"));
+  } else {
+    DB.clientes.create(datos);
+    toast(t("toast_cliente_creado"));
+  }
+  cerrarModal("modalCliente");
+  renderClientes();
+});
+
+function pedirEliminarCliente(id){
+  clienteAEliminar = id;
+  abrirModal("modalConfirmar");
+}
+document.getElementById("btnConfirmarEliminar").addEventListener("click", () => {
+  if (clienteAEliminar) { DB.clientes.remove(clienteAEliminar); toast(t("toast_cliente_eliminado")); }
+  clienteAEliminar = null;
+  cerrarModal("modalConfirmar");
+  renderClientes();
+});
+
+/* =========================================================================
+   MAPA (Google Maps) — se carga solo cuando hace falta
+   ========================================================================= */
+let googleMapsListo = false;
+let googleMapsCargando = null;
+let gMap, gMarker, gAutocomplete, gGeocoder;
+
+function cargarGoogleMaps(apiKey){
+  if (googleMapsListo) return Promise.resolve();
+  if (googleMapsCargando) return googleMapsCargando;
+  googleMapsCargando = new Promise((resolve, reject) => {
+    window.__onGoogleMapsReady = () => { googleMapsListo = true; resolve(); };
+    const s = document.createElement("script");
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&callback=__onGoogleMapsReady`;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+  return googleMapsCargando;
+}
+
+document.getElementById("btnAbrirMapa").addEventListener("click", async () => {
+  const apiKey = DB.config.get("maps_api_key", "");
+  mapaLatLngTemp = null;
+  document.getElementById("btnUsarUbicacion").disabled = true;
+  abrirModal("modalMapa");
+
+  if (!apiKey) {
+    document.getElementById("mapaSinClave").style.display = "flex";
+    document.getElementById("mapaConClave").style.display = "none";
+    return;
+  }
+  document.getElementById("mapaSinClave").style.display = "none";
+  document.getElementById("mapaConClave").style.display = "block";
+
+  try {
+    await cargarGoogleMaps(apiKey);
+  } catch (e) {
+    document.getElementById("mapaConClave").style.display = "none";
+    document.getElementById("mapaSinClave").style.display = "flex";
+    toast("No se pudo cargar Google Maps. Revisá la clave.", true);
+    return;
+  }
+  inicializarMapa();
+});
+
+document.getElementById("btnIrConfigMaps").addEventListener("click", () => {
+  cerrarModal("modalMapa");
+  irATab("config");
+  setTimeout(() => document.getElementById("mapsApiKeyInput").focus(), 200);
+});
+
+function inicializarMapa(){
+  const latActual = parseFloat(document.getElementById("clienteLat").value);
+  const lngActual = parseFloat(document.getElementById("clienteLng").value);
+  const tieneUbicacion = !isNaN(latActual) && !isNaN(lngActual);
+  const centro = tieneUbicacion ? { lat: latActual, lng: lngActual } : { lat: 34.0549, lng: -118.2426 }; // Los Ángeles por defecto
+
+  gMap = new google.maps.Map(document.getElementById("mapaCanvas"), {
+    center: centro, zoom: tieneUbicacion ? 16 : 9,
+    disableDefaultUI: true, zoomControl: true, streetViewControl: false,
+  });
+  gGeocoder = new google.maps.Geocoder();
+  gMarker = new google.maps.Marker({ map: gMap, position: tieneUbicacion ? centro : null, draggable: true, visible: tieneUbicacion });
+  if (tieneUbicacion) {
+    mapaLatLngTemp = { lat: latActual, lng: lngActual, direccion: document.getElementById("clienteDireccion").value };
+    document.getElementById("btnUsarUbicacion").disabled = false;
+  }
+
+  const input = document.getElementById("mapaAutocompleteInput");
+  input.value = "";
+  gAutocomplete = new google.maps.places.Autocomplete(input, {
+    fields: ["formatted_address", "geometry"],
+    componentRestrictions: { country: "us" },
+  });
+  gAutocomplete.bindTo("bounds", gMap);
+  gAutocomplete.addListener("place_changed", () => {
+    const place = gAutocomplete.getPlace();
+    if (!place.geometry) return;
+    gMap.setCenter(place.geometry.location);
+    gMap.setZoom(16);
+    gMarker.setPosition(place.geometry.location);
+    gMarker.setVisible(true);
+    mapaLatLngTemp = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng(), direccion: place.formatted_address };
+    document.getElementById("btnUsarUbicacion").disabled = false;
+  });
+
+  gMap.addListener("click", (e) => {
+    gMarker.setPosition(e.latLng); gMarker.setVisible(true);
+    reverseGeocode(e.latLng);
+  });
+  gMarker.addListener("dragend", () => reverseGeocode(gMarker.getPosition()));
+}
+
+function reverseGeocode(latLng){
+  gGeocoder.geocode({ location: latLng }, (results, status) => {
+    const direccion = (status === "OK" && results[0]) ? results[0].formatted_address : `${latLng.lat().toFixed(5)}, ${latLng.lng().toFixed(5)}`;
+    mapaLatLngTemp = { lat: latLng.lat(), lng: latLng.lng(), direccion };
+    document.getElementById("btnUsarUbicacion").disabled = false;
+  });
+}
+
+document.getElementById("btnUsarUbicacion").addEventListener("click", () => {
+  if (!mapaLatLngTemp) return;
+  document.getElementById("clienteDireccion").value = mapaLatLngTemp.direccion;
+  document.getElementById("clienteLat").value = mapaLatLngTemp.lat;
+  document.getElementById("clienteLng").value = mapaLatLngTemp.lng;
+  cerrarModal("modalMapa");
+});
+
+/* =========================================================================
+   CONFIGURACIÓN
+   ========================================================================= */
+function renderCategoriasChips(){
+  const cats = DB.categoriasClientes.getAll();
+  document.getElementById("categoriasChipList").innerHTML = cats.map(c => `
+    <span class="chip"><span class="dot" style="background:${c.color}"></span>${esc(c.nombre)}
+      <button onclick="eliminarCategoria('${c.id}')">${iconTrash()}</button>
+    </span>`).join("");
+}
+function eliminarCategoria(id){
+  if (!DB.categoriasClientes.remove(id)) { toast(t("config_categoria_en_uso"), true); return; }
+  renderCategoriasChips(); renderFiltros(); renderClientes();
+}
+document.getElementById("btnAgregarCategoria").addEventListener("click", () => {
+  const input = document.getElementById("nuevaCategoriaInput");
+  const nombre = input.value.trim(); if (!nombre) return;
+  DB.categoriasClientes.create(nombre, document.getElementById("nuevaCategoriaColor").value);
+  input.value = "";
+  renderCategoriasChips(); renderFiltros(); renderClientes();
+});
+
+function renderUsuarios(){
+  const usuarios = DB.usuarios.getAll();
+  document.getElementById("usuariosList").innerHTML = usuarios.map(u => `
+    <div class="user-row">
+      <div class="user-avatar">${iniciales(u.nombre)}</div>
+      <div class="info"><b>${esc(u.nombre)}</b><span>${esc(u.email || "")}</span></div>
+      <select class="rol-select" onchange="DB.usuarios.update('${u.id}', {rol:this.value})">
+        <option value="dueno" ${u.rol === "dueno" ? "selected" : ""}>${t("rol_dueno")}</option>
+        <option value="administrador" ${u.rol === "administrador" ? "selected" : ""}>${t("rol_administrador")}</option>
+        <option value="tecnico" ${u.rol === "tecnico" ? "selected" : ""}>${t("rol_tecnico")}</option>
+      </select>
+      <button class="btn icon ghost sm" onclick="DB.usuarios.remove('${u.id}'); renderUsuarios();">${iconTrash()}</button>
+    </div>`).join("");
+}
+document.getElementById("btnAgregarUsuario").addEventListener("click", () => {
+  const nombre = document.getElementById("nuevoUsuarioNombre").value.trim(); if (!nombre) return;
+  DB.usuarios.create({ nombre, email: document.getElementById("nuevoUsuarioEmail").value, rol: document.getElementById("nuevoUsuarioRol").value });
+  document.getElementById("nuevoUsuarioNombre").value = ""; document.getElementById("nuevoUsuarioEmail").value = "";
+  renderUsuarios();
+});
+
+document.getElementById("mapsApiKeyInput").value = DB.config.get("maps_api_key", "");
+document.getElementById("btnGuardarMapsKey").addEventListener("click", () => {
+  DB.config.set("maps_api_key", document.getElementById("mapsApiKeyInput").value.trim());
+  toast(t("config_guardado"));
+});
+
+document.getElementById("logoTamanoSlider").value = DB.config.get("logo_tamano", 30);
+document.getElementById("logoTamanoSlider").addEventListener("input", (e) => {
+  const px = e.target.value;
+  document.querySelectorAll(".brand svg").forEach(svg => { svg.setAttribute("width", px); svg.setAttribute("height", px); });
+  DB.config.set("logo_tamano", px);
+});
+
+/* ---------- Arranque ---------- */
+(function init(){
+  aplicarTraducciones();
+  document.querySelectorAll("#langSwitch button").forEach(b => b.classList.toggle("active", b.dataset.lang === window.CFG_LANG));
+  document.getElementById("langBtnLabelDesktop").textContent = window.CFG_LANG === "es" ? "English" : "Español";
+  const px = DB.config.get("logo_tamano", 30);
+  document.querySelectorAll(".brand svg").forEach(svg => { svg.setAttribute("width", px); svg.setAttribute("height", px); });
+  renderFiltros();
+  renderClientes();
+  renderCategoriasChips();
+  renderUsuarios();
+  irATab("clientes");
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('service-worker.js').catch(() => {}); });
+  }
+})();
+</script>
+</body>
+</html>
