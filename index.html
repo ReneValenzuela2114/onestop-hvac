@@ -212,6 +212,22 @@
   /* ---------- Config ---------- */
   .config-section{padding:var(--sp-5);border-bottom:1px solid var(--line)}
   .config-section:last-child{border-bottom:none}
+  /* Acordeón de configuración: grupos desplegables */
+  .config-group{border-bottom:1px solid var(--line)}
+  .config-group:last-child{border-bottom:none}
+  .config-group-head{display:flex;align-items:center;gap:var(--sp-3);width:100%;padding:var(--sp-4) var(--sp-5);background:none;border:none;text-align:left;cursor:pointer;transition:background .15s}
+  .config-group-head:hover{background:#FAFBFD}
+  .cfg-ico{width:38px;height:38px;border-radius:10px;background:var(--line-soft);color:var(--frio-600);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .cfg-txt{flex:1;min-width:0}
+  .cfg-txt b{display:block;font-size:14px;font-family:var(--font-head);color:var(--ink)}
+  .cfg-txt span{display:block;font-size:12.5px;color:var(--muted)}
+  .config-group-head .chev{transition:transform .2s;color:var(--muted);flex-shrink:0}
+  .config-group.open .config-group-head .chev{transform:rotate(180deg)}
+  .config-group-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .25s ease}
+  .config-group.open .config-group-body{grid-template-rows:1fr}
+  .config-group-inner{overflow:hidden}
+  .config-group-inner .config-section{border-bottom:1px solid var(--line-soft)}
+  .config-group-inner .config-section:last-child{border-bottom:none}
   .config-section h3{font-size:14.5px;margin-bottom:2px}
   .config-section .desc{color:var(--muted);font-size:12.5px;margin:0 0 var(--sp-4)}
   .lang-switch{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--line-soft)}
@@ -383,7 +399,15 @@
       <!-- ============ TAB: Configuración ============ -->
       <section id="tab-config" class="tabpanel" style="display:none">
         <div class="page-head"><div><h1 data-i18n="config_titulo">Configuración</h1></div></div>
-        <div class="card">
+        <div class="card" id="configAcordeon">
+
+          <div class="config-group open">
+            <button class="config-group-head" type="button">
+              <span class="cfg-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>
+              <span class="cfg-txt"><b data-i18n="config_grupo_general">General</b><span data-i18n="config_grupo_general_desc">Language, logo and appearance</span></span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="config-group-body"><div class="config-group-inner">
 
           <div class="config-section">
             <h3 data-i18n="config_idioma">Idioma</h3>
@@ -416,16 +440,16 @@
             </div>
           </div>
 
-          <div class="config-section">
-            <h3 data-i18n="config_integraciones">Integraciones</h3>
-            <p class="desc" data-i18n="config_integraciones_texto">Claves de servicios externos que usa la app.</p>
-            <div class="field" style="margin-bottom:var(--sp-3)">
-              <label data-i18n="config_maps_key">Clave de Google Maps</label>
-              <input type="text" id="mapsApiKeyInput" data-i18n-ph="config_maps_key_ph" placeholder="Pegá tu clave…">
-              <p class="hint" data-i18n="config_maps_ayuda">Se usa para mostrar el mapa al elegir la dirección de un cliente.</p>
-            </div>
-            <button class="btn primary sm" id="btnGuardarMapsKey"><span data-i18n="config_guardar">Guardar</span></button>
+            </div></div>
           </div>
+
+          <div class="config-group">
+            <button class="config-group-head" type="button">
+              <span class="cfg-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+              <span class="cfg-txt"><b data-i18n="config_grupo_clientes">Clients</b><span data-i18n="config_grupo_clientes_desc">Categories and client preferences</span></span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="config-group-body"><div class="config-group-inner">
 
           <div class="config-section">
             <h3 data-i18n="config_categorias">Categorías de clientes</h3>
@@ -437,6 +461,17 @@
               <button class="btn sm" id="btnAgregarCategoria"><span data-i18n="config_categoria_agregar">Agregar</span></button>
             </div>
           </div>
+
+            </div></div>
+          </div>
+
+          <div class="config-group">
+            <button class="config-group-head" type="button">
+              <span class="cfg-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
+              <span class="cfg-txt"><b data-i18n="config_grupo_equipo">Team</b><span data-i18n="config_grupo_equipo_desc">Workers and their roles</span></span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="config-group-body"><div class="config-group-inner">
 
           <div class="config-section">
             <h3 data-i18n="config_usuarios">Usuarios</h3>
@@ -452,6 +487,31 @@
               </select>
               <button class="btn sm" id="btnAgregarUsuario"><span data-i18n="config_usuario_nuevo">Nuevo</span></button>
             </div>
+          </div>
+
+            </div></div>
+          </div>
+
+          <div class="config-group">
+            <button class="config-group-head" type="button">
+              <span class="cfg-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+              <span class="cfg-txt"><b data-i18n="config_grupo_integraciones">Integrations</b><span data-i18n="config_grupo_integraciones_desc">External services like Google Maps</span></span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="config-group-body"><div class="config-group-inner">
+
+          <div class="config-section">
+            <h3 data-i18n="config_integraciones">Integraciones</h3>
+            <p class="desc" data-i18n="config_integraciones_texto">Claves de servicios externos que usa la app.</p>
+            <div class="field" style="margin-bottom:var(--sp-3)">
+              <label data-i18n="config_maps_key">Clave de Google Maps</label>
+              <input type="text" id="mapsApiKeyInput" data-i18n-ph="config_maps_key_ph" placeholder="Pegá tu clave…">
+              <p class="hint" data-i18n="config_maps_ayuda">Se usa para mostrar el mapa al elegir la dirección de un cliente.</p>
+            </div>
+            <button class="btn primary sm" id="btnGuardarMapsKey"><span data-i18n="config_guardar">Guardar</span></button>
+          </div>
+
+            </div></div>
           </div>
 
         </div>
@@ -733,9 +793,9 @@ function serializarFormularioCliente(){
     "clienteNombre","clienteEmpresa","clienteTelefono","clienteEmail",
     "clienteDireccion","clienteDireccion2","clienteDireccionFact","clienteDireccionFact2",
     "clienteCategoria","clienteNotas",
-  ].map(id => document.getElementById(id).value).join("")
-    + "" + document.getElementById("clienteFactIgual").checked
-    + "" + (document.getElementById("clienteEstadoToggle").dataset.value || "activo");
+  ].map(id => document.getElementById(id).value).join("")
+    + "" + document.getElementById("clienteFactIgual").checked
+    + "" + (document.getElementById("clienteEstadoToggle").dataset.value || "activo");
 }
 function clienteFormSucio(){
   return document.getElementById("modalCliente").classList.contains("open")
@@ -1169,6 +1229,11 @@ async function activarAutocompletadoDireccion(){
 /* =========================================================================
    CONFIGURACIÓN
    ========================================================================= */
+/* Acordeón: abre/cierra cada grupo */
+document.querySelectorAll(".config-group-head").forEach(h => {
+  h.addEventListener("click", () => h.parentElement.classList.toggle("open"));
+});
+
 function renderCategoriasChips(){
   const cats = DB.categoriasClientes.getAll();
   document.getElementById("categoriasChipList").innerHTML = cats.map(c => `
