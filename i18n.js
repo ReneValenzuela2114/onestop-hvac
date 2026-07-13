@@ -122,6 +122,7 @@ const I18N = {
     rol_administrador: "Administrador",
     rol_tecnico: "Técnico",
 
+    campo_limpiar: "Limpiar",
     cerrar: "Cerrar",
     guardar: "Guardar",
     eliminar: "Eliminar",
@@ -242,6 +243,7 @@ const I18N = {
     rol_administrador: "Administrator",
     rol_tecnico: "Technician",
 
+    campo_limpiar: "Clear",
     cerrar: "Close",
     guardar: "Save",
     eliminar: "Delete",

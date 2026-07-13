@@ -189,6 +189,12 @@
   .ac-item b{font-weight:600}
   .ac-item span{color:var(--muted);font-size:12px}
 
+  /* Botón × para vaciar un campo de un toque (aparece solo con contenido) */
+  .clearable{position:relative;display:flex;flex:1;min-width:0;width:100%}
+  .clearable input{width:100%;padding-right:34px}
+  .btn-limpiar{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:20px;height:20px;border:none;border-radius:50%;background:var(--muted);color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;padding:0;opacity:.55;transition:opacity .15s}
+  .btn-limpiar:hover{opacity:.85}
+
   .estado-toggle{display:flex;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;width:fit-content}
   .estado-toggle button{padding:8px 16px;border:none;background:var(--panel);font-size:13px;font-weight:600;color:var(--muted)}
   .estado-toggle button.active[data-v=activo]{background:var(--success-soft);color:var(--success)}
@@ -639,6 +645,38 @@ function irATab(tab){
 }
 document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => irATab(b.dataset.tab)));
 
+/* ---------- Botón × para vaciar campos (estilo buscador de Google/iPhone) ----------
+   Aparece solo cuando el campo tiene texto. Un toque lo vacía, mantiene el foco
+   y dispara el evento "input" para que filtros/autocompletado reaccionen. */
+const limpiarRegistros = [];
+function refrescarBotonesLimpiar(){ limpiarRegistros.forEach(f => f()); }
+
+function agregarBotonLimpiar(input, alLimpiar){
+  const wrap = document.createElement("div");
+  wrap.className = "clearable";
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn-limpiar";
+  btn.setAttribute("aria-label", t("campo_limpiar"));
+  btn.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
+  wrap.appendChild(btn);
+  const refrescar = () => { btn.style.display = input.value ? "flex" : "none"; };
+  limpiarRegistros.push(refrescar);
+  input.addEventListener("input", refrescar);
+  // pointerdown: en táctil gana antes que el blur del campo
+  btn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    input.value = "";
+    if (alLimpiar) alLimpiar();
+    refrescar();
+    input.focus();
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  refrescar();
+}
+
 /* ---------- Toasts ---------- */
 function toast(msg, isError=false){
   const el = document.createElement("div");
@@ -845,6 +883,7 @@ function abrirNuevoCliente(){
   abrirModal("modalCliente");
   activarAutocompletadoDireccion();
   clienteFormBase = serializarFormularioCliente();
+  refrescarBotonesLimpiar();
 }
 
 function abrirEdicionCliente(id){
@@ -872,6 +911,7 @@ function abrirEdicionCliente(id){
   abrirModal("modalCliente");
   activarAutocompletadoDireccion();
   clienteFormBase = serializarFormularioCliente();
+  refrescarBotonesLimpiar();
 }
 
 document.getElementById("btnGuardarCliente").addEventListener("click", () => {
@@ -1026,6 +1066,7 @@ document.getElementById("btnUsarUbicacion").addEventListener("click", () => {
   document.getElementById("clienteDireccion").value = mapaLatLngTemp.direccion;
   document.getElementById("clienteLat").value = mapaLatLngTemp.lat;
   document.getElementById("clienteLng").value = mapaLatLngTemp.lng;
+  refrescarBotonesLimpiar();
   cerrarModal("modalMapa");
 });
 
@@ -1078,6 +1119,7 @@ function conectarAutocomplete(input, alElegir){
       await place.fetchFields({ fields: ["formattedAddress", "location"] });
       acToken = null; // elegir un lugar cierra la sesión de facturación de Google
       alElegir({ direccion: place.formattedAddress, lat: place.location.lat(), lng: place.location.lng() });
+      refrescarBotonesLimpiar();
     } catch (e) { /* si falla, la dirección se puede escribir a mano */ }
   }
 
@@ -1263,6 +1305,13 @@ document.getElementById("logoTamanoSlider").addEventListener("input", (e) => {
   document.querySelectorAll("#langSwitch button").forEach(b => b.classList.toggle("active", b.dataset.lang === window.CFG_LANG));
   document.getElementById("langBtnLabelDesktop").textContent = window.CFG_LANG === "es" ? "English" : "Español";
   aplicarLogo();
+  agregarBotonLimpiar(document.getElementById("buscarCliente"));
+  agregarBotonLimpiar(document.getElementById("clienteDireccion"), () => {
+    document.getElementById("clienteLat").value = "";
+    document.getElementById("clienteLng").value = "";
+  });
+  agregarBotonLimpiar(document.getElementById("clienteDireccionFact"));
+  agregarBotonLimpiar(document.getElementById("mapaAutocompleteInput"));
   renderFiltros();
   renderClientes();
   renderCategoriasChips();
