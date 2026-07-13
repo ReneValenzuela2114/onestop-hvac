@@ -4,7 +4,7 @@
  * versión nueva: subir CACHE de v1 a v2 para que los usuarios reciban lo
  * nuevo sin quedar pegados en lo viejo.
  */
-const CACHE = 'onestop-shell-v4';
+const CACHE = 'onestop-shell-v5';
 const API_PREFIX = '/api';
 const SHELL = [
   './',

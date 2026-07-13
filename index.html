@@ -210,6 +210,7 @@
   .lang-switch button.active{background:var(--panel);color:var(--frio-700);box-shadow:var(--shadow)}
   .logo-preview-row{display:flex;align-items:center;gap:var(--sp-5)}
   .logo-preview-box{width:96px;height:96px;border-radius:var(--radius-sm);background:var(--frio-900);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+  .logo-img{object-fit:contain;flex-shrink:0;display:block}
   .slider-row{flex:1}
   .slider-row input[type=range]{width:100%}
   .chip-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:var(--sp-4)}
@@ -387,8 +388,16 @@
                 <svg width="52" height="52" viewBox="0 0 24 24" fill="none"><path d="M3 20 L9 8 L12 13 L15 6 L21 20 Z" fill="url(#gradCfg)"/><defs><linearGradient id="gradCfg" x1="3" y1="20" x2="21" y2="6"><stop offset="0" stop-color="#E8622C"/><stop offset="1" stop-color="#2E8FD9"/></linearGradient></defs></svg>
               </div>
               <div class="slider-row">
-                <label data-i18n="config_logo_tamano" style="font-size:12.5px;font-weight:600;display:block;margin-bottom:6px">Tamaño del logo</label>
+                <label data-i18n="config_logo_tamano" style="font-size:12.5px;font-weight:600;display:block;margin-bottom:6px">Logo size</label>
                 <input type="range" id="logoTamanoSlider" min="20" max="52" value="30">
+                <div style="display:flex;gap:8px;margin-top:12px">
+                  <button class="btn sm" id="btnSubirLogo">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+                    <span data-i18n="config_logo_subir">Upload logo</span>
+                  </button>
+                  <button class="btn sm ghost" id="btnQuitarLogo"><span data-i18n="config_logo_quitar">Remove</span></button>
+                  <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden>
+                </div>
               </div>
             </div>
           </div>
@@ -1094,11 +1103,93 @@ document.getElementById("btnGuardarMapsKey").addEventListener("click", () => {
   toast(t("config_guardado"));
 });
 
+/* ---------- Logo de la empresa (subir / quitar / tamaño) ---------- */
+function aplicarLogo(){
+  const url = DB.config.get("logo_url", "");
+  const px = parseInt(DB.config.get("logo_tamano", 30), 10) || 30;
+
+  document.querySelectorAll(".brand").forEach(b => {
+    const svg = b.querySelector("svg");
+    let img = b.querySelector("img.logo-img");
+    if (url) {
+      if (!img) {
+        img = document.createElement("img");
+        img.className = "logo-img";
+        img.alt = "Logo";
+        b.insertBefore(img, b.firstChild);
+      }
+      img.src = url;
+      img.style.width = px + "px";
+      img.style.height = px + "px";
+      img.style.display = "";
+      if (svg) svg.style.display = "none";
+    } else {
+      if (img) img.style.display = "none";
+      if (svg) { svg.style.display = ""; svg.setAttribute("width", px); svg.setAttribute("height", px); }
+    }
+  });
+
+  const box = document.getElementById("logoPreviewBox");
+  const boxSvg = box.querySelector("svg");
+  let boxImg = box.querySelector("img.logo-img");
+  if (url) {
+    if (!boxImg) {
+      boxImg = document.createElement("img");
+      boxImg.className = "logo-img";
+      boxImg.alt = "Logo";
+      box.appendChild(boxImg);
+    }
+    boxImg.src = url;
+    boxImg.style.width = "72px";
+    boxImg.style.height = "72px";
+    boxImg.style.display = "";
+    if (boxSvg) boxSvg.style.display = "none";
+  } else {
+    if (boxImg) boxImg.style.display = "none";
+    if (boxSvg) boxSvg.style.display = "";
+  }
+}
+
+document.getElementById("btnSubirLogo").addEventListener("click", () => document.getElementById("logoFileInput").click());
+document.getElementById("logoFileInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  const lector = new FileReader();
+  lector.onload = () => {
+    if (file.type === "image/svg+xml") {
+      // Vectorial: se guarda tal cual, queda nítido a cualquier tamaño
+      DB.config.set("logo_url", lector.result);
+      aplicarLogo();
+      toast(t("toast_logo_actualizado"));
+      return;
+    }
+    const im = new Image();
+    im.onload = () => {
+      const MAX = 512; // se reduce para guardarlo liviano en el navegador
+      const escala = Math.min(1, MAX / Math.max(im.width, im.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(im.width * escala);
+      canvas.height = Math.round(im.height * escala);
+      canvas.getContext("2d").drawImage(im, 0, 0, canvas.width, canvas.height);
+      DB.config.set("logo_url", canvas.toDataURL("image/png"));
+      aplicarLogo();
+      toast(t("toast_logo_actualizado"));
+    };
+    im.src = lector.result;
+  };
+  lector.readAsDataURL(file);
+});
+document.getElementById("btnQuitarLogo").addEventListener("click", () => {
+  DB.config.set("logo_url", "");
+  aplicarLogo();
+  toast(t("config_guardado"));
+});
+
 document.getElementById("logoTamanoSlider").value = DB.config.get("logo_tamano", 30);
 document.getElementById("logoTamanoSlider").addEventListener("input", (e) => {
-  const px = e.target.value;
-  document.querySelectorAll(".brand svg").forEach(svg => { svg.setAttribute("width", px); svg.setAttribute("height", px); });
-  DB.config.set("logo_tamano", px);
+  DB.config.set("logo_tamano", e.target.value);
+  aplicarLogo();
 });
 
 /* ---------- Arranque ---------- */
@@ -1106,8 +1197,7 @@ document.getElementById("logoTamanoSlider").addEventListener("input", (e) => {
   aplicarTraducciones();
   document.querySelectorAll("#langSwitch button").forEach(b => b.classList.toggle("active", b.dataset.lang === window.CFG_LANG));
   document.getElementById("langBtnLabelDesktop").textContent = window.CFG_LANG === "es" ? "English" : "Español";
-  const px = DB.config.get("logo_tamano", 30);
-  document.querySelectorAll(".brand svg").forEach(svg => { svg.setAttribute("width", px); svg.setAttribute("height", px); });
+  aplicarLogo();
   renderFiltros();
   renderClientes();
   renderCategoriasChips();
