@@ -263,6 +263,11 @@
   }
   .hide-desktop{display:none}
   @media (max-width: 960px){.hide-desktop{display:inline-flex}.hide-mobile{display:none}}
+  /* En teléfonos, el botón del mapa queda solo con el ícono para dar más ancho a la dirección */
+  @media (max-width: 600px){
+    #btnAbrirMapaLabel{display:none}
+    #btnAbrirMapa{width:42px;justify-content:center;padding:9px;flex-shrink:0}
+  }
 </style>
 </head>
 <body>
