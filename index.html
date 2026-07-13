@@ -177,8 +177,14 @@
   .field-with-btn input{flex:1}
   label.check-row{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:500;color:var(--ink);cursor:pointer;user-select:none;margin-top:8px}
   .check-row input[type=checkbox]{width:17px;height:17px;accent-color:var(--frio-600);cursor:pointer;flex-shrink:0;margin:0}
-  /* El menú de sugerencias de Google Places debe verse por encima del modal */
-  .pac-container{z-index:300;border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);border:1px solid var(--line);font-family:var(--font-body)}
+  /* Menú de sugerencias de direcciones (dropdown propio sobre la API nueva de Places) */
+  .ac-anchor{position:relative}
+  .ac-menu{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);z-index:320;max-height:280px;overflow:auto}
+  .ac-item{padding:10px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--line-soft)}
+  .ac-item:last-child{border-bottom:none}
+  .ac-item:hover{background:var(--line-soft)}
+  .ac-item b{font-weight:600}
+  .ac-item span{color:var(--muted);font-size:12px}
 
   .estado-toggle{display:flex;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;width:fit-content}
   .estado-toggle button{padding:8px 16px;border:none;background:var(--panel);font-size:13px;font-weight:600;color:var(--muted)}
@@ -852,7 +858,7 @@ document.getElementById("btnConfirmarEliminar").addEventListener("click", () => 
    ========================================================================= */
 let googleMapsListo = false;
 let googleMapsCargando = null;
-let gMap, gMarker, gAutocomplete, gGeocoder;
+let gMap, gMarker, gGeocoder;
 
 function cargarGoogleMaps(apiKey){
   if (googleMapsListo) return Promise.resolve();
@@ -917,19 +923,14 @@ function inicializarMapa(){
 
   const input = document.getElementById("mapaAutocompleteInput");
   input.value = "";
-  gAutocomplete = new google.maps.places.Autocomplete(input, {
-    fields: ["formatted_address", "geometry"],
-    componentRestrictions: { country: "us" },
-  });
-  gAutocomplete.bindTo("bounds", gMap);
-  gAutocomplete.addListener("place_changed", () => {
-    const place = gAutocomplete.getPlace();
-    if (!place.geometry) return;
-    gMap.setCenter(place.geometry.location);
+  conectarAutocomplete(input, ({ direccion, lat, lng }) => {
+    const pos = { lat, lng };
+    gMap.setCenter(pos);
     gMap.setZoom(16);
-    gMarker.setPosition(place.geometry.location);
+    gMarker.setPosition(pos);
     gMarker.setVisible(true);
-    mapaLatLngTemp = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng(), direccion: place.formatted_address };
+    input.value = direccion;
+    mapaLatLngTemp = { lat, lng, direccion };
     document.getElementById("btnUsarUbicacion").disabled = false;
   });
 
@@ -957,9 +958,74 @@ document.getElementById("btnUsarUbicacion").addEventListener("click", () => {
 });
 
 /* ---------- Autocompletado al escribir en los campos de dirección ----------
-   Si hay clave de Google Maps configurada, los campos de dirección sugieren
-   direcciones reales mientras se escribe (como Housecall Pro). Sin clave,
-   quedan como texto libre y no pasa nada. */
+   Usa la API NUEVA de Places (AutocompleteSuggestion): la clásica
+   (google.maps.places.Autocomplete) ya no está disponible para cuentas de
+   Google creadas después de marzo 2025. El dropdown es propio, con el mismo
+   estilo de la app. Sin clave de Maps, los campos quedan como texto libre. */
+let acToken = null;
+
+function conectarAutocomplete(input, alElegir){
+  if (input.dataset.acListo) return;
+  input.dataset.acListo = "1";
+  const anchor = input.parentElement;
+  anchor.classList.add("ac-anchor");
+  const menu = document.createElement("div");
+  menu.className = "ac-menu";
+  menu.style.display = "none";
+  anchor.appendChild(menu);
+  let sugerencias = [];
+  let timer = null;
+
+  function cerrar(){ menu.style.display = "none"; menu.innerHTML = ""; sugerencias = []; }
+
+  async function buscar(texto){
+    if (!acToken) acToken = new google.maps.places.AutocompleteSessionToken();
+    try {
+      const { suggestions } = await google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+        input: texto,
+        sessionToken: acToken,
+        includedRegionCodes: ["us"],
+      });
+      sugerencias = suggestions || [];
+      if (!sugerencias.length || document.activeElement !== input) { cerrar(); return; }
+      menu.innerHTML = sugerencias.map((s, i) => {
+        const p = s.placePrediction;
+        const main = p.mainText ? p.mainText.text : p.text.text;
+        const sec = p.secondaryText ? p.secondaryText.text : "";
+        return `<div class="ac-item" data-i="${i}"><b>${esc(main)}</b>${sec ? ` <span>${esc(sec)}</span>` : ""}</div>`;
+      }).join("");
+      menu.style.display = "block";
+    } catch (e) { cerrar(); }
+  }
+
+  async function elegir(i){
+    const s = sugerencias[i]; if (!s) return;
+    cerrar();
+    try {
+      const place = s.placePrediction.toPlace();
+      await place.fetchFields({ fields: ["formattedAddress", "location"] });
+      acToken = null; // elegir un lugar cierra la sesión de facturación de Google
+      alElegir({ direccion: place.formattedAddress, lat: place.location.lat(), lng: place.location.lng() });
+    } catch (e) { /* si falla, la dirección se puede escribir a mano */ }
+  }
+
+  input.addEventListener("input", () => {
+    clearTimeout(timer);
+    const texto = input.value.trim();
+    if (texto.length < 3) { cerrar(); return; }
+    timer = setTimeout(() => buscar(texto), 250);
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && sugerencias.length) { e.preventDefault(); elegir(0); }
+    if (e.key === "Escape") cerrar();
+  });
+  menu.addEventListener("mousedown", (e) => {
+    const item = e.target.closest(".ac-item");
+    if (item) { e.preventDefault(); elegir(parseInt(item.dataset.i, 10)); }
+  });
+  input.addEventListener("blur", () => setTimeout(cerrar, 150));
+}
+
 let autocompleteDireccionListo = false;
 async function activarAutocompletadoDireccion(){
   if (autocompleteDireccionListo) return;
@@ -969,22 +1035,13 @@ async function activarAutocompletadoDireccion(){
   if (autocompleteDireccionListo) return; // por si se llamó dos veces en paralelo
   autocompleteDireccionListo = true;
 
-  const opciones = { fields: ["formatted_address", "geometry"], componentRestrictions: { country: "us" }, types: ["address"] };
-
-  const acPrincipal = new google.maps.places.Autocomplete(document.getElementById("clienteDireccion"), opciones);
-  acPrincipal.addListener("place_changed", () => {
-    const place = acPrincipal.getPlace();
-    if (!place.geometry) return;
-    document.getElementById("clienteDireccion").value = place.formatted_address;
-    document.getElementById("clienteLat").value = place.geometry.location.lat();
-    document.getElementById("clienteLng").value = place.geometry.location.lng();
+  conectarAutocomplete(document.getElementById("clienteDireccion"), ({ direccion, lat, lng }) => {
+    document.getElementById("clienteDireccion").value = direccion;
+    document.getElementById("clienteLat").value = lat;
+    document.getElementById("clienteLng").value = lng;
   });
-
-  const acFact = new google.maps.places.Autocomplete(document.getElementById("clienteDireccionFact"), opciones);
-  acFact.addListener("place_changed", () => {
-    const place = acFact.getPlace();
-    if (!place.geometry) return;
-    document.getElementById("clienteDireccionFact").value = place.formatted_address;
+  conectarAutocomplete(document.getElementById("clienteDireccionFact"), ({ direccion }) => {
+    document.getElementById("clienteDireccionFact").value = direccion;
   });
 }
 
