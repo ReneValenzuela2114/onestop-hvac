@@ -155,6 +155,9 @@
   .modal{background:var(--panel);border-radius:var(--radius);width:100%;max-width:560px;box-shadow:var(--shadow-lg);animation:pop .18s ease}
   .modal.wide{max-width:640px}
   @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  /* Sacudida sutil: avisa que hay datos sin guardar al hacer clic afuera */
+  @keyframes shakeX{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  .modal.shake{animation:shakeX .35s ease}
   .modal-head{display:flex;align-items:center;justify-content:space-between;padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--line)}
   .modal-head h3{font-size:16px;color:var(--frio-900)}
   .modal-body{padding:var(--sp-5)}
@@ -587,6 +590,20 @@
   </div>
 </div>
 
+<!-- ============ Modal: Descartar cambios sin guardar ============ -->
+<div class="modal-backdrop" id="modalDescartar">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-body" style="padding-top:var(--sp-5)">
+      <h3 data-i18n="descartar_titulo" style="margin-bottom:8px">Discard changes?</h3>
+      <p style="color:var(--muted);font-size:13.5px;margin:0" data-i18n="descartar_texto">You have unsaved information. If you leave now, it will be lost.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" data-close-modal="modalDescartar"><span data-i18n="descartar_seguir">Keep editing</span></button>
+      <button class="btn danger" id="btnDescartarCambios"><span data-i18n="descartar_btn">Discard</span></button>
+    </div>
+  </div>
+</div>
+
 <div id="toasts"></div>
 
 <script src="i18n.js"></script>
@@ -631,11 +648,34 @@ function toast(msg, isError=false){
   setTimeout(() => el.remove(), 3200);
 }
 
-/* ---------- Modales ---------- */
+/* ---------- Modales ----------
+   El modal de cliente tiene "protección de cambios sin guardar": con datos a
+   medias, el clic afuera no cierra (sacude la tarjeta como aviso) y la X o
+   Cancelar preguntan antes de descartar. Sin cambios, cierra normal. */
 function abrirModal(id){ document.getElementById(id).classList.add("open"); }
 function cerrarModal(id){ document.getElementById(id).classList.remove("open"); }
-document.querySelectorAll("[data-close-modal]").forEach(b => b.addEventListener("click", () => cerrarModal(b.dataset.closeModal)));
-document.querySelectorAll(".modal-backdrop").forEach(bd => bd.addEventListener("click", (e) => { if (e.target === bd) bd.classList.remove("open"); }));
+
+function sacudirModal(backdrop){
+  const m = backdrop.querySelector(".modal");
+  m.classList.remove("shake");
+  void m.offsetWidth; // reinicia la animación si ya estaba aplicada
+  m.classList.add("shake");
+}
+
+document.querySelectorAll("[data-close-modal]").forEach(b => b.addEventListener("click", () => {
+  const id = b.dataset.closeModal;
+  if (id === "modalCliente" && clienteFormSucio()) { abrirModal("modalDescartar"); return; }
+  cerrarModal(id);
+}));
+document.querySelectorAll(".modal-backdrop").forEach(bd => bd.addEventListener("click", (e) => {
+  if (e.target !== bd) return;
+  if (bd.id === "modalCliente" && clienteFormSucio()) { sacudirModal(bd); return; }
+  bd.classList.remove("open");
+}));
+document.getElementById("btnDescartarCambios").addEventListener("click", () => {
+  cerrarModal("modalDescartar");
+  cerrarModal("modalCliente");
+});
 
 /* =========================================================================
    CLIENTES
@@ -643,6 +683,21 @@ document.querySelectorAll(".modal-backdrop").forEach(bd => bd.addEventListener("
 let clienteEditandoId = null;
 let clienteAEliminar = null;
 let mapaLatLngTemp = null; // {lat,lng,direccion}
+let clienteFormBase = ""; // "foto" del formulario al abrirlo, para detectar cambios sin guardar
+
+function serializarFormularioCliente(){
+  return [
+    "clienteNombre","clienteEmpresa","clienteTelefono","clienteEmail",
+    "clienteDireccion","clienteDireccion2","clienteDireccionFact","clienteDireccionFact2",
+    "clienteCategoria","clienteNotas",
+  ].map(id => document.getElementById(id).value).join("")
+    + "" + document.getElementById("clienteFactIgual").checked
+    + "" + (document.getElementById("clienteEstadoToggle").dataset.value || "activo");
+}
+function clienteFormSucio(){
+  return document.getElementById("modalCliente").classList.contains("open")
+    && serializarFormularioCliente() !== clienteFormBase;
+}
 
 function renderFiltros(){
   const cats = DB.categoriasClientes.getAll();
@@ -789,6 +844,7 @@ function abrirNuevoCliente(){
   document.getElementById("btnGuardarCliente").querySelector("span").textContent = t("form_guardar");
   abrirModal("modalCliente");
   activarAutocompletadoDireccion();
+  clienteFormBase = serializarFormularioCliente();
 }
 
 function abrirEdicionCliente(id){
@@ -815,6 +871,7 @@ function abrirEdicionCliente(id){
   document.getElementById("btnGuardarCliente").querySelector("span").textContent = t("form_guardar_cambios");
   abrirModal("modalCliente");
   activarAutocompletadoDireccion();
+  clienteFormBase = serializarFormularioCliente();
 }
 
 document.getElementById("btnGuardarCliente").addEventListener("click", () => {

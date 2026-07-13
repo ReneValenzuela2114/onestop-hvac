@@ -78,6 +78,11 @@ const I18N = {
     mapa_sin_clave_texto: "Configurá tu clave de Google Maps en Configuración → Integraciones para poder marcar la ubicación en el mapa. Mientras tanto podés escribir la dirección a mano.",
     mapa_ir_config: "Ir a Configuración",
 
+    descartar_titulo: "¿Descartar los cambios?",
+    descartar_texto: "Tenés información sin guardar. Si salís ahora, se va a perder.",
+    descartar_seguir: "Seguir editando",
+    descartar_btn: "Descartar",
+
     confirmar_eliminar_titulo: "¿Eliminar este cliente?",
     confirmar_eliminar_texto: "Esta acción no se puede deshacer.",
     confirmar_eliminar_btn: "Sí, eliminar",
@@ -192,6 +197,11 @@ const I18N = {
     mapa_sin_clave_titulo: "Google Maps isn't set up yet",
     mapa_sin_clave_texto: "Add your Google Maps key in Settings → Integrations to pin the exact location on a map. You can still type the address by hand for now.",
     mapa_ir_config: "Go to Settings",
+
+    descartar_titulo: "Discard changes?",
+    descartar_texto: "You have unsaved information. If you leave now, it will be lost.",
+    descartar_seguir: "Keep editing",
+    descartar_btn: "Discard",
 
     confirmar_eliminar_titulo: "Delete this client?",
     confirmar_eliminar_texto: "This action can't be undone.",
