@@ -869,6 +869,12 @@ let googleMapsListo = false;
 let googleMapsCargando = null;
 let gMap, gMarker, gGeocoder;
 
+/* Clave de Google Maps precargada. Es seguro que sea visible: está restringida
+   en Google Cloud para funcionar SOLO desde este sitio (práctica estándar en
+   claves de Maps para navegador). El campo de Configuración permite anularla. */
+const MAPS_KEY_DEFAULT = "AIzaSyBGhUsUMwefF4aZ_HPOjGPPYQWbfuVpswc";
+function mapsApiKey(){ return DB.config.get("maps_api_key", "") || MAPS_KEY_DEFAULT; }
+
 function cargarGoogleMaps(apiKey){
   if (googleMapsListo) return Promise.resolve();
   if (googleMapsCargando) return googleMapsCargando;
@@ -883,7 +889,7 @@ function cargarGoogleMaps(apiKey){
 }
 
 document.getElementById("btnAbrirMapa").addEventListener("click", async () => {
-  const apiKey = DB.config.get("maps_api_key", "");
+  const apiKey = mapsApiKey();
   mapaLatLngTemp = null;
   document.getElementById("btnUsarUbicacion").disabled = true;
   abrirModal("modalMapa");
@@ -1028,17 +1034,19 @@ function conectarAutocomplete(input, alElegir){
     if (e.key === "Enter" && sugerencias.length) { e.preventDefault(); elegir(0); }
     if (e.key === "Escape") cerrar();
   });
-  menu.addEventListener("mousedown", (e) => {
+  // pointerdown (no click): en táctil se dispara antes que el blur del input,
+  // que era lo que cerraba el menú antes de poder elegir en algunos navegadores
+  menu.addEventListener("pointerdown", (e) => {
     const item = e.target.closest(".ac-item");
     if (item) { e.preventDefault(); elegir(parseInt(item.dataset.i, 10)); }
   });
-  input.addEventListener("blur", () => setTimeout(cerrar, 150));
+  input.addEventListener("blur", () => setTimeout(cerrar, 250));
 }
 
 let autocompleteDireccionListo = false;
 async function activarAutocompletadoDireccion(){
   if (autocompleteDireccionListo) return;
-  const apiKey = DB.config.get("maps_api_key", "");
+  const apiKey = mapsApiKey();
   if (!apiKey) return;
   try { await cargarGoogleMaps(apiKey); } catch (e) { return; }
   if (autocompleteDireccionListo) return; // por si se llamó dos veces en paralelo
