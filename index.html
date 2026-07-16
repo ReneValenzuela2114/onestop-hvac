@@ -139,6 +139,36 @@
   .client-card-row{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--frio-600);margin-top:6px;text-decoration:none}
   .client-card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)}
 
+  /* ---------- Calendario de trabajos ---------- */
+  .cal-card{padding:var(--sp-4);margin-bottom:var(--sp-4)}
+  .cal-head{display:flex;align-items:center;gap:var(--sp-2);margin-bottom:var(--sp-3)}
+  .cal-head b{font-family:var(--font-head);font-size:15px;color:var(--frio-900);text-transform:capitalize}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cal-dow{text-align:center;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:4px 0}
+  .cal-day{min-height:58px;border:1px solid var(--line-soft);border-radius:8px;padding:5px 6px;cursor:pointer;display:flex;flex-direction:column;gap:3px;transition:background .12s,border-color .12s;background:var(--panel)}
+  .cal-day:hover{background:#FAFBFD;border-color:var(--line)}
+  .cal-day.fuera{border:none;cursor:default;background:transparent}
+  .cal-day.hoy .cal-num{background:var(--frio-600);color:#fff}
+  .cal-day.sel{border-color:var(--frio-500);box-shadow:0 0 0 2px rgba(46,143,217,.18)}
+  .cal-num{font-size:12px;font-weight:600;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+  .cal-dots{display:flex;flex-wrap:wrap;gap:3px;align-items:center}
+  .cal-dot{width:7px;height:7px;border-radius:50%}
+  .cal-mas{font-size:9.5px;color:var(--muted);font-weight:700}
+  @media (max-width:600px){.cal-day{min-height:46px;padding:3px 4px}.cal-num{font-size:11px;width:20px;height:20px}}
+
+  /* ---------- Tarjetas de trabajo ---------- */
+  .trabajo-card{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--sp-3);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+  .trabajo-card:hover{box-shadow:var(--shadow);border-color:var(--frio-500)}
+  .tc-info{min-width:0;flex:1}
+  .tc-info b{display:block;font-size:13.5px}
+  .tc-info span{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tc-hora{color:var(--frio-600) !important;font-weight:600;margin-top:2px}
+  .tc-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+  .tc-avatars{display:flex;gap:3px}
+  .user-avatar.mini{width:23px;height:23px;font-size:9.5px}
+  .chip.sel{background:var(--frio-600);color:#fff;border-color:var(--frio-600)}
+  button.chip{cursor:pointer;background:var(--panel)}
+
   /* ---------- Estado vacío ---------- */
   .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:var(--sp-6) var(--sp-4);color:var(--muted)}
   .empty-state svg{color:var(--line);margin-bottom:var(--sp-3)}
@@ -392,11 +422,36 @@
         </div>
       </section>
       <section id="tab-proyectos" class="tabpanel" style="display:none">
-        <div class="placeholder-tab">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m2 22 5-1.5L20.5 7 17 3.5 3.5 17 2 22Z"/></svg>
-          <h3 data-i18n="proximamente_titulo">Próximamente</h3>
-          <p data-i18n="proximamente_texto">Esta pestaña se termina en la siguiente etapa.</p>
+        <div class="page-head">
+          <div>
+            <h1 data-i18n="trabajos_titulo">Jobs</h1>
+            <p data-i18n="trabajos_subtitulo">Schedule and track every job</p>
+          </div>
+          <button class="btn primary" id="btnNuevoTrabajo">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <span data-i18n="trabajos_nuevo">New job</span>
+          </button>
         </div>
+
+        <div class="card cal-card">
+          <div class="cal-head">
+            <button class="btn icon ghost sm" id="btnCalPrev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+            <b id="calTitulo">July 2026</b>
+            <button class="btn icon ghost sm" id="btnCalNext"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+            <button class="btn ghost sm" id="btnCalHoy" style="margin-left:auto"><span data-i18n="cal_hoy">Today</span></button>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+
+        <button class="btn sm" id="btnPorAgendar" style="margin-bottom:var(--sp-3)">
+          <span class="dot" style="width:8px;height:8px;border-radius:50%;background:#94A3B8"></span>
+          <span data-i18n="trabajos_por_agendar">Unscheduled</span>&nbsp;<b id="porAgendarCount">0</b>
+        </button>
+        <div id="porAgendarLista" style="display:none;margin-bottom:var(--sp-4)"></div>
+
+        <h3 id="listaDiaTitulo" style="font-size:14.5px;margin-bottom:var(--sp-3)"></h3>
+        <div id="listaDia"></div>
+        <p id="listaDiaVacio" style="display:none;color:var(--muted);font-size:13px" data-i18n="trabajos_dia_vacio">No jobs on this day.</p>
       </section>
 
       <!-- ============ TAB: Configuración ============ -->
@@ -663,6 +718,108 @@
   </div>
 </div>
 
+<!-- ============ Modal: Trabajo (nuevo/editar) ============ -->
+<div class="modal-backdrop" id="modalTrabajo">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3 id="modalTrabajoTitulo" data-i18n="form_trabajo_nuevo">New job</h3>
+      <button class="btn icon ghost" data-close-modal="modalTrabajo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="field" id="fieldTrabajoCliente">
+        <label data-i18n="form_trabajo_cliente">Client</label>
+        <div class="field-with-btn">
+          <select id="trabajoCliente"></select>
+          <button class="btn sm" id="btnClienteDesdeTrabajo" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <span class="hide-mobile" data-i18n="clientes_nuevo">New client</span>
+          </button>
+        </div>
+        <p class="error-msg" data-i18n="form_error_cliente">Pick a client</p>
+      </div>
+
+      <div class="field" id="fieldTrabajoTitulo">
+        <label data-i18n="form_trabajo_titulo">Job title</label>
+        <input type="text" id="trabajoTitulo" data-i18n-ph="form_trabajo_titulo_ph">
+        <p class="error-msg" data-i18n="form_error_titulo">Title is required</p>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label data-i18n="form_trabajo_estado">Status</label>
+          <select id="trabajoEstado">
+            <option value="por_agendar" data-i18n="estado_por_agendar">Unscheduled</option>
+            <option value="agendado" data-i18n="estado_agendado">Scheduled</option>
+            <option value="en_curso" data-i18n="estado_en_curso">In progress</option>
+            <option value="terminado" data-i18n="estado_terminado">Finished</option>
+            <option value="cancelado" data-i18n="estado_cancelado">Canceled</option>
+          </select>
+        </div>
+        <div class="field" id="fieldTrabajoFecha">
+          <label data-i18n="form_fecha">Date</label>
+          <input type="date" id="trabajoFecha">
+          <p class="error-msg" data-i18n="form_error_fecha">Set a date to schedule this job</p>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label data-i18n="form_hora_inicio">Start time</label>
+          <input type="time" id="trabajoHoraInicio">
+        </div>
+        <div class="field">
+          <label data-i18n="form_hora_fin">End time</label>
+          <input type="time" id="trabajoHoraFin">
+        </div>
+      </div>
+
+      <div class="field">
+        <label data-i18n="form_trabajadores">Assigned workers</label>
+        <div class="chip-list" id="trabajoTrabajadores" style="margin-bottom:0"></div>
+        <p class="hint" id="trabajoSinEquipo" style="display:none" data-i18n="trabajo_sin_equipo_hint">Add workers first in Settings → Team.</p>
+      </div>
+
+      <div class="field">
+        <label data-i18n="form_trabajo_direccion">Job address</label>
+        <div class="field-with-btn">
+          <input type="text" id="trabajoDireccion" data-i18n-ph="form_direccion_ph" autocomplete="off">
+          <button class="btn sm" id="btnAbrirMapaTrabajo" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span class="hide-mobile" data-i18n="form_direccion_mapa">Locate on map</span>
+          </button>
+        </div>
+        <input type="hidden" id="trabajoLat"><input type="hidden" id="trabajoLng">
+      </div>
+      <div class="field">
+        <input type="text" id="trabajoDireccion2" data-i18n-ph="form_direccion_2_ph" placeholder="Floor, Apartment, Suite, etc">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label data-i18n="form_precio">Price (charged to client)</label>
+          <input type="number" id="trabajoPrecio" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label data-i18n="form_costo">Cost (materials & labor)</label>
+          <input type="number" id="trabajoCosto" min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:0">
+        <label data-i18n="form_trabajo_desc">Details</label>
+        <textarea id="trabajoDescripcion" data-i18n-ph="form_trabajo_desc_ph"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot" style="justify-content:space-between">
+      <button class="btn ghost" id="btnEliminarTrabajo" style="display:none;color:var(--danger)"><span data-i18n="eliminar">Delete</span></button>
+      <div style="display:flex;gap:var(--sp-2);margin-left:auto">
+        <button class="btn ghost" data-close-modal="modalTrabajo"><span data-i18n="form_cancelar">Cancel</span></button>
+        <button class="btn primary" id="btnGuardarTrabajo"><span data-i18n="form_guardar_trabajo">Save job</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ Modal: Mapa ============ -->
 <div class="modal-backdrop" id="modalMapa">
   <div class="modal wide">
@@ -754,6 +911,7 @@ function irATab(tab){
   document.querySelectorAll(".tabpanel").forEach(p => p.style.display = "none");
   document.getElementById("tab-" + tab).style.display = "block";
   document.querySelectorAll(".navitem[data-tab], .bn-item[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  if (tab === "proyectos") renderTrabajos(); // refresca por si cambiaron clientes/trabajadores
   window.scrollTo(0,0);
 }
 document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => irATab(b.dataset.tab)));
@@ -803,7 +961,8 @@ function toast(msg, isError=false){
    El modal de cliente tiene "protección de cambios sin guardar": con datos a
    medias, el clic afuera no cierra (sacude la tarjeta como aviso) y la X o
    Cancelar preguntan antes de descartar. Sin cambios, cierra normal. */
-function abrirModal(id){ document.getElementById(id).classList.add("open"); }
+let modalZ = 100; // los modales se apilan: el último abierto queda arriba
+function abrirModal(id){ const el = document.getElementById(id); el.style.zIndex = ++modalZ; el.classList.add("open"); }
 function cerrarModal(id){ document.getElementById(id).classList.remove("open"); }
 
 function sacudirModal(backdrop){
@@ -817,6 +976,7 @@ function sacudirModal(backdrop){
 const guardasModal = {
   modalCliente: () => clienteFormSucio(),
   modalTrabajador: () => trabajadorFormSucio(),
+  modalTrabajo: () => trabajoFormSucio(),
 };
 let modalADescartar = null;
 
@@ -1072,18 +1232,25 @@ document.getElementById("btnGuardarCliente").addEventListener("click", () => {
     estado: document.getElementById("clienteEstadoToggle").dataset.value || "activo",
   };
 
+  let guardado;
   if (clienteEditandoId) {
-    DB.clientes.update(clienteEditandoId, datos);
+    guardado = DB.clientes.update(clienteEditandoId, datos);
     toast(t("toast_cliente_actualizado"));
   } else {
-    DB.clientes.create(datos);
+    guardado = DB.clientes.create(datos);
     toast(t("toast_cliente_creado"));
   }
   cerrarModal("modalCliente");
   renderClientes();
+  // Si el cliente se creó desde el modal de trabajo, queda seleccionado ahí
+  if (guardado && document.getElementById("modalTrabajo").classList.contains("open")) {
+    poblarSelectClientes(guardado.id);
+    document.getElementById("trabajoCliente").dispatchEvent(new Event("change"));
+  }
 });
 
 function pedirEliminarCliente(id){
+  if (DB.trabajos.deCliente(id).length) { toast(t("cliente_con_trabajos"), true); return; }
   pedirConfirmacion("confirmar_eliminar_titulo", "confirmar_eliminar_texto", () => {
     DB.clientes.remove(id);
     toast(t("toast_cliente_eliminado"));
@@ -1117,7 +1284,11 @@ function cargarGoogleMaps(apiKey){
   return googleMapsCargando;
 }
 
-document.getElementById("btnAbrirMapa").addEventListener("click", async () => {
+/* El mapa es compartido: cada botón indica sobre qué campos escribe (cliente o trabajo) */
+let mapaTarget = { dir: "clienteDireccion", lat: "clienteLat", lng: "clienteLng" };
+
+async function abrirMapaPara(dirId, latId, lngId){
+  mapaTarget = { dir: dirId, lat: latId, lng: lngId };
   const apiKey = mapsApiKey();
   mapaLatLngTemp = null;
   document.getElementById("btnUsarUbicacion").disabled = true;
@@ -1140,7 +1311,9 @@ document.getElementById("btnAbrirMapa").addEventListener("click", async () => {
     return;
   }
   inicializarMapa();
-});
+}
+document.getElementById("btnAbrirMapa").addEventListener("click", () => abrirMapaPara("clienteDireccion", "clienteLat", "clienteLng"));
+document.getElementById("btnAbrirMapaTrabajo").addEventListener("click", () => abrirMapaPara("trabajoDireccion", "trabajoLat", "trabajoLng"));
 
 document.getElementById("btnIrConfigMaps").addEventListener("click", () => {
   cerrarModal("modalMapa");
@@ -1149,8 +1322,8 @@ document.getElementById("btnIrConfigMaps").addEventListener("click", () => {
 });
 
 function inicializarMapa(){
-  const latActual = parseFloat(document.getElementById("clienteLat").value);
-  const lngActual = parseFloat(document.getElementById("clienteLng").value);
+  const latActual = parseFloat(document.getElementById(mapaTarget.lat).value);
+  const lngActual = parseFloat(document.getElementById(mapaTarget.lng).value);
   const tieneUbicacion = !isNaN(latActual) && !isNaN(lngActual);
   const centro = tieneUbicacion ? { lat: latActual, lng: lngActual } : { lat: 34.0549, lng: -118.2426 }; // Los Ángeles por defecto
 
@@ -1161,7 +1334,7 @@ function inicializarMapa(){
   gGeocoder = new google.maps.Geocoder();
   gMarker = new google.maps.Marker({ map: gMap, position: tieneUbicacion ? centro : null, draggable: true, visible: tieneUbicacion });
   if (tieneUbicacion) {
-    mapaLatLngTemp = { lat: latActual, lng: lngActual, direccion: document.getElementById("clienteDireccion").value };
+    mapaLatLngTemp = { lat: latActual, lng: lngActual, direccion: document.getElementById(mapaTarget.dir).value };
     document.getElementById("btnUsarUbicacion").disabled = false;
   }
 
@@ -1195,9 +1368,9 @@ function reverseGeocode(latLng){
 
 document.getElementById("btnUsarUbicacion").addEventListener("click", () => {
   if (!mapaLatLngTemp) return;
-  document.getElementById("clienteDireccion").value = mapaLatLngTemp.direccion;
-  document.getElementById("clienteLat").value = mapaLatLngTemp.lat;
-  document.getElementById("clienteLng").value = mapaLatLngTemp.lng;
+  document.getElementById(mapaTarget.dir).value = mapaLatLngTemp.direccion;
+  document.getElementById(mapaTarget.lat).value = mapaLatLngTemp.lat;
+  document.getElementById(mapaTarget.lng).value = mapaLatLngTemp.lng;
   refrescarBotonesLimpiar();
   cerrarModal("modalMapa");
 });
@@ -1291,7 +1464,271 @@ async function activarAutocompletadoDireccion(){
   conectarAutocomplete(document.getElementById("clienteDireccionFact"), ({ direccion }) => {
     document.getElementById("clienteDireccionFact").value = direccion;
   });
+  conectarAutocomplete(document.getElementById("trabajoDireccion"), ({ direccion, lat, lng }) => {
+    document.getElementById("trabajoDireccion").value = direccion;
+    document.getElementById("trabajoLat").value = lat;
+    document.getElementById("trabajoLng").value = lng;
+  });
 }
+
+/* =========================================================================
+   TRABAJOS (Jobs) · calendario + modal
+   ========================================================================= */
+const ESTADOS_TRABAJO = [
+  { id: "por_agendar", color: "#94A3B8" },
+  { id: "agendado",    color: "#2E8FD9" },
+  { id: "en_curso",    color: "#E8622C" },
+  { id: "terminado",   color: "#2E9E64" },
+  { id: "cancelado",   color: "#D0422A" },
+];
+function estadoInfo(id){ return ESTADOS_TRABAJO.find(e => e.id === id) || ESTADOS_TRABAJO[0]; }
+
+let calFecha = new Date();
+let diaSeleccionado = hoyISO();
+let trabajoEditandoId = null;
+let trabajoFormBase = "";
+let trabajoTrabSel = new Set(); // ids de trabajadores asignados en el modal
+
+function hoyISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function formatHora(hhmm){
+  const [h, m] = hhmm.split(":").map(Number);
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+}
+function localeApp(){ return window.CFG_LANG === "es" ? "es" : "en-US"; }
+
+function renderCalendario(){
+  const y = calFecha.getFullYear(), m = calFecha.getMonth();
+  document.getElementById("calTitulo").textContent =
+    new Date(y, m, 1).toLocaleDateString(localeApp(), { month: "long", year: "numeric" });
+
+  // Encabezados de días (domingo primero, convención de EE.UU.)
+  const dows = [...Array(7)].map((_, i) =>
+    new Date(2026, 2, 1 + i).toLocaleDateString(localeApp(), { weekday: "short" }));
+
+  const mesPrefijo = `${y}-${String(m + 1).padStart(2, "0")}`;
+  const porDia = {};
+  DB.trabajos.getAll().forEach(tj => {
+    if (tj.fecha && tj.fecha.startsWith(mesPrefijo)) (porDia[tj.fecha] = porDia[tj.fecha] || []).push(tj);
+  });
+
+  const primerDow = new Date(y, m, 1).getDay();
+  const diasMes = new Date(y, m + 1, 0).getDate();
+  const hoy = hoyISO();
+  let html = dows.map(d => `<div class="cal-dow">${d}</div>`).join("");
+  for (let i = 0; i < primerDow; i++) html += `<div class="cal-day fuera"></div>`;
+  for (let d = 1; d <= diasMes; d++){
+    const iso = `${mesPrefijo}-${String(d).padStart(2, "0")}`;
+    const del = porDia[iso] || [];
+    const dots = del.slice(0, 3).map(tj => `<span class="cal-dot" style="background:${estadoInfo(tj.estado).color}"></span>`).join("")
+      + (del.length > 3 ? `<span class="cal-mas">+${del.length - 3}</span>` : "");
+    html += `<div class="cal-day${iso === hoy ? " hoy" : ""}${iso === diaSeleccionado ? " sel" : ""}" onclick="seleccionarDia('${iso}')">
+      <span class="cal-num">${d}</span><span class="cal-dots">${dots}</span>
+    </div>`;
+  }
+  document.getElementById("calGrid").innerHTML = html;
+}
+
+function seleccionarDia(iso){
+  diaSeleccionado = iso;
+  renderCalendario();
+  renderListaDia();
+}
+document.getElementById("btnCalPrev").addEventListener("click", () => { calFecha = new Date(calFecha.getFullYear(), calFecha.getMonth() - 1, 1); renderCalendario(); });
+document.getElementById("btnCalNext").addEventListener("click", () => { calFecha = new Date(calFecha.getFullYear(), calFecha.getMonth() + 1, 1); renderCalendario(); });
+document.getElementById("btnCalHoy").addEventListener("click", () => { calFecha = new Date(); seleccionarDia(hoyISO()); });
+
+function tarjetaTrabajo(tj){
+  const c = DB.clientes.get(tj.cliente_id);
+  const e = estadoInfo(tj.estado);
+  const avatars = (tj.trabajador_ids || []).map(id => {
+    const u = DB.usuarios.getAll().find(x => x.id === id);
+    return u ? `<span class="user-avatar mini" title="${esc(u.nombre)}">${iniciales(u.nombre)}</span>` : "";
+  }).join("");
+  const horas = tj.hora_inicio ? formatHora(tj.hora_inicio) + (tj.hora_fin ? " – " + formatHora(tj.hora_fin) : "") : "";
+  return `<div class="trabajo-card" onclick="abrirEdicionTrabajo('${tj.id}')">
+    <div class="tc-info">
+      <b>${esc(tj.titulo)}</b>
+      <span>${c ? esc(c.nombre) : "—"}${tj.direccion ? " · " + esc(tj.direccion) : ""}</span>
+      ${horas ? `<span class="tc-hora">${horas}</span>` : ""}
+    </div>
+    <div class="tc-right">
+      <span class="badge" style="background:${e.color}22;color:${e.color}"><span class="dot" style="background:${e.color}"></span>${t("estado_" + tj.estado)}</span>
+      ${avatars ? `<div class="tc-avatars">${avatars}</div>` : ""}
+    </div>
+  </div>`;
+}
+
+function renderListaDia(){
+  const del = DB.trabajos.deFecha(diaSeleccionado).sort((a, b) => (a.hora_inicio || "99").localeCompare(b.hora_inicio || "99"));
+  const fecha = new Date(diaSeleccionado + "T12:00:00");
+  document.getElementById("listaDiaTitulo").textContent =
+    fecha.toLocaleDateString(localeApp(), { weekday: "long", month: "long", day: "numeric" });
+  document.getElementById("listaDia").innerHTML = del.map(tarjetaTrabajo).join("");
+  document.getElementById("listaDiaVacio").style.display = del.length ? "none" : "block";
+}
+
+function renderPorAgendar(){
+  const lista = DB.trabajos.getAll().filter(tj => tj.estado === "por_agendar");
+  document.getElementById("porAgendarCount").textContent = lista.length;
+  document.getElementById("porAgendarLista").innerHTML = lista.map(tarjetaTrabajo).join("");
+  if (!lista.length) document.getElementById("porAgendarLista").style.display = "none";
+}
+document.getElementById("btnPorAgendar").addEventListener("click", () => {
+  const el = document.getElementById("porAgendarLista");
+  el.style.display = el.style.display === "none" ? "block" : "none";
+});
+
+function renderTrabajos(){ renderCalendario(); renderListaDia(); renderPorAgendar(); }
+
+/* ---------- Modal de trabajo ---------- */
+function serializarFormularioTrabajo(){
+  return ["trabajoCliente", "trabajoTitulo", "trabajoEstado", "trabajoFecha", "trabajoHoraInicio",
+    "trabajoHoraFin", "trabajoDireccion", "trabajoDireccion2", "trabajoPrecio", "trabajoCosto", "trabajoDescripcion"]
+    .map(id => document.getElementById(id).value).join("")
+    + "" + [...trabajoTrabSel].sort().join(",");
+}
+function trabajoFormSucio(){
+  return document.getElementById("modalTrabajo").classList.contains("open")
+    && serializarFormularioTrabajo() !== trabajoFormBase;
+}
+
+function poblarSelectClientes(seleccionado){
+  const sel = document.getElementById("trabajoCliente");
+  sel.innerHTML = `<option value="">${t("form_trabajo_cliente_ph")}</option>` +
+    DB.clientes.getAll().map(c => `<option value="${c.id}">${esc(c.nombre)}${c.empresa ? ` (${esc(c.empresa)})` : ""}</option>`).join("");
+  sel.value = seleccionado || "";
+}
+
+function renderChipsTrabajadores(){
+  const activos = DB.usuarios.getAll().filter(u => u.activo !== false);
+  document.getElementById("trabajoSinEquipo").style.display = activos.length ? "none" : "block";
+  document.getElementById("trabajoTrabajadores").innerHTML = activos.map(u => `
+    <button type="button" class="chip${trabajoTrabSel.has(u.id) ? " sel" : ""}" onclick="toggleTrabajadorSel('${u.id}')">
+      ${esc(u.nombre)}
+    </button>`).join("");
+}
+function toggleTrabajadorSel(id){
+  if (trabajoTrabSel.has(id)) trabajoTrabSel.delete(id); else trabajoTrabSel.add(id);
+  renderChipsTrabajadores();
+}
+
+/* Al elegir cliente, su dirección se propone como dirección del trabajo (si está vacía) */
+document.getElementById("trabajoCliente").addEventListener("change", () => {
+  const c = DB.clientes.get(document.getElementById("trabajoCliente").value);
+  if (c && !document.getElementById("trabajoDireccion").value) {
+    document.getElementById("trabajoDireccion").value = c.direccion || "";
+    document.getElementById("trabajoDireccion2").value = c.direccion_2 || "";
+    document.getElementById("trabajoLat").value = c.lat ?? "";
+    document.getElementById("trabajoLng").value = c.lng ?? "";
+    refrescarBotonesLimpiar();
+  }
+});
+
+function limpiarFormularioTrabajo(){
+  trabajoEditandoId = null;
+  trabajoTrabSel = new Set();
+  ["trabajoTitulo", "trabajoFecha", "trabajoHoraInicio", "trabajoHoraFin", "trabajoDireccion",
+   "trabajoDireccion2", "trabajoLat", "trabajoLng", "trabajoPrecio", "trabajoCosto", "trabajoDescripcion"]
+    .forEach(id => document.getElementById(id).value = "");
+  document.getElementById("trabajoEstado").value = "por_agendar";
+  ["fieldTrabajoCliente", "fieldTrabajoTitulo", "fieldTrabajoFecha"].forEach(id => document.getElementById(id).classList.remove("error"));
+}
+
+document.getElementById("btnNuevoTrabajo").addEventListener("click", () => {
+  limpiarFormularioTrabajo();
+  poblarSelectClientes("");
+  renderChipsTrabajadores();
+  document.getElementById("modalTrabajoTitulo").textContent = t("form_trabajo_nuevo");
+  document.getElementById("btnEliminarTrabajo").style.display = "none";
+  abrirModal("modalTrabajo");
+  activarAutocompletadoDireccion();
+  trabajoFormBase = serializarFormularioTrabajo();
+  refrescarBotonesLimpiar();
+});
+
+function abrirEdicionTrabajo(id){
+  const tj = DB.trabajos.get(id); if (!tj) return;
+  limpiarFormularioTrabajo();
+  trabajoEditandoId = id;
+  poblarSelectClientes(tj.cliente_id);
+  document.getElementById("trabajoTitulo").value = tj.titulo;
+  document.getElementById("trabajoEstado").value = tj.estado;
+  document.getElementById("trabajoFecha").value = tj.fecha || "";
+  document.getElementById("trabajoHoraInicio").value = tj.hora_inicio || "";
+  document.getElementById("trabajoHoraFin").value = tj.hora_fin || "";
+  document.getElementById("trabajoDireccion").value = tj.direccion || "";
+  document.getElementById("trabajoDireccion2").value = tj.direccion_2 || "";
+  document.getElementById("trabajoLat").value = tj.lat ?? "";
+  document.getElementById("trabajoLng").value = tj.lng ?? "";
+  document.getElementById("trabajoPrecio").value = tj.precio || "";
+  document.getElementById("trabajoCosto").value = tj.costo || "";
+  document.getElementById("trabajoDescripcion").value = tj.descripcion || "";
+  trabajoTrabSel = new Set(tj.trabajador_ids || []);
+  renderChipsTrabajadores();
+  document.getElementById("modalTrabajoTitulo").textContent = t("form_trabajo_editar");
+  document.getElementById("btnEliminarTrabajo").style.display = "";
+  abrirModal("modalTrabajo");
+  activarAutocompletadoDireccion();
+  trabajoFormBase = serializarFormularioTrabajo();
+  refrescarBotonesLimpiar();
+}
+
+document.getElementById("btnClienteDesdeTrabajo").addEventListener("click", () => abrirNuevoCliente());
+
+document.getElementById("btnGuardarTrabajo").addEventListener("click", () => {
+  const clienteId = document.getElementById("trabajoCliente").value;
+  const titulo = document.getElementById("trabajoTitulo").value.trim();
+  const estado = document.getElementById("trabajoEstado").value;
+  const fecha = document.getElementById("trabajoFecha").value;
+  const requiereFecha = (estado === "agendado" || estado === "en_curso") && !fecha;
+  document.getElementById("fieldTrabajoCliente").classList.toggle("error", !clienteId);
+  document.getElementById("fieldTrabajoTitulo").classList.toggle("error", !titulo);
+  document.getElementById("fieldTrabajoFecha").classList.toggle("error", requiereFecha);
+  if (!clienteId || !titulo || requiereFecha) return;
+
+  const datos = {
+    cliente_id: clienteId,
+    titulo,
+    estado,
+    fecha: fecha || null,
+    hora_inicio: document.getElementById("trabajoHoraInicio").value,
+    hora_fin: document.getElementById("trabajoHoraFin").value,
+    trabajador_ids: [...trabajoTrabSel],
+    direccion: document.getElementById("trabajoDireccion").value,
+    direccion_2: document.getElementById("trabajoDireccion2").value,
+    lat: document.getElementById("trabajoLat").value ? parseFloat(document.getElementById("trabajoLat").value) : null,
+    lng: document.getElementById("trabajoLng").value ? parseFloat(document.getElementById("trabajoLng").value) : null,
+    precio: parseFloat(document.getElementById("trabajoPrecio").value) || 0,
+    costo: parseFloat(document.getElementById("trabajoCosto").value) || 0,
+    descripcion: document.getElementById("trabajoDescripcion").value,
+  };
+
+  if (trabajoEditandoId) {
+    DB.trabajos.update(trabajoEditandoId, datos);
+    toast(t("toast_trabajo_actualizado"));
+  } else {
+    DB.trabajos.create(datos);
+    toast(t("toast_trabajo_creado"));
+  }
+  if (datos.fecha) diaSeleccionado = datos.fecha; // el calendario salta al día del trabajo
+  if (datos.fecha) calFecha = new Date(datos.fecha + "T12:00:00");
+  cerrarModal("modalTrabajo");
+  renderTrabajos();
+});
+
+document.getElementById("btnEliminarTrabajo").addEventListener("click", () => {
+  if (!trabajoEditandoId) return;
+  pedirConfirmacion("confirmar_eliminar_trabajo_titulo", "confirmar_eliminar_trabajo_texto", () => {
+    DB.trabajos.remove(trabajoEditandoId);
+    toast(t("toast_trabajo_eliminado"));
+    cerrarModal("modalTrabajo");
+    renderTrabajos();
+  });
+});
 
 /* =========================================================================
    CONFIGURACIÓN
@@ -1526,6 +1963,10 @@ document.getElementById("logoTamanoSlider").addEventListener("input", (e) => {
   });
   agregarBotonLimpiar(document.getElementById("clienteDireccionFact"));
   agregarBotonLimpiar(document.getElementById("mapaAutocompleteInput"));
+  agregarBotonLimpiar(document.getElementById("trabajoDireccion"), () => {
+    document.getElementById("trabajoLat").value = "";
+    document.getElementById("trabajoLng").value = "";
+  });
   renderFiltros();
   renderClientes();
   renderCategoriasChips();

@@ -16,6 +16,7 @@ const OS_KEYS = {
   clientes: "os_clientes_v1",
   categoriasClientes: "os_categorias_clientes_v1",
   usuarios: "os_usuarios_v1",
+  trabajos: "os_trabajos_v1",
   config: "os_config_v1",
 };
 
@@ -47,6 +48,7 @@ function _sembrarSiVacio() {
   }
   if (localStorage.getItem(OS_KEYS.clientes) === null) _escribir(OS_KEYS.clientes, []);
   if (localStorage.getItem(OS_KEYS.usuarios) === null) _escribir(OS_KEYS.usuarios, []);
+  if (localStorage.getItem(OS_KEYS.trabajos) === null) _escribir(OS_KEYS.trabajos, []);
   if (localStorage.getItem(OS_KEYS.config) === null) _escribir(OS_KEYS.config, {});
 }
 _sembrarSiVacio();
@@ -147,6 +149,78 @@ const CategoriasClientes = {
   },
 };
 
+/* ---------------- Trabajos (jobs) ---------------- */
+const ESTADOS_TRABAJO_VALIDOS = ["por_agendar", "agendado", "en_curso", "terminado", "cancelado"];
+
+const Trabajos = {
+  getAll() {
+    return _leer(OS_KEYS.trabajos, []);
+  },
+  get(id) {
+    return this.getAll().find((tj) => tj.id === id) || null;
+  },
+  deCliente(clienteId) {
+    return this.getAll().filter((tj) => tj.cliente_id === clienteId);
+  },
+  deFecha(fechaISO) {
+    return this.getAll().filter((tj) => tj.fecha === fechaISO);
+  },
+  create(datos) {
+    const ahora = Date.now();
+    const item = {
+      id: _uuid(),
+      cliente_id: datos.cliente_id,
+      titulo: datos.titulo.trim(),
+      descripcion: datos.descripcion?.trim() || "",
+      estado: ESTADOS_TRABAJO_VALIDOS.includes(datos.estado) ? datos.estado : "por_agendar",
+      fecha: datos.fecha || null,
+      hora_inicio: datos.hora_inicio || "",
+      hora_fin: datos.hora_fin || "",
+      trabajador_ids: Array.isArray(datos.trabajador_ids) ? datos.trabajador_ids : [],
+      direccion: datos.direccion?.trim() || "",
+      direccion_2: datos.direccion_2?.trim() || "",
+      lat: typeof datos.lat === "number" ? datos.lat : null,
+      lng: typeof datos.lng === "number" ? datos.lng : null,
+      precio: typeof datos.precio === "number" && !isNaN(datos.precio) ? datos.precio : 0,
+      costo: typeof datos.costo === "number" && !isNaN(datos.costo) ? datos.costo : 0,
+      creado: ahora,
+      actualizado: ahora,
+    };
+    const todos = _leer(OS_KEYS.trabajos, []);
+    todos.push(item);
+    _escribir(OS_KEYS.trabajos, todos);
+    return item;
+  },
+  update(id, datos) {
+    const todos = _leer(OS_KEYS.trabajos, []);
+    const idx = todos.findIndex((tj) => tj.id === id);
+    if (idx === -1) return null;
+    todos[idx] = {
+      ...todos[idx],
+      cliente_id: datos.cliente_id ?? todos[idx].cliente_id,
+      titulo: datos.titulo?.trim() ?? todos[idx].titulo,
+      descripcion: datos.descripcion?.trim() ?? todos[idx].descripcion,
+      estado: ESTADOS_TRABAJO_VALIDOS.includes(datos.estado) ? datos.estado : todos[idx].estado,
+      fecha: datos.fecha !== undefined ? (datos.fecha || null) : todos[idx].fecha,
+      hora_inicio: datos.hora_inicio !== undefined ? datos.hora_inicio : todos[idx].hora_inicio,
+      hora_fin: datos.hora_fin !== undefined ? datos.hora_fin : todos[idx].hora_fin,
+      trabajador_ids: Array.isArray(datos.trabajador_ids) ? datos.trabajador_ids : todos[idx].trabajador_ids,
+      direccion: datos.direccion?.trim() ?? todos[idx].direccion,
+      direccion_2: datos.direccion_2?.trim() ?? todos[idx].direccion_2,
+      lat: datos.lat !== undefined ? datos.lat : todos[idx].lat,
+      lng: datos.lng !== undefined ? datos.lng : todos[idx].lng,
+      precio: typeof datos.precio === "number" && !isNaN(datos.precio) ? datos.precio : todos[idx].precio,
+      costo: typeof datos.costo === "number" && !isNaN(datos.costo) ? datos.costo : todos[idx].costo,
+      actualizado: Date.now(),
+    };
+    _escribir(OS_KEYS.trabajos, todos);
+    return todos[idx];
+  },
+  remove(id) {
+    _escribir(OS_KEYS.trabajos, _leer(OS_KEYS.trabajos, []).filter((tj) => tj.id !== id));
+  },
+};
+
 /* ---------------- Usuarios (directorio + rol, sin login todavía) ---------------- */
 const Usuarios = {
   getAll() {
@@ -198,4 +272,4 @@ const Config = {
   },
 };
 
-const DB = { clientes: Clientes, categoriasClientes: CategoriasClientes, usuarios: Usuarios, config: Config };
+const DB = { clientes: Clientes, categoriasClientes: CategoriasClientes, usuarios: Usuarios, trabajos: Trabajos, config: Config };
