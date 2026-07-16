@@ -252,6 +252,9 @@
   .user-row .info b{display:block;font-size:13.5px}
   .user-row .info span{display:block;font-size:12px;color:var(--muted)}
   select.rol-select{padding:7px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:12.5px}
+  .rol-badge{background:var(--line-soft);color:var(--frio-700);flex-shrink:0}
+  .user-row{flex-wrap:wrap}
+  .user-row.inactivo .user-avatar,.user-row.inactivo .info{opacity:.55}
 
   /* ---------- Toasts ---------- */
   #toasts{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px}
@@ -474,19 +477,18 @@
             <div class="config-group-body"><div class="config-group-inner">
 
           <div class="config-section">
-            <h3 data-i18n="config_usuarios">Usuarios</h3>
-            <p class="desc" data-i18n="config_usuarios_texto">Directorio y rol. El login real llega con la base en la nube.</p>
-            <div id="usuariosList"></div>
-            <div class="add-row" style="margin-top:var(--sp-3)">
-              <input type="text" id="nuevoUsuarioNombre" data-i18n-ph="config_usuario_nombre_ph" placeholder="Nombre">
-              <input type="text" id="nuevoUsuarioEmail" data-i18n-ph="config_usuario_email_ph" placeholder="Correo">
-              <select id="nuevoUsuarioRol" class="rol-select">
-                <option value="dueno" data-i18n="rol_dueno">Dueño</option>
-                <option value="administrador" data-i18n="rol_administrador">Administrador</option>
-                <option value="tecnico" selected data-i18n="rol_tecnico">Técnico</option>
-              </select>
-              <button class="btn sm" id="btnAgregarUsuario"><span data-i18n="config_usuario_nuevo">Nuevo</span></button>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp-3);flex-wrap:wrap;margin-bottom:var(--sp-3)">
+              <div>
+                <h3 data-i18n="config_usuarios">Workers</h3>
+                <p class="desc" style="margin-bottom:0" data-i18n="config_usuarios_texto">Register your team. Once projects are live, you'll assign them to each job.</p>
+              </div>
+              <button class="btn primary sm" id="btnNuevoTrabajador">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                <span data-i18n="equipo_agregar">Add worker</span>
+              </button>
             </div>
+            <div id="usuariosList"></div>
+            <p id="equipoEmpty" style="display:none;color:var(--muted);font-size:13px;margin:var(--sp-3) 0 0" data-i18n="equipo_vacio">No workers registered yet.</p>
           </div>
 
             </div></div>
@@ -615,6 +617,52 @@
   </div>
 </div>
 
+<!-- ============ Modal: Trabajador (nuevo/editar) ============ -->
+<div class="modal-backdrop" id="modalTrabajador">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTrabajadorTitulo" data-i18n="form_trabajador_nuevo">New worker</h3>
+      <button class="btn icon ghost" data-close-modal="modalTrabajador"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="field" id="fieldTrabNombre">
+        <label data-i18n="form_nombre">Full name</label>
+        <input type="text" id="trabNombre" data-i18n-ph="form_nombre_ph">
+        <p class="error-msg" data-i18n="form_error_nombre">Name is required</p>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label data-i18n="form_telefono">Phone</label>
+          <input type="tel" id="trabTelefono" data-i18n-ph="form_telefono_ph">
+        </div>
+        <div class="field">
+          <label data-i18n="form_email">Email</label>
+          <input type="email" id="trabEmail" data-i18n-ph="form_email_ph">
+        </div>
+      </div>
+      <div class="field">
+        <label data-i18n="form_rol">Role</label>
+        <select id="trabRol">
+          <option value="tecnico" data-i18n="rol_tecnico">Technician</option>
+          <option value="administrador" data-i18n="rol_administrador">Administrator</option>
+          <option value="dueno" data-i18n="rol_dueno">Owner</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label data-i18n="form_estado_trabajador">Status</label>
+        <div class="estado-toggle" id="trabEstadoToggle">
+          <button type="button" data-v="activo" data-i18n="clientes_activo">Active</button>
+          <button type="button" data-v="inactivo" data-i18n="clientes_inactivo">Inactive</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" data-close-modal="modalTrabajador"><span data-i18n="form_cancelar">Cancel</span></button>
+      <button class="btn primary" id="btnGuardarTrabajador"><span data-i18n="form_guardar_trabajador">Save worker</span></button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ Modal: Mapa ============ -->
 <div class="modal-backdrop" id="modalMapa">
   <div class="modal wide">
@@ -651,8 +699,8 @@
 <div class="modal-backdrop" id="modalConfirmar">
   <div class="modal" style="max-width:400px">
     <div class="modal-body" style="padding-top:var(--sp-5)">
-      <h3 data-i18n="confirmar_eliminar_titulo" style="margin-bottom:8px">¿Eliminar este cliente?</h3>
-      <p style="color:var(--muted);font-size:13.5px;margin:0" data-i18n="confirmar_eliminar_texto">Esta acción no se puede deshacer.</p>
+      <h3 id="confirmarTitulo" data-i18n="confirmar_eliminar_titulo" style="margin-bottom:8px">¿Eliminar este cliente?</h3>
+      <p id="confirmarTexto" style="color:var(--muted);font-size:13.5px;margin:0" data-i18n="confirmar_eliminar_texto">Esta acción no se puede deshacer.</p>
     </div>
     <div class="modal-foot">
       <button class="btn ghost" data-close-modal="modalConfirmar"><span data-i18n="confirmar_cancelar_btn">Cancelar</span></button>
@@ -765,26 +813,48 @@ function sacudirModal(backdrop){
   m.classList.add("shake");
 }
 
+/* Cada modal con formulario registra aquí su detector de cambios sin guardar */
+const guardasModal = {
+  modalCliente: () => clienteFormSucio(),
+  modalTrabajador: () => trabajadorFormSucio(),
+};
+let modalADescartar = null;
+
 document.querySelectorAll("[data-close-modal]").forEach(b => b.addEventListener("click", () => {
   const id = b.dataset.closeModal;
-  if (id === "modalCliente" && clienteFormSucio()) { abrirModal("modalDescartar"); return; }
+  if (guardasModal[id] && guardasModal[id]()) { modalADescartar = id; abrirModal("modalDescartar"); return; }
   cerrarModal(id);
 }));
 document.querySelectorAll(".modal-backdrop").forEach(bd => bd.addEventListener("click", (e) => {
   if (e.target !== bd) return;
-  if (bd.id === "modalCliente" && clienteFormSucio()) { sacudirModal(bd); return; }
+  if (guardasModal[bd.id] && guardasModal[bd.id]()) { sacudirModal(bd); return; }
   bd.classList.remove("open");
 }));
 document.getElementById("btnDescartarCambios").addEventListener("click", () => {
   cerrarModal("modalDescartar");
-  cerrarModal("modalCliente");
+  if (modalADescartar) cerrarModal(modalADescartar);
+  modalADescartar = null;
+});
+
+/* Confirmación genérica de eliminación: cualquier módulo la reutiliza */
+let accionConfirmada = null;
+function pedirConfirmacion(tituloKey, textoKey, accion){
+  document.getElementById("confirmarTitulo").textContent = t(tituloKey);
+  document.getElementById("confirmarTexto").textContent = t(textoKey);
+  accionConfirmada = accion;
+  abrirModal("modalConfirmar");
+}
+document.getElementById("btnConfirmarEliminar").addEventListener("click", () => {
+  const fn = accionConfirmada;
+  accionConfirmada = null;
+  cerrarModal("modalConfirmar");
+  if (fn) fn();
 });
 
 /* =========================================================================
    CLIENTES
    ========================================================================= */
 let clienteEditandoId = null;
-let clienteAEliminar = null;
 let mapaLatLngTemp = null; // {lat,lng,direccion}
 let clienteFormBase = ""; // "foto" del formulario al abrirlo, para detectar cambios sin guardar
 
@@ -1014,15 +1084,12 @@ document.getElementById("btnGuardarCliente").addEventListener("click", () => {
 });
 
 function pedirEliminarCliente(id){
-  clienteAEliminar = id;
-  abrirModal("modalConfirmar");
+  pedirConfirmacion("confirmar_eliminar_titulo", "confirmar_eliminar_texto", () => {
+    DB.clientes.remove(id);
+    toast(t("toast_cliente_eliminado"));
+    renderClientes();
+  });
 }
-document.getElementById("btnConfirmarEliminar").addEventListener("click", () => {
-  if (clienteAEliminar) { DB.clientes.remove(clienteAEliminar); toast(t("toast_cliente_eliminado")); }
-  clienteAEliminar = null;
-  cerrarModal("modalConfirmar");
-  renderClientes();
-});
 
 /* =========================================================================
    MAPA (Google Maps) — se carga solo cuando hace falta
@@ -1253,24 +1320,101 @@ document.getElementById("btnAgregarCategoria").addEventListener("click", () => {
   renderCategoriasChips(); renderFiltros(); renderClientes();
 });
 
+/* ---------- Equipo: registro de trabajadores ---------- */
+let trabajadorEditandoId = null;
+let trabajadorFormBase = "";
+
+function serializarFormularioTrabajador(){
+  return ["trabNombre", "trabTelefono", "trabEmail", "trabRol"]
+    .map(id => document.getElementById(id).value).join("")
+    + "" + (document.getElementById("trabEstadoToggle").dataset.value || "activo");
+}
+function trabajadorFormSucio(){
+  return document.getElementById("modalTrabajador").classList.contains("open")
+    && serializarFormularioTrabajador() !== trabajadorFormBase;
+}
+function setTrabEstadoToggle(v){
+  document.querySelectorAll("#trabEstadoToggle button").forEach(b => b.classList.toggle("active", b.dataset.v === v));
+  document.getElementById("trabEstadoToggle").dataset.value = v;
+}
+document.getElementById("trabEstadoToggle").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return; setTrabEstadoToggle(b.dataset.v);
+});
+
 function renderUsuarios(){
   const usuarios = DB.usuarios.getAll();
+  document.getElementById("equipoEmpty").style.display = usuarios.length ? "none" : "block";
   document.getElementById("usuariosList").innerHTML = usuarios.map(u => `
-    <div class="user-row">
+    <div class="user-row${u.activo === false ? " inactivo" : ""}">
       <div class="user-avatar">${iniciales(u.nombre)}</div>
-      <div class="info"><b>${esc(u.nombre)}</b><span>${esc(u.email || "")}</span></div>
-      <select class="rol-select" onchange="DB.usuarios.update('${u.id}', {rol:this.value})">
-        <option value="dueno" ${u.rol === "dueno" ? "selected" : ""}>${t("rol_dueno")}</option>
-        <option value="administrador" ${u.rol === "administrador" ? "selected" : ""}>${t("rol_administrador")}</option>
-        <option value="tecnico" ${u.rol === "tecnico" ? "selected" : ""}>${t("rol_tecnico")}</option>
-      </select>
-      <button class="btn icon ghost sm" onclick="DB.usuarios.remove('${u.id}'); renderUsuarios();">${iconTrash()}</button>
+      <div class="info">
+        <b>${esc(u.nombre)}${u.activo === false ? ` <span class="badge estado-inactivo">${t("clientes_inactivo")}</span>` : ""}</b>
+        <span>${[u.telefono, u.email].filter(Boolean).map(esc).join(" · ") || t("equipo_sin_contacto")}</span>
+      </div>
+      <span class="badge rol-badge">${t("rol_" + u.rol)}</span>
+      <div class="row-actions">
+        <button class="btn icon ghost sm" onclick="abrirEdicionTrabajador('${u.id}')">${iconEdit()}</button>
+        <button class="btn icon ghost sm" onclick="pedirEliminarTrabajador('${u.id}')">${iconTrash()}</button>
+      </div>
     </div>`).join("");
 }
-document.getElementById("btnAgregarUsuario").addEventListener("click", () => {
-  const nombre = document.getElementById("nuevoUsuarioNombre").value.trim(); if (!nombre) return;
-  DB.usuarios.create({ nombre, email: document.getElementById("nuevoUsuarioEmail").value, rol: document.getElementById("nuevoUsuarioRol").value });
-  document.getElementById("nuevoUsuarioNombre").value = ""; document.getElementById("nuevoUsuarioEmail").value = "";
+
+function limpiarFormularioTrabajador(){
+  trabajadorEditandoId = null;
+  ["trabNombre", "trabTelefono", "trabEmail"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("trabRol").value = "tecnico";
+  setTrabEstadoToggle("activo");
+  document.getElementById("fieldTrabNombre").classList.remove("error");
+}
+
+document.getElementById("btnNuevoTrabajador").addEventListener("click", () => {
+  limpiarFormularioTrabajador();
+  document.getElementById("modalTrabajadorTitulo").textContent = t("form_trabajador_nuevo");
+  abrirModal("modalTrabajador");
+  trabajadorFormBase = serializarFormularioTrabajador();
+});
+
+function abrirEdicionTrabajador(id){
+  const u = DB.usuarios.getAll().find(x => x.id === id); if (!u) return;
+  trabajadorEditandoId = id;
+  document.getElementById("trabNombre").value = u.nombre;
+  document.getElementById("trabTelefono").value = u.telefono || "";
+  document.getElementById("trabEmail").value = u.email || "";
+  document.getElementById("trabRol").value = u.rol;
+  setTrabEstadoToggle(u.activo === false ? "inactivo" : "activo");
+  document.getElementById("fieldTrabNombre").classList.remove("error");
+  document.getElementById("modalTrabajadorTitulo").textContent = t("form_trabajador_editar");
+  abrirModal("modalTrabajador");
+  trabajadorFormBase = serializarFormularioTrabajador();
+}
+
+function pedirEliminarTrabajador(id){
+  pedirConfirmacion("confirmar_eliminar_trab_titulo", "confirmar_eliminar_trab_texto", () => {
+    DB.usuarios.remove(id);
+    toast(t("toast_trabajador_eliminado"));
+    renderUsuarios();
+  });
+}
+
+document.getElementById("btnGuardarTrabajador").addEventListener("click", () => {
+  const nombre = document.getElementById("trabNombre").value.trim();
+  document.getElementById("fieldTrabNombre").classList.toggle("error", !nombre);
+  if (!nombre) return; // único campo obligatorio, igual que en clientes
+  const datos = {
+    nombre,
+    telefono: document.getElementById("trabTelefono").value,
+    email: document.getElementById("trabEmail").value,
+    rol: document.getElementById("trabRol").value,
+    activo: (document.getElementById("trabEstadoToggle").dataset.value || "activo") === "activo",
+  };
+  if (trabajadorEditandoId) {
+    DB.usuarios.update(trabajadorEditandoId, datos);
+    toast(t("toast_trabajador_actualizado"));
+  } else {
+    DB.usuarios.create(datos);
+    toast(t("toast_trabajador_creado"));
+  }
+  cerrarModal("modalTrabajador");
   renderUsuarios();
 });
 

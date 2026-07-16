@@ -157,9 +157,10 @@ const Usuarios = {
     const item = {
       id: _uuid(),
       nombre: datos.nombre.trim(),
+      telefono: datos.telefono?.trim() || "",
       email: datos.email?.trim() || "",
       rol: ["dueno", "administrador", "tecnico"].includes(datos.rol) ? datos.rol : "tecnico",
-      activo: true,
+      activo: datos.activo !== false,
       creado: ahora,
       actualizado: ahora,
     };
