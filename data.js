@@ -183,6 +183,7 @@ const Trabajos = {
       lng: typeof datos.lng === "number" ? datos.lng : null,
       precio: typeof datos.precio === "number" && !isNaN(datos.precio) ? datos.precio : 0,
       costo: typeof datos.costo === "number" && !isNaN(datos.costo) ? datos.costo : 0,
+      creado_por: datos.creado_por || null,
       creado: ahora,
       actualizado: ahora,
     };

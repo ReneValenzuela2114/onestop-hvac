@@ -542,6 +542,11 @@
                 <span data-i18n="equipo_agregar">Add worker</span>
               </button>
             </div>
+            <div class="field" style="max-width:360px">
+              <label data-i18n="config_usuario_actual">Who is using this device?</label>
+              <select id="usuarioActualSelect"></select>
+              <p class="hint" data-i18n="config_usuario_actual_hint">Signs who creates each job and applies permissions, until password login arrives.</p>
+            </div>
             <div id="usuariosList"></div>
             <p id="equipoEmpty" style="display:none;color:var(--muted);font-size:13px;margin:var(--sp-3) 0 0" data-i18n="equipo_vacio">No workers registered yet.</p>
           </div>
@@ -726,6 +731,7 @@
       <button class="btn icon ghost" data-close-modal="modalTrabajo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="modal-body">
+      <p class="hint" id="trabajoCreadoPor" style="display:none;margin:-4px 0 var(--sp-4)"></p>
       <div class="field" id="fieldTrabajoCliente">
         <label data-i18n="form_trabajo_cliente">Client</label>
         <div class="field-with-btn">
@@ -1639,11 +1645,14 @@ function limpiarFormularioTrabajo(){
 }
 
 document.getElementById("btnNuevoTrabajo").addEventListener("click", () => {
+  if (!puedeGestionarTrabajos()) { toast(t("sin_permiso_trabajos"), true); return; }
   limpiarFormularioTrabajo();
   poblarSelectClientes("");
   renderChipsTrabajadores();
   document.getElementById("modalTrabajoTitulo").textContent = t("form_trabajo_nuevo");
   document.getElementById("btnEliminarTrabajo").style.display = "none";
+  document.getElementById("trabajoCreadoPor").style.display = "none";
+  document.getElementById("btnGuardarTrabajo").style.display = "";
   abrirModal("modalTrabajo");
   activarAutocompletadoDireccion();
   trabajoFormBase = serializarFormularioTrabajo();
@@ -1670,7 +1679,14 @@ function abrirEdicionTrabajo(id){
   trabajoTrabSel = new Set(tj.trabajador_ids || []);
   renderChipsTrabajadores();
   document.getElementById("modalTrabajoTitulo").textContent = t("form_trabajo_editar");
-  document.getElementById("btnEliminarTrabajo").style.display = "";
+  const editable = puedeGestionarTrabajos();
+  document.getElementById("btnEliminarTrabajo").style.display = editable ? "" : "none";
+  document.getElementById("btnGuardarTrabajo").style.display = editable ? "" : "none";
+  const creador = tj.creado_por ? DB.usuarios.getAll().find(u => u.id === tj.creado_por) : null;
+  const infoCreado = document.getElementById("trabajoCreadoPor");
+  infoCreado.textContent = (creador ? `${t("trabajo_creado_por")} ${creador.nombre} · ` : "") +
+    new Date(tj.creado).toLocaleDateString(localeApp(), { month: "short", day: "numeric", year: "numeric" });
+  infoCreado.style.display = "block";
   abrirModal("modalTrabajo");
   activarAutocompletadoDireccion();
   trabajoFormBase = serializarFormularioTrabajo();
@@ -1680,6 +1696,7 @@ function abrirEdicionTrabajo(id){
 document.getElementById("btnClienteDesdeTrabajo").addEventListener("click", () => abrirNuevoCliente());
 
 document.getElementById("btnGuardarTrabajo").addEventListener("click", () => {
+  if (!puedeGestionarTrabajos()) { toast(t("sin_permiso_trabajos"), true); return; }
   const clienteId = document.getElementById("trabajoCliente").value;
   const titulo = document.getElementById("trabajoTitulo").value.trim();
   const estado = document.getElementById("trabajoEstado").value;
@@ -1711,6 +1728,7 @@ document.getElementById("btnGuardarTrabajo").addEventListener("click", () => {
     DB.trabajos.update(trabajoEditandoId, datos);
     toast(t("toast_trabajo_actualizado"));
   } else {
+    datos.creado_por = (usuarioActual() || {}).id || null;
     DB.trabajos.create(datos);
     toast(t("toast_trabajo_creado"));
   }
@@ -1777,10 +1795,28 @@ function setTrabEstadoToggle(v){
 document.getElementById("trabEstadoToggle").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return; setTrabEstadoToggle(b.dataset.v);
 });
+document.getElementById("usuarioActualSelect").addEventListener("change", (e) => {
+  DB.config.set("usuario_actual_id", e.target.value);
+  toast(t("config_guardado"));
+});
+
+/* Usuario del dispositivo y permisos (a nivel interfaz; el candado real llega con el login) */
+function usuarioActual(){
+  return DB.usuarios.getAll().find(u => u.id === DB.config.get("usuario_actual_id", "")) || null;
+}
+function puedeGestionarTrabajos(){
+  if (!DB.usuarios.getAll().length) return true; // sin equipo registrado, no hay a quién restringir
+  const u = usuarioActual();
+  return !!u && u.activo !== false && (u.rol === "dueno" || u.rol === "administrador");
+}
 
 function renderUsuarios(){
   const usuarios = DB.usuarios.getAll();
   document.getElementById("equipoEmpty").style.display = usuarios.length ? "none" : "block";
+  const selAct = document.getElementById("usuarioActualSelect");
+  selAct.innerHTML = `<option value="">${t("sel_usuario_ph")}</option>` +
+    usuarios.map(u => `<option value="${u.id}">${esc(u.nombre)}</option>`).join("");
+  selAct.value = DB.config.get("usuario_actual_id", "");
   document.getElementById("usuariosList").innerHTML = usuarios.map(u => `
     <div class="user-row${u.activo === false ? " inactivo" : ""}">
       <div class="user-avatar">${iniciales(u.nombre)}</div>
