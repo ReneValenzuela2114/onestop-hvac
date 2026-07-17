@@ -1653,6 +1653,11 @@ document.getElementById("btnNuevoTrabajo").addEventListener("click", () => {
   document.getElementById("btnEliminarTrabajo").style.display = "none";
   document.getElementById("trabajoCreadoPor").style.display = "none";
   document.getElementById("btnGuardarTrabajo").style.display = "";
+  // El día seleccionado en el calendario viene precargado (se puede borrar para dejarlo por agendar)
+  if (diaSeleccionado) {
+    document.getElementById("trabajoFecha").value = diaSeleccionado;
+    document.getElementById("trabajoEstado").value = "agendado";
+  }
   abrirModal("modalTrabajo");
   activarAutocompletadoDireccion();
   trabajoFormBase = serializarFormularioTrabajo();
