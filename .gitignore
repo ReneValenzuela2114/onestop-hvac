@@ -1,0 +1,16 @@
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+
+# Cloudflare / Wrangler (cuando se conecte D1)
+.wrangler/
+.dev.vars
+node_modules/
+
+# Claude Code (local, no compartido)
+.claude/settings.local.json

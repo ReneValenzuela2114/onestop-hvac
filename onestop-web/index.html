@@ -161,6 +161,8 @@
   .trabajo-card:hover{box-shadow:var(--shadow);border-color:var(--frio-500)}
   .tc-info{min-width:0;flex:1}
   .tc-info b{display:block;font-size:13.5px}
+  /* Número consecutivo del trabajo: lo que se dice por teléfono ("el #1042") */
+  .tc-num{color:var(--muted);font-weight:600;margin-right:6px;font-variant-numeric:tabular-nums}
   .tc-info span{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .tc-hora{color:var(--frio-600) !important;font-weight:600;margin-top:2px}
   .tc-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
@@ -576,6 +578,33 @@
             </div></div>
           </div>
 
+          <div class="config-group">
+            <button class="config-group-head" type="button">
+              <span class="cfg-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg></span>
+              <span class="cfg-txt"><b data-i18n="config_grupo_datos">Data</b><span data-i18n="config_grupo_datos_desc">Backup of all your information</span></span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="config-group-body"><div class="config-group-inner">
+
+          <div class="config-section">
+            <h3 data-i18n="config_respaldo">Backup</h3>
+            <p class="desc" data-i18n="config_respaldo_texto">While your data lives only on this device, save a copy every now and then.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn primary sm" id="btnExportarRespaldo">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+                <span data-i18n="config_respaldo_exportar">Download backup</span>
+              </button>
+              <button class="btn sm" id="btnImportarRespaldo">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+                <span data-i18n="config_respaldo_importar">Restore backup</span>
+              </button>
+              <input type="file" id="respaldoFileInput" accept="application/json,.json" hidden>
+            </div>
+          </div>
+
+            </div></div>
+          </div>
+
         </div>
       </section>
 
@@ -895,8 +924,10 @@
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
    ========================================================================= */
 
-/* ---------- Idioma ---------- */
-window.CFG_LANG = DB.config.get("idioma", "en"); // inglés por defecto (app para California)
+/* ---------- Idioma ----------
+   El valor real se lee en init(), después de que DB.iniciar() haya cargado
+   la configuración: antes de eso todavía no hay datos en memoria. */
+window.CFG_LANG = "en"; // inglés por defecto (app para California)
 function setLang(lang){
   window.CFG_LANG = lang;
   DB.config.set("idioma", lang);
@@ -904,7 +935,11 @@ function setLang(lang){
   document.querySelectorAll("#langSwitch button").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
   const label = lang === "es" ? "English" : "Español";
   document.getElementById("langBtnLabelDesktop").textContent = label;
-  renderFiltros(); renderClientes();
+  // Se repinta TODO lo que se dibuja con JavaScript: aplicarTraducciones() solo
+  // alcanza al HTML fijo, no al contenido generado (calendario, tarjetas de
+  // trabajo, lista de equipo). Si falta alguno, queda en el idioma anterior
+  // hasta cambiar de pestaña.
+  renderFiltros(); renderClientes(); renderCategoriasChips(); renderUsuarios(); renderTrabajos();
 }
 document.querySelectorAll("#langSwitch button[data-lang]").forEach(b=>{
   b.addEventListener("click", ()=> setLang(b.dataset.lang));
@@ -952,6 +987,26 @@ function agregarBotonLimpiar(input, alLimpiar){
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
   refrescar();
+}
+
+/* ---------- Errores de la capa de datos ----------
+   Todo lo que sale mal al guardar termina acá: nunca se pierde en silencio.
+   Los códigos son claves de i18n que vienen de data.js. */
+function mostrarErrorDatos(err){
+  if (err instanceof DB.ErrorDatos) {
+    // En validación, se muestra el primer problema concreto, no el genérico
+    const clave = (err.codigo === "error_validacion" && err.detalle?.length) ? err.detalle[0] : err.codigo;
+    toast(t(clave), true);
+  } else {
+    console.error(err);
+    toast(t("error_guardado_fallido"), true);
+  }
+}
+
+/* Envuelve un guardado: si la capa de datos rechaza, avisa y no sigue. */
+function conAviso(fn){
+  try { fn(); return true; }
+  catch (err) { mostrarErrorDatos(err); return false; }
 }
 
 /* ---------- Toasts ---------- */
@@ -1002,11 +1057,13 @@ document.getElementById("btnDescartarCambios").addEventListener("click", () => {
   modalADescartar = null;
 });
 
-/* Confirmación genérica de eliminación: cualquier módulo la reutiliza */
+/* Confirmación genérica: cualquier módulo la reutiliza.
+   `btnKey` permite cambiar el texto del botón rojo (eliminar, restaurar, …). */
 let accionConfirmada = null;
-function pedirConfirmacion(tituloKey, textoKey, accion){
+function pedirConfirmacion(tituloKey, textoKey, accion, btnKey = "confirmar_eliminar_btn"){
   document.getElementById("confirmarTitulo").textContent = t(tituloKey);
   document.getElementById("confirmarTexto").textContent = t(textoKey);
+  document.querySelector("#btnConfirmarEliminar span").textContent = t(btnKey);
   accionConfirmada = accion;
   abrirModal("modalConfirmar");
 }
@@ -1239,13 +1296,16 @@ document.getElementById("btnGuardarCliente").addEventListener("click", () => {
   };
 
   let guardado;
-  if (clienteEditandoId) {
-    guardado = DB.clientes.update(clienteEditandoId, datos);
-    toast(t("toast_cliente_actualizado"));
-  } else {
-    guardado = DB.clientes.create(datos);
-    toast(t("toast_cliente_creado"));
-  }
+  const ok = conAviso(() => {
+    if (clienteEditandoId) {
+      guardado = DB.clientes.update(clienteEditandoId, datos);
+      toast(t("toast_cliente_actualizado"));
+    } else {
+      guardado = DB.clientes.create(datos);
+      toast(t("toast_cliente_creado"));
+    }
+  });
+  if (!ok) return;
   cerrarModal("modalCliente");
   renderClientes();
   // Si el cliente se creó desde el modal de trabajo, queda seleccionado ahí
@@ -1256,11 +1316,13 @@ document.getElementById("btnGuardarCliente").addEventListener("click", () => {
 });
 
 function pedirEliminarCliente(id){
-  if (DB.trabajos.deCliente(id).length) { toast(t("cliente_con_trabajos"), true); return; }
+  if (DB.trabajos.deCliente(id).length) { toast(t("error_cliente_con_trabajos"), true); return; }
   pedirConfirmacion("confirmar_eliminar_titulo", "confirmar_eliminar_texto", () => {
-    DB.clientes.remove(id);
-    toast(t("toast_cliente_eliminado"));
-    renderClientes();
+    conAviso(() => {
+      DB.clientes.remove(id);
+      toast(t("toast_cliente_eliminado"));
+      renderClientes();
+    });
   });
 }
 
@@ -1557,7 +1619,7 @@ function tarjetaTrabajo(tj){
   const horas = tj.hora_inicio ? formatHora(tj.hora_inicio) + (tj.hora_fin ? " – " + formatHora(tj.hora_fin) : "") : "";
   return `<div class="trabajo-card" onclick="abrirEdicionTrabajo('${tj.id}')">
     <div class="tc-info">
-      <b>${esc(tj.titulo)}</b>
+      <b><span class="tc-num">#${tj.numero}</span>${esc(tj.titulo)}</b>
       <span>${c ? esc(c.nombre) : "—"}${tj.direccion ? " · " + esc(tj.direccion) : ""}</span>
       ${horas ? `<span class="tc-hora">${horas}</span>` : ""}
     </div>
@@ -1678,12 +1740,13 @@ function abrirEdicionTrabajo(id){
   document.getElementById("trabajoDireccion2").value = tj.direccion_2 || "";
   document.getElementById("trabajoLat").value = tj.lat ?? "";
   document.getElementById("trabajoLng").value = tj.lng ?? "";
-  document.getElementById("trabajoPrecio").value = tj.precio || "";
-  document.getElementById("trabajoCosto").value = tj.costo || "";
+  // La plata se guarda en centavos enteros; el formulario la muestra en dólares
+  document.getElementById("trabajoPrecio").value = tj.precio_centavos ? DB.dinero.aTexto(tj.precio_centavos) : "";
+  document.getElementById("trabajoCosto").value = tj.costo_centavos ? DB.dinero.aTexto(tj.costo_centavos) : "";
   document.getElementById("trabajoDescripcion").value = tj.descripcion || "";
   trabajoTrabSel = new Set(tj.trabajador_ids || []);
   renderChipsTrabajadores();
-  document.getElementById("modalTrabajoTitulo").textContent = t("form_trabajo_editar");
+  document.getElementById("modalTrabajoTitulo").textContent = `${t("form_trabajo_editar")} · #${tj.numero}`;
   const editable = puedeGestionarTrabajos();
   document.getElementById("btnEliminarTrabajo").style.display = editable ? "" : "none";
   document.getElementById("btnGuardarTrabajo").style.display = editable ? "" : "none";
@@ -1724,19 +1787,22 @@ document.getElementById("btnGuardarTrabajo").addEventListener("click", () => {
     direccion_2: document.getElementById("trabajoDireccion2").value,
     lat: document.getElementById("trabajoLat").value ? parseFloat(document.getElementById("trabajoLat").value) : null,
     lng: document.getElementById("trabajoLng").value ? parseFloat(document.getElementById("trabajoLng").value) : null,
-    precio: parseFloat(document.getElementById("trabajoPrecio").value) || 0,
-    costo: parseFloat(document.getElementById("trabajoCosto").value) || 0,
+    // Dólares del formulario → centavos enteros, que es como se guarda siempre
+    precio_centavos: DB.dinero.aCentavos(document.getElementById("trabajoPrecio").value),
+    costo_centavos: DB.dinero.aCentavos(document.getElementById("trabajoCosto").value),
     descripcion: document.getElementById("trabajoDescripcion").value,
   };
 
-  if (trabajoEditandoId) {
-    DB.trabajos.update(trabajoEditandoId, datos);
-    toast(t("toast_trabajo_actualizado"));
-  } else {
-    datos.creado_por = (usuarioActual() || {}).id || null;
-    DB.trabajos.create(datos);
-    toast(t("toast_trabajo_creado"));
-  }
+  const ok = conAviso(() => {
+    if (trabajoEditandoId) {
+      DB.trabajos.update(trabajoEditandoId, datos);
+      toast(t("toast_trabajo_actualizado"));
+    } else {
+      DB.trabajos.create(datos);
+      toast(t("toast_trabajo_creado"));
+    }
+  });
+  if (!ok) return;
   if (datos.fecha) diaSeleccionado = datos.fecha; // el calendario salta al día del trabajo
   if (datos.fecha) calFecha = new Date(datos.fecha + "T12:00:00");
   cerrarModal("modalTrabajo");
@@ -1746,10 +1812,12 @@ document.getElementById("btnGuardarTrabajo").addEventListener("click", () => {
 document.getElementById("btnEliminarTrabajo").addEventListener("click", () => {
   if (!trabajoEditandoId) return;
   pedirConfirmacion("confirmar_eliminar_trabajo_titulo", "confirmar_eliminar_trabajo_texto", () => {
-    DB.trabajos.remove(trabajoEditandoId);
-    toast(t("toast_trabajo_eliminado"));
-    cerrarModal("modalTrabajo");
-    renderTrabajos();
+    conAviso(() => {
+      DB.trabajos.remove(trabajoEditandoId);
+      toast(t("toast_trabajo_eliminado"));
+      cerrarModal("modalTrabajo");
+      renderTrabajos();
+    });
   });
 });
 
@@ -1775,7 +1843,7 @@ function eliminarCategoria(id){
 document.getElementById("btnAgregarCategoria").addEventListener("click", () => {
   const input = document.getElementById("nuevaCategoriaInput");
   const nombre = input.value.trim(); if (!nombre) return;
-  DB.categoriasClientes.create(nombre, document.getElementById("nuevaCategoriaColor").value);
+  if (!conAviso(() => DB.categoriasClientes.create(nombre, document.getElementById("nuevaCategoriaColor").value))) return;
   input.value = "";
   renderCategoriasChips(); renderFiltros(); renderClientes();
 });
@@ -1867,10 +1935,15 @@ function abrirEdicionTrabajador(id){
 }
 
 function pedirEliminarTrabajador(id){
+  // Si está asignado a trabajos no se puede borrar: quedarían trabajos
+  // apuntando a alguien que no existe (y D1 rechaza ese borrado igual).
+  if (DB.usuarios.trabajosAsignados(id)) { toast(t("error_trabajador_con_trabajos"), true); return; }
   pedirConfirmacion("confirmar_eliminar_trab_titulo", "confirmar_eliminar_trab_texto", () => {
-    DB.usuarios.remove(id);
-    toast(t("toast_trabajador_eliminado"));
-    renderUsuarios();
+    conAviso(() => {
+      DB.usuarios.remove(id);
+      toast(t("toast_trabajador_eliminado"));
+      renderUsuarios();
+    });
   });
 }
 
@@ -1885,26 +1958,31 @@ document.getElementById("btnGuardarTrabajador").addEventListener("click", () => 
     rol: document.getElementById("trabRol").value,
     activo: (document.getElementById("trabEstadoToggle").dataset.value || "activo") === "activo",
   };
-  if (trabajadorEditandoId) {
-    DB.usuarios.update(trabajadorEditandoId, datos);
-    toast(t("toast_trabajador_actualizado"));
-  } else {
-    DB.usuarios.create(datos);
-    toast(t("toast_trabajador_creado"));
-  }
+  const ok = conAviso(() => {
+    if (trabajadorEditandoId) {
+      DB.usuarios.update(trabajadorEditandoId, datos);
+      toast(t("toast_trabajador_actualizado"));
+    } else {
+      DB.usuarios.create(datos);
+      toast(t("toast_trabajador_creado"));
+    }
+  });
+  if (!ok) return;
   cerrarModal("modalTrabajador");
   renderUsuarios();
 });
 
-document.getElementById("mapsApiKeyInput").value = DB.config.get("maps_api_key", "");
 document.getElementById("btnGuardarMapsKey").addEventListener("click", () => {
   DB.config.set("maps_api_key", document.getElementById("mapsApiKeyInput").value.trim());
   toast(t("config_guardado"));
 });
 
-/* ---------- Logo de la empresa (subir / quitar / tamaño) ---------- */
+/* ---------- Logo de la empresa (subir / quitar / tamaño) ----------
+   El logo es un archivo como cualquier otro: su ficha vive en DB.archivos y
+   el contenido se pide con DB.archivos.url(). Hoy sale del navegador; con R2
+   va a salir de un link firmado, y esta función no cambia. */
 function aplicarLogo(){
-  const url = DB.config.get("logo_url", "");
+  const url = DB.archivos.url(DB.archivos.logoEmpresa());
   const px = parseInt(DB.config.get("logo_tamano", 30), 10) || 30;
 
   document.querySelectorAll(".brand").forEach(b => {
@@ -1954,13 +2032,24 @@ document.getElementById("logoFileInput").addEventListener("change", (e) => {
   const file = e.target.files[0];
   e.target.value = "";
   if (!file) return;
+  const guardar = (dataUrl, mime) => {
+    conAviso(() => {
+      const anterior = DB.archivos.logoEmpresa();
+      if (anterior) DB.archivos.remove(anterior.id);
+      DB.archivos.crear({
+        entidad: "empresa", entidad_id: null, tipo: "logo",
+        nombre_original: file.name, mime, bytes: dataUrl.length, dataUrl,
+      });
+      aplicarLogo();
+      toast(t("toast_logo_actualizado"));
+    });
+  };
+
   const lector = new FileReader();
   lector.onload = () => {
     if (file.type === "image/svg+xml") {
       // Vectorial: se guarda tal cual, queda nítido a cualquier tamaño
-      DB.config.set("logo_url", lector.result);
-      aplicarLogo();
-      toast(t("toast_logo_actualizado"));
+      guardar(lector.result, file.type);
       return;
     }
     const im = new Image();
@@ -1971,28 +2060,69 @@ document.getElementById("logoFileInput").addEventListener("change", (e) => {
       canvas.width = Math.round(im.width * escala);
       canvas.height = Math.round(im.height * escala);
       canvas.getContext("2d").drawImage(im, 0, 0, canvas.width, canvas.height);
-      DB.config.set("logo_url", canvas.toDataURL("image/png"));
-      aplicarLogo();
-      toast(t("toast_logo_actualizado"));
+      guardar(canvas.toDataURL("image/png"), "image/png");
     };
     im.src = lector.result;
   };
   lector.readAsDataURL(file);
 });
 document.getElementById("btnQuitarLogo").addEventListener("click", () => {
-  DB.config.set("logo_url", "");
+  const actual = DB.archivos.logoEmpresa();
+  if (actual) conAviso(() => DB.archivos.remove(actual.id));
   aplicarLogo();
   toast(t("config_guardado"));
 });
 
-document.getElementById("logoTamanoSlider").value = DB.config.get("logo_tamano", 30);
 document.getElementById("logoTamanoSlider").addEventListener("input", (e) => {
   DB.config.set("logo_tamano", e.target.value);
   aplicarLogo();
 });
 
-/* ---------- Arranque ---------- */
-(function init(){
+/* ---------- Respaldo: descargar / restaurar ----------
+   Red de seguridad mientras los datos vivan solo en este dispositivo. */
+document.getElementById("btnExportarRespaldo").addEventListener("click", () => {
+  const blob = new Blob([DB.respaldo.exportar()], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = DB.respaldo.nombreArchivo();
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(t("toast_respaldo_exportado"));
+});
+
+document.getElementById("btnImportarRespaldo").addEventListener("click", () => document.getElementById("respaldoFileInput").click());
+document.getElementById("respaldoFileInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  const lector = new FileReader();
+  lector.onload = () => {
+    // Reemplaza todo: se pregunta antes, y el aviso dice exactamente qué pasa
+    pedirConfirmacion("confirmar_importar_titulo", "confirmar_importar_texto", () => {
+      conAviso(() => {
+        DB.respaldo.importar(lector.result);
+        setLang(DB.config.get("idioma", "en"));
+        aplicarLogo();
+        renderFiltros(); renderClientes(); renderCategoriasChips(); renderUsuarios(); renderTrabajos();
+        toast(t("toast_respaldo_importado"));
+      });
+    }, "confirmar_importar_ok");
+  };
+  lector.readAsText(file);
+});
+
+/* ---------- Arranque ----------
+   DB.iniciar() carga los datos a memoria. Hoy es instantáneo (localStorage);
+   cuando llegue D1 va a viajar por la red, y este es el ÚNICO lugar de toda
+   la app que tiene que esperarlo. */
+(async function init(){
+  DB.alFallarGuardado(mostrarErrorDatos);
+  await DB.iniciar();
+
+  window.CFG_LANG = DB.config.get("idioma", "en");
+  document.getElementById("mapsApiKeyInput").value = DB.config.get("maps_api_key", "");
+  document.getElementById("logoTamanoSlider").value = DB.config.get("logo_tamano", 30);
+
   aplicarTraducciones();
   document.querySelectorAll("#langSwitch button").forEach(b => b.classList.toggle("active", b.dataset.lang === window.CFG_LANG));
   document.getElementById("langBtnLabelDesktop").textContent = window.CFG_LANG === "es" ? "English" : "Español";

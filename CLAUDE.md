@@ -1,0 +1,160 @@
+# One Stop Heating and Cooling · Guía del proyecto
+
+App de gestión de servicio en campo (field service) para una empresa de HVAC en
+California. Clientes, trabajos agendados, equipo de trabajadores. Bilingüe ES/EN,
+inglés por defecto.
+
+---
+
+## 1. Estructura
+
+```
+OneStop-HVAC/
+├── CLAUDE.md                  ← este archivo
+├── logo resolucion.png        ← logo original en alta (fuente de los íconos)
+├── onestop-web/               ← la app (estático, se publica en Cloudflare Pages)
+│   ├── index.html             ← TODO: markup + CSS + lógica de pantallas (~2000 líneas)
+│   ├── data.js                ← capa de datos (hoy localStorage, mañana fetch al Worker)
+│   ├── i18n.js                ← traducciones ES/EN (ningún texto suelto en el HTML)
+│   ├── service-worker.js      ← PWA: red-primero para HTML, caché para estáticos
+│   ├── manifest.webmanifest
+│   ├── _headers               ← Cloudflare Pages: no-cache para SW y manifest
+│   └── assets/                ← íconos PWA (192, 512, maskable, apple-touch)
+└── worker-d1/
+    └── schema.sql             ← esquema de D1, escrito de antemano (todavía sin desplegar)
+```
+
+**Sin build, sin dependencias, sin npm.** Se abre el HTML y funciona. No introducir
+un bundler salvo que el proyecto lo pida de verdad.
+
+---
+
+## 2. Reglas del proyecto (no romper)
+
+1. **Ninguna pantalla toca `localStorage` directamente.** Todo pasa por `DB.*`
+   (`DB.clientes`, `DB.trabajos`, `DB.usuarios`, `DB.categoriasClientes`,
+   `DB.archivos`, `DB.config`). Ese es el contrato que permite cambiar a D1 sin
+   tocar la UI.
+2. **La plata SIEMPRE en centavos enteros** (`precio_centavos`, `costo_centavos`).
+   Nunca decimales: los flotantes no representan `0.10` exacto y los reportes
+   terminan sin cuadrar. Convertir con `DB.dinero.aCentavos()` / `.aTexto()` /
+   `.formato()`. Un campo de dinero nuevo se llama `*_centavos`, sin excepción.
+3. **Nada se borra de verdad.** `remove()` marca `eliminado` (epoch ms) y
+   `eliminado_por`. Toda lectura filtra los eliminados. Un trabajo tiene precio y
+   costo: borrarlo sería borrar plata del historial de la empresa.
+4. **`data.js` y `worker-d1/schema.sql` van sincronizados.** Los campos de cada
+   objeto JS son EXACTAMENTE las columnas de su tabla. Si se agrega un campo, se
+   agrega en los dos lados en el mismo cambio.
+5. **Ningún texto visible se escribe en `index.html`.** Se usa `data-i18n="clave"`
+   (contenido) o `data-i18n-ph="clave"` (placeholder), y la clave se define en
+   `i18n.js` **en ES y EN**. Pestaña nueva = claves nuevas, nunca texto suelto.
+6. **Los datos se leen de memoria, no del disco.** `DB.iniciar()` (en `init()`) es
+   el **único** punto asíncrono de toda la app. Todo lo demás (`getAll`, `get`,
+   `create`…) es instantáneo. No agregar `await` en las pantallas: si algo necesita
+   ir a la red, va adentro del almacén de `data.js`.
+7. **Los errores de datos nunca se pierden.** Los `create`/`update`/`remove` lanzan
+   `ErrorDatos` con una clave de i18n. En la UI se envuelven con `conAviso(...)`,
+   que muestra el aviso y frena. Un guardado que falla de fondo llega a
+   `DB.alFallarGuardado`.
+8. **Al publicar, subir la versión del caché** en `service-worker.js`
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v15**. Si no se sube, hay
+   usuarios que se quedan pegados en la versión vieja.
+9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
+   en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
+   en `fecha`, `HH:MM` 24h en `hora_inicio`/`hora_fin`.
+10. **Escapar siempre** lo que venga del usuario al armar HTML: `esc(valor)`.
+11. **Hosting: Cloudflare.** Pages para el estático, Workers + D1 + R2 para los datos.
+
+### Cambiar la forma de los datos
+
+Si hace falta agregar o renombrar un campo: subir `ESQUEMA_VERSION` en `data.js`,
+escribir la migración en `_migrar()` (tiene que poder correr dos veces sin romper
+nada) y actualizar `schema.sql` en el mismo cambio.
+
+---
+
+## 3. Estado real (25 jul 2026)
+
+| Módulo | Estado |
+|---|---|
+| Shell, navegación, PWA, ES/EN, logo configurable | ✅ terminado |
+| **Clientes** (alta/edición/borrado, categorías, filtros, búsqueda, Google Maps + autocompletado) | ✅ terminado |
+| **Trabajos** (calendario mensual, "por agendar", modal completo, precio/costo, asignar trabajadores) | ✅ terminado |
+| **Equipo** (alta de trabajadores, roles, usuario del dispositivo) | ✅ terminado, sin login real |
+| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v2) |
+| **Catálogo** | ⛔ placeholder "Próximamente" |
+| **Cotizaciones** | ⛔ placeholder "Próximamente" |
+| **Base de datos D1 + Worker** | ⛔ solo existe `schema.sql`. No hay código de Worker ni `wrangler.toml` |
+| **R2** | ⛔ la tabla `archivos` y `DB.archivos` ya existen; falta el bucket. Hoy solo lo usa el logo |
+| **Login / permisos reales** | ⛔ hoy los roles son solo etiquetas de interfaz |
+| **Reportes** (cuánto se ganó por cliente / por mes) | ⛔ los datos ya están, falta la pantalla |
+
+**Dónde viven los datos hoy:** solo en el navegador de cada dispositivo
+(`localStorage`, claves `os_*_v1`, y los bytes de archivos bajo `os_bytes_*`).
+Dos teléfonos = dos bases distintas, sin sincronizar. Por eso hay **respaldo
+exportar/importar** en Configuración → Datos. **La empresa no debería usarla en
+serio hasta que exista D1.**
+
+---
+
+## 4. Deuda técnica conocida
+
+- **Clave de Google Maps hardcodeada** en `index.html` (`MAPS_KEY_DEFAULT`). Al ser
+  una clave de navegador es pública por diseño, pero **tiene que estar restringida
+  por dominio (HTTP referrer) en Google Cloud Console**, si no cualquiera la usa y
+  la factura la paga Rene. Verificar antes de publicar.
+- **El proyecto no está bajo control de versiones** (no hay `.git`). Un archivo de
+  2000 líneas sin historial es riesgoso: un error grande no tiene vuelta atrás.
+- **Cambiar de idioma no repinta todas las pestañas.** `setLang()` refresca clientes
+  y filtros, pero no el calendario, las tarjetas de trabajo ni la lista de equipo:
+  hay que cambiar de pestaña para verlos traducidos. Verificado en el navegador.
+- **Naming inconsistente**: la pestaña se llama `proyectos` en el HTML pero el módulo,
+  la tabla y los textos son "trabajos"/"jobs". Unificar a `trabajos` cuando se toque.
+- **Sin control de concurrencia.** Dos dispositivos editando el mismo registro: gana
+  el último y no avisa. Los campos `actualizado` / `actualizado_por` ya están para
+  resolverlo; se aplica cuando exista el Worker (comparar `actualizado` antes de
+  escribir y avisar si cambió).
+- **Los bytes de los archivos siguen en el navegador** (data URL). Sirve para el
+  logo; **las fotos de trabajos esperan a R2**, subirlas ahora reventaría la cuota.
+
+---
+
+## 5. Cómo correr la app localmente
+
+Servidor estático (hace falta uno real: el service worker y el `manifest` no
+funcionan abriendo el archivo con `file://`):
+
+```bash
+python -m http.server 5173 --directory onestop-web
+```
+
+Después, `http://localhost:5173`. También está configurado en `.claude/launch.json`,
+así que Claude puede levantarlo y verlo con la herramienta de preview.
+
+---
+
+## 6. Próximos pasos (en orden)
+
+1. ~~**Modelo de datos a nivel producción**~~ ✅ hecho (25 jul 2026): centavos
+   enteros, borrado suave, auditoría, validación, número de trabajo, tabla de
+   archivos, respaldo.
+2. **Git.** `git init` + primer commit, antes de cualquier cambio grande.
+3. **Catálogo** (equipos y materiales con precio) → alimenta las **Cotizaciones**.
+   Se puede programar entero contra `localStorage`: la capa de datos ya tiene la
+   forma definitiva, así que no hay que rehacerlo cuando llegue la base.
+4. **Reportes** de ganancia por cliente / mes (`DB.trabajos.ganancia(tj)`).
+5. **D1 + Worker + login, todo junto al final.** Implica: `wrangler.toml`, un Worker
+   con endpoints `/api/*`, reemplazar `AlmacenLocal` por uno que hable con el Worker,
+   y `DB.iniciar()` cargando de la red. Las pantallas no se tocan.
+   ⚠️ **El login va en el mismo paso, no después**: una API abierta expone la base
+   de clientes (nombres, direcciones y teléfonos de California) a cualquiera.
+6. **R2** para fotos de trabajos: bucket **privado** con links firmados que expiran,
+   y `Archivos.url()` devolviendo esos links en vez del contenido local.
+
+---
+
+## 7. Cómo trabajar con Rene
+
+Ver la skill `app-builder-pro`: explicaciones cortas y simples, honestidad técnica
+antes de hacer un parche, y no arrancar a programar cuando la pregunta es solo una
+duda — esperar el "dale".
