@@ -8,19 +8,25 @@ abriendo sin señal.
 
 ## Estructura
 
-```
-onestop-web/     la app (esto es lo que se publica)
-worker-d1/       esquema de la base de datos, todavía sin desplegar
-```
+La app vive en la raíz (`index.html`, `data.js`, `i18n.js`, …) para que se
+publique sin configurar nada. En `worker-d1/` está el esquema de la base de
+datos, todavía sin desplegar.
 
 ## Publicación
 
-Se publica con **Cloudflare Pages**, apuntando a la carpeta `onestop-web`.
-Cada cambio que se sube a `main` se publica solo.
+Hoy se publica con **GitHub Pages** desde la raíz de `main`: cada cambio que se
+sube queda publicado solo.
+
+Más adelante se muda a **Cloudflare Pages**. No hay que reorganizar nada, solo
+conectar el repo con *Framework: None*, *Build command: vacío* y *Output
+directory: `/`*.
 
 > Al publicar una versión nueva hay que subir el número de caché en
-> `onestop-web/service-worker.js` (`const CACHE = 'onestop-shell-vNN'`), si no
-> los usuarios se quedan viendo la versión vieja.
+> `service-worker.js` (`const CACHE = 'onestop-shell-vNN'`), si no los usuarios
+> se quedan viendo la versión vieja.
+>
+> Y al cambiar de dominio hay que agregarlo a las restricciones de la clave de
+> Google Maps, o el mapa deja de cargar.
 
 ## Dónde viven los datos
 
@@ -37,7 +43,7 @@ Hace falta un servidor de verdad — abrir el archivo con doble clic no alcanza,
 porque el service worker y el manifest no funcionan con `file://`.
 
 ```bash
-python -m http.server 5173 --directory onestop-web
+python -m http.server 5173
 ```
 
 Después, abrir `http://localhost:5173`.

@@ -10,19 +10,23 @@ inglés por defecto.
 
 ```
 OneStop-HVAC/
-├── CLAUDE.md                  ← este archivo
-├── logo resolucion.png        ← logo original en alta (fuente de los íconos)
-├── onestop-web/               ← la app (estático, se publica en Cloudflare Pages)
-│   ├── index.html             ← TODO: markup + CSS + lógica de pantallas (~2000 líneas)
-│   ├── data.js                ← capa de datos (hoy localStorage, mañana fetch al Worker)
-│   ├── i18n.js                ← traducciones ES/EN (ningún texto suelto en el HTML)
-│   ├── service-worker.js      ← PWA: red-primero para HTML, caché para estáticos
-│   ├── manifest.webmanifest
-│   ├── _headers               ← Cloudflare Pages: no-cache para SW y manifest
-│   └── assets/                ← íconos PWA (192, 512, maskable, apple-touch)
+├── index.html             ← TODO: markup + CSS + lógica de pantallas (~2100 líneas)
+├── data.js                ← capa de datos (hoy localStorage, mañana fetch al Worker)
+├── i18n.js                ← traducciones ES/EN (ningún texto suelto en el HTML)
+├── service-worker.js      ← PWA: red-primero para HTML, caché para estáticos
+├── manifest.webmanifest
+├── _headers               ← no-cache para el service worker y el manifest
+├── assets/                ← íconos PWA (192, 512, maskable, apple-touch)
+├── CLAUDE.md              ← este archivo
+├── README.md
+├── logo resolucion.png    ← logo original en alta (fuente de los íconos)
 └── worker-d1/
-    └── schema.sql             ← esquema de D1, escrito de antemano (todavía sin desplegar)
+    └── schema.sql         ← esquema de D1, escrito de antemano (todavía sin desplegar)
 ```
+
+**La app va en la raíz a propósito.** Así se publica sin configurar nada: GitHub
+Pages sirve desde la raíz, y Cloudflare Pages también (carpeta de salida `/`).
+No mover estos archivos a una subcarpeta sin actualizar la publicación primero.
 
 **Sin build, sin dependencias, sin npm.** Se abre el HTML y funciona. No introducir
 un bundler salvo que el proyecto lo pida de verdad.
@@ -125,11 +129,35 @@ Servidor estático (hace falta uno real: el service worker y el `manifest` no
 funcionan abriendo el archivo con `file://`):
 
 ```bash
-python -m http.server 5173 --directory onestop-web
+python -m http.server 5173
 ```
 
 Después, `http://localhost:5173`. También está configurado en `.claude/launch.json`,
 así que Claude puede levantarlo y verlo con la herramienta de preview.
+
+---
+
+## 5b. Publicación
+
+**Hoy: GitHub Pages**, desde la raíz de `main`. Se sube con `git push` y queda
+publicado solo. El repo es <https://github.com/ReneValenzuela2114/onestop-hvac>.
+
+**Mañana: Cloudflare Pages**, en la cuenta del socio de Rene (no en la de Rene).
+Ya está todo preparado — no hay nada que reorganizar, solo conectar:
+
+1. Cloudflare → *Workers & Pages* → *Create* → *Pages* → *Connect to Git*
+2. Elegir el repo `onestop-hvac`, rama `main`
+3. Framework preset: **None** · Build command: **vacío** · Output directory: **`/`**
+
+Después de conectarlo, cada `git push` se publica solo.
+
+⚠️ **Al cambiar de dominio hay que actualizar la clave de Google Maps.** Está
+restringida por sitio (HTTP referrer) en Google Cloud Console: si el dominio nuevo
+no se agrega ahí, la app carga pero el mapa no. Es el error que más fácil se pasa
+por alto en la mudanza.
+
+⚠️ **Antes de que la empresa la use con clientes reales tiene que existir el login**,
+porque una URL pública sin login expone la base de clientes.
 
 ---
 

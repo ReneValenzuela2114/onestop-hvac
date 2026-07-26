@@ -4,7 +4,7 @@
     {
       "name": "onestop-web",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5173", "--directory", "onestop-web"],
+      "runtimeArgs": ["-m", "http.server", "5173"],
       "port": 5173
     }
   ]
