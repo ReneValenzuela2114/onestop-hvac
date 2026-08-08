@@ -20,9 +20,15 @@ OneStop-HVAC/
 ├── CLAUDE.md              ← este archivo
 ├── README.md
 ├── logo resolucion.png    ← logo original en alta (fuente de los íconos)
-└── worker-d1/
+└── worker-d1/             ← el backend (Cloudflare Worker, cuenta de Rene)
+    ├── src/index.js       ← lector de mensajes con IA (POST /api/leer-cliente)
+    ├── wrangler.toml      ← config del Worker + orígenes permitidos
+    ├── README.md          ← cómo desplegarlo y cargar la clave
     └── schema.sql         ← esquema de D1, escrito de antemano (todavía sin desplegar)
 ```
+
+**La carpeta se llama `worker-d1` desde antes de que hubiera Worker.** Es el mismo
+Worker que va a servir D1 más adelante; el nombre cobra sentido en ese momento.
 
 **La app va en la raíz a propósito.** Así se publica sin configurar nada: GitHub
 Pages sirve desde la raíz, y Cloudflare Pages también (carpeta de salida `/`).
@@ -86,6 +92,7 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Trabajos** (calendario mensual, "por agendar", modal completo, precio/costo, asignar trabajadores) | ✅ terminado |
 | **Equipo** (alta de trabajadores, roles, usuario del dispositivo) | ✅ terminado, sin login real |
 | **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v2) |
+| **Lector de mensajes** (captura/PDF → campos del cliente, con Claude) | ✅ programado; falta desplegar el Worker |
 | **Catálogo** | ⛔ placeholder "Próximamente" |
 | **Cotizaciones** | ⛔ placeholder "Próximamente" |
 | **Base de datos D1 + Worker** | ⛔ solo existe `schema.sql`. No hay código de Worker ni `wrangler.toml` |
@@ -114,6 +121,13 @@ serio hasta que exista D1.**
   hay que cambiar de pestaña para verlos traducidos. Verificado en el navegador.
 - **Naming inconsistente**: la pestaña se llama `proyectos` en el HTML pero el módulo,
   la tabla y los textos son "trabajos"/"jobs". Unificar a `trabajos` cuando se toque.
+- **El Worker queda con una dirección pública hasta que exista el login.** Se filtra
+  por `Origin` (un pedido de otro sitio recibe 403 sin gastar un centavo), pero eso
+  no frena a alguien decidido. **La protección real es el tope de gasto mensual del
+  workspace en la consola de Claude.** El login lo cierra de verdad.
+- **La clave de Claude es la de la organización entera**, compartida con la otra app
+  de Rene (DES): lo que gaste esta app le come créditos a aquella. Conviene un
+  workspace con tope propio.
 - **Sin control de concurrencia.** Dos dispositivos editando el mismo registro: gana
   el último y no avisa. Los campos `actualizado` / `actualizado_por` ya están para
   resolverlo; se aplica cuando exista el Worker (comparar `actualizado` antes de

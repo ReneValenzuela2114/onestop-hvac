@@ -1,0 +1,19 @@
+# Worker de One Stop Heating and Cooling
+# -----------------------------------------------------------------------------
+# Hoy hace una sola cosa: leer una captura de pantalla o un PDF con la IA de
+# Claude y devolver los datos del cliente. Es también el Worker que va a servir
+# la base de datos D1 más adelante (por eso vive en esta carpeta).
+#
+# La clave de Claude NO va acá. Se guarda como secreto, fuera del código:
+#   wrangler secret put ANTHROPIC_API_KEY
+#
+# Ver README.md de esta carpeta para el paso a paso.
+
+name = "onestop-api"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+[vars]
+# Desde qué sitios se acepta un pedido. Separados por coma, sin barra final.
+# Cualquier otro origen recibe 403 y no gasta un centavo de la API.
+ORIGENES_PERMITIDOS = "https://renevalenzuela2114.github.io,http://localhost:5173,http://127.0.0.1:5173"

@@ -277,6 +277,10 @@
   .chip button:hover{color:var(--danger)}
   /* Técnico ya asignado a un trabajo: se distingue de una categoría suelta */
   .chip.persona{background:#EAF3FB;border-color:#CFE2F2;color:var(--frio-700)}
+  /* Fila del lector de mensajes, arriba del formulario de cliente */
+  .ia-row{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;margin-bottom:var(--sp-4);padding-bottom:var(--sp-4);border-bottom:1px dashed var(--line)}
+  .ia-estado{font-size:12.5px;color:var(--muted)}
+  .ia-estado.ok{color:var(--success)}
   .add-row{display:flex;gap:8px}
   .add-row input{flex:1;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px}
   .user-row{display:flex;align-items:center;gap:var(--sp-3);padding:11px 0;border-bottom:1px solid var(--line-soft)}
@@ -574,6 +578,11 @@
               <input type="text" id="mapsApiKeyInput" data-i18n-ph="config_maps_key_ph" placeholder="Pegá tu clave…">
               <p class="hint" data-i18n="config_maps_ayuda">Se usa para mostrar el mapa al elegir la dirección de un cliente.</p>
             </div>
+            <div class="field" style="margin-bottom:var(--sp-3)">
+              <label data-i18n="config_worker">Lector de mensajes</label>
+              <input type="text" id="workerUrlInput" data-i18n-ph="config_worker_ph" placeholder="https://onestop-api.tu-cuenta.workers.dev">
+              <p class="hint" data-i18n="config_worker_ayuda">Dirección del Worker que lee capturas de pantalla. Sin esto, el botón de leer imagen no funciona.</p>
+            </div>
             <button class="btn primary sm" id="btnGuardarMapsKey"><span data-i18n="config_guardar">Guardar</span></button>
           </div>
 
@@ -633,6 +642,18 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="clienteId">
+
+      <!-- Lector de mensajes: llena el formulario desde una captura de pantalla.
+           No guarda nada: deja los campos listos para revisar. -->
+      <div class="ia-row">
+        <button class="btn sm" id="btnLeerImagen" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          <span data-i18n="form_ia_boton">Read from an image</span>
+        </button>
+        <span class="ia-estado" id="clienteIaEstado"></span>
+        <input type="file" id="clienteIaInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" hidden>
+      </div>
+
       <div class="field" id="fieldNombre">
         <label data-i18n="form_nombre">Nombre completo</label>
         <input type="text" id="clienteNombre" data-i18n-ph="form_nombre_ph">
@@ -1222,6 +1243,9 @@ function limpiarFormularioCliente(){
   document.getElementById("clienteCategoria").value = "";
   setEstadoToggle("activo");
   document.getElementById("fieldNombre").classList.remove("error");
+  const estadoIa = document.getElementById("clienteIaEstado");
+  estadoIa.className = "ia-estado";
+  estadoIa.textContent = "";
 }
 
 function actualizarGrupoFacturacion(){
@@ -1319,6 +1343,83 @@ document.getElementById("btnGuardarCliente").addEventListener("click", () => {
     poblarSelectClientes(guardado.id);
     document.getElementById("trabajoCliente").dispatchEvent(new Event("change"));
   }
+});
+
+/* =========================================================================
+   LECTOR DE MENSAJES · llena el formulario de cliente desde una captura
+   -------------------------------------------------------------------------
+   La app no habla con Claude directamente: le pide al Worker, y el Worker
+   —que es el único que tiene la clave— le pide a Claude. Ver worker-d1/.
+   Nada se guarda solo: los campos quedan listos para que la persona revise.
+   ========================================================================= */
+function urlWorker(){ return String(DB.config.get("worker_url", "")).trim().replace(/\/$/, ""); }
+
+function archivoABase64(file){
+  return new Promise((resolve, reject) => {
+    const lector = new FileReader();
+    lector.onerror = () => reject(new DB.ErrorDatos("error_ia_pedido"));
+    // readAsDataURL devuelve "data:image/png;base64,XXXX" — la API quiere solo XXXX
+    lector.onload = () => resolve(String(lector.result).split(",")[1] || "");
+    lector.readAsDataURL(file);
+  });
+}
+
+/* Vuelca en el formulario solo los campos que la IA encontró. Devuelve cuántos. */
+function volcarClienteEnFormulario(d){
+  const mapa = {
+    clienteNombre: d.nombre, clienteEmpresa: d.empresa, clienteTelefono: d.telefono,
+    clienteEmail: d.email, clienteDireccion: d.direccion, clienteNotas: d.notas,
+  };
+  let puestos = 0;
+  for (const [id, valor] of Object.entries(mapa)) {
+    if (!valor) continue;
+    document.getElementById(id).value = valor;
+    puestos++;
+  }
+  if (d.direccion) {
+    // La dirección viene de una imagen, sin coordenadas: las viejas ya no valen
+    document.getElementById("clienteLat").value = "";
+    document.getElementById("clienteLng").value = "";
+  }
+  refrescarBotonesLimpiar();
+  return puestos;
+}
+
+async function leerClienteDeArchivo(file){
+  const estado = document.getElementById("clienteIaEstado");
+  const boton = document.getElementById("btnLeerImagen");
+  boton.disabled = true;
+  estado.className = "ia-estado";
+  estado.textContent = t("form_ia_leyendo");
+  try {
+    const datos = await archivoABase64(file);
+    const r = await fetch(urlWorker() + "/api/leer-cliente", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ mime: file.type, datos }),
+    });
+    const cuerpo = await r.json().catch(() => ({}));
+    if (!r.ok) throw new DB.ErrorDatos(cuerpo.error || "error_ia_servicio");
+    const puestos = volcarClienteEnFormulario(cuerpo);
+    estado.className = puestos ? "ia-estado ok" : "ia-estado";
+    estado.textContent = puestos ? t("form_ia_listo") : t("form_ia_nada");
+  } catch (err) {
+    estado.textContent = "";
+    // Si falla la red, fetch tira TypeError y no un ErrorDatos
+    mostrarErrorDatos(err instanceof DB.ErrorDatos ? err : new DB.ErrorDatos("error_ia_red"));
+  } finally {
+    boton.disabled = false;
+  }
+}
+
+document.getElementById("btnLeerImagen").addEventListener("click", () => {
+  if (!urlWorker()) { toast(t("error_ia_sin_worker"), true); irATab("config"); return; }
+  document.getElementById("clienteIaInput").click();
+});
+document.getElementById("clienteIaInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (file) leerClienteDeArchivo(file);
 });
 
 function pedirEliminarCliente(id){
@@ -2048,6 +2149,7 @@ document.getElementById("btnGuardarTrabajador").addEventListener("click", () => 
 
 document.getElementById("btnGuardarMapsKey").addEventListener("click", () => {
   DB.config.set("maps_api_key", document.getElementById("mapsApiKeyInput").value.trim());
+  DB.config.set("worker_url", document.getElementById("workerUrlInput").value.trim());
   toast(t("config_guardado"));
 });
 
@@ -2195,6 +2297,7 @@ document.getElementById("respaldoFileInput").addEventListener("change", (e) => {
 
   window.CFG_LANG = DB.config.get("idioma", "en");
   document.getElementById("mapsApiKeyInput").value = DB.config.get("maps_api_key", "");
+  document.getElementById("workerUrlInput").value = DB.config.get("worker_url", "");
   document.getElementById("logoTamanoSlider").value = DB.config.get("logo_tamano", 30);
 
   aplicarTraducciones();

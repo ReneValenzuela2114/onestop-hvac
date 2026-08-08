@@ -189,6 +189,27 @@ const I18N = {
 
     trabajo_numero: "Trabajo",
 
+    /* --- Lector de mensajes (IA) --- */
+    form_ia_boton: "Leer de una imagen",
+    form_ia_leyendo: "Leyendo la imagen…",
+    form_ia_listo: "Listo — revisá los datos antes de guardar",
+    form_ia_nada: "No se encontraron datos en esa imagen",
+    config_worker: "Lector de mensajes",
+    config_worker_ph: "https://onestop-api.tu-cuenta.workers.dev",
+    config_worker_ayuda: "Dirección del Worker que lee las capturas de pantalla. Sin esto, el botón de leer imagen no funciona.",
+    error_ia_sin_worker: "Falta configurar el lector en Configuración → Integraciones",
+    error_ia_sin_clave: "El lector no tiene cargada la clave de Claude",
+    error_ia_origen: "Este sitio no tiene permiso para usar el lector",
+    error_ia_ruta: "La dirección del lector no es correcta",
+    error_ia_pedido: "No se pudo leer el archivo",
+    error_ia_tipo: "Solo se pueden leer imágenes o archivos PDF",
+    error_ia_pesado: "La imagen pesa demasiado (máximo 5 MB)",
+    error_ia_red: "No se pudo conectar con el lector. Revisá tu internet.",
+    error_ia_servicio: "El lector tuvo un problema. Probá de nuevo.",
+    error_ia_sin_creditos: "Sin créditos de Claude, o demasiados pedidos seguidos",
+    error_ia_rechazado: "La IA no pudo procesar esa imagen",
+    error_ia_vacio: "La IA no devolvió datos. Probá con una captura más clara.",
+
     /* --- Datos y respaldo --- */
     config_grupo_datos: "Datos",
     config_grupo_datos_desc: "Copia de seguridad de toda la información",
@@ -411,6 +432,27 @@ const I18N = {
     rol_tecnico: "Technician",
 
     trabajo_numero: "Job",
+
+    /* --- Message reader (AI) --- */
+    form_ia_boton: "Read from an image",
+    form_ia_leyendo: "Reading the image…",
+    form_ia_listo: "Done — review the details before saving",
+    form_ia_nada: "No details found in that image",
+    config_worker: "Message reader",
+    config_worker_ph: "https://onestop-api.your-account.workers.dev",
+    config_worker_ayuda: "Address of the Worker that reads screenshots. Without it, the read-image button won't work.",
+    error_ia_sin_worker: "Set up the reader first in Settings → Integrations",
+    error_ia_sin_clave: "The reader has no Claude key configured",
+    error_ia_origen: "This site isn't allowed to use the reader",
+    error_ia_ruta: "The reader address isn't correct",
+    error_ia_pedido: "Couldn't read the file",
+    error_ia_tipo: "Only images or PDF files can be read",
+    error_ia_pesado: "That image is too large (5 MB max)",
+    error_ia_red: "Couldn't reach the reader. Check your internet.",
+    error_ia_servicio: "The reader ran into a problem. Please try again.",
+    error_ia_sin_creditos: "Out of Claude credits, or too many requests in a row",
+    error_ia_rechazado: "The AI couldn't process that image",
+    error_ia_vacio: "The AI returned no details. Try a clearer screenshot.",
 
     /* --- Data & backup --- */
     config_grupo_datos: "Data",
