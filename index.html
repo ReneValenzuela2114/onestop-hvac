@@ -275,6 +275,8 @@
   .chip .dot{width:9px;height:9px;border-radius:50%}
   .chip button{border:none;background:none;padding:3px;display:flex;color:var(--muted)}
   .chip button:hover{color:var(--danger)}
+  /* Técnico ya asignado a un trabajo: se distingue de una categoría suelta */
+  .chip.persona{background:#EAF3FB;border-color:#CFE2F2;color:var(--frio-700)}
   .add-row{display:flex;gap:8px}
   .add-row input{flex:1;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px}
   .user-row{display:flex;align-items:center;gap:var(--sp-3);padding:11px 0;border-bottom:1px solid var(--line-soft)}
@@ -810,7 +812,11 @@
 
       <div class="field">
         <label data-i18n="form_trabajadores">Assigned workers</label>
-        <div class="chip-list" id="trabajoTrabajadores" style="margin-bottom:0"></div>
+        <div class="ac-anchor">
+          <input type="text" id="trabajoBuscarTrabajador" data-i18n-ph="form_trabajadores_buscar_ph" placeholder="Search technician…" autocomplete="off">
+          <div class="ac-menu" id="trabajoTrabajadoresMenu" style="display:none"></div>
+        </div>
+        <div class="chip-list" id="trabajoTrabajadores" style="margin:var(--sp-3) 0 0"></div>
         <p class="hint" id="trabajoSinEquipo" style="display:none" data-i18n="trabajo_sin_equipo_hint">Add workers first in Settings → Team.</p>
       </div>
 
@@ -1671,18 +1677,84 @@ function poblarSelectClientes(seleccionado){
   sel.value = seleccionado || "";
 }
 
-function renderChipsTrabajadores(){
-  const activos = DB.usuarios.getAll().filter(u => u.activo !== false);
-  document.getElementById("trabajoSinEquipo").style.display = activos.length ? "none" : "block";
-  document.getElementById("trabajoTrabajadores").innerHTML = activos.map(u => `
-    <button type="button" class="chip${trabajoTrabSel.has(u.id) ? " sel" : ""}" onclick="toggleTrabajadorSel('${u.id}')">
-      ${esc(u.nombre)}
-    </button>`).join("");
+/* ---------- Buscador de técnicos del modal de trabajo ----------
+   Al tocar el campo sin escribir aparecen todos: escribir solo filtra, así
+   sirve igual con 3 técnicos que con 30. Los ya asignados salen de la lista
+   (están abajo como etiquetas) para no poder agregarlos dos veces. */
+function trabajadoresDisponibles(texto){
+  const busca = (texto || "").trim().toLowerCase();
+  return DB.usuarios.activos()
+    .filter(u => !trabajoTrabSel.has(u.id))
+    .filter(u => !busca || u.nombre.toLowerCase().includes(busca));
 }
-function toggleTrabajadorSel(id){
-  if (trabajoTrabSel.has(id)) trabajoTrabSel.delete(id); else trabajoTrabSel.add(id);
+
+function renderMenuTrabajadores(){
+  const menu = document.getElementById("trabajoTrabajadoresMenu");
+  const lista = trabajadoresDisponibles(document.getElementById("trabajoBuscarTrabajador").value);
+  if (lista.length) {
+    menu.innerHTML = lista.map(u =>
+      `<div class="ac-item" data-id="${u.id}"><b>${esc(u.nombre)}</b> <span>${t("rol_" + u.rol)}</span></div>`).join("");
+  } else {
+    // Sin resultados: se dice por qué, en vez de dejar un menú vacío
+    const sinEquipo = !DB.usuarios.activos().length;
+    const yaTodos = !sinEquipo && !document.getElementById("trabajoBuscarTrabajador").value.trim();
+    const clave = sinEquipo ? "trabajo_sin_equipo_hint"
+      : yaTodos ? "form_trabajadores_todos" : "form_trabajadores_sin_resultados";
+    menu.innerHTML = `<div class="ac-item" style="color:var(--muted);cursor:default">${t(clave)}</div>`;
+  }
+  menu.style.display = "block";
+}
+function cerrarMenuTrabajadores(){
+  document.getElementById("trabajoTrabajadoresMenu").style.display = "none";
+}
+
+function agregarTrabajadorSel(id){
+  if (!DB.usuarios.get(id)) return;
+  trabajoTrabSel.add(id);
+  const input = document.getElementById("trabajoBuscarTrabajador");
+  input.value = "";
+  renderChipsTrabajadores();
+  renderMenuTrabajadores(); // sigue abierto para agregar varios de corrido
+  input.focus();
+}
+function quitarTrabajadorSel(id){
+  trabajoTrabSel.delete(id);
   renderChipsTrabajadores();
 }
+
+/* Dibuja los técnicos ya asignados, debajo del buscador */
+function renderChipsTrabajadores(){
+  const hayEquipo = DB.usuarios.activos().length > 0;
+  document.getElementById("trabajoSinEquipo").style.display = hayEquipo ? "none" : "block";
+  document.getElementById("trabajoBuscarTrabajador").disabled = !hayEquipo;
+  const elegidos = [...trabajoTrabSel].map(id => DB.usuarios.get(id)).filter(Boolean);
+  document.getElementById("trabajoTrabajadores").innerHTML = elegidos.map(u => `
+    <span class="chip persona">${esc(u.nombre)}
+      <button type="button" onclick="quitarTrabajadorSel('${u.id}')" aria-label="${t("eliminar")}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </span>`).join("");
+}
+
+(() => {
+  const input = document.getElementById("trabajoBuscarTrabajador");
+  const menu = document.getElementById("trabajoTrabajadoresMenu");
+  input.addEventListener("focus", renderMenuTrabajadores);
+  input.addEventListener("input", renderMenuTrabajadores);
+  input.addEventListener("keydown", (e) => {
+    const lista = trabajadoresDisponibles(input.value);
+    if (e.key === "Enter" && lista.length) { e.preventDefault(); agregarTrabajadorSel(lista[0].id); }
+    if (e.key === "Escape") { e.stopPropagation(); cerrarMenuTrabajadores(); }
+  });
+  // pointerdown (no click): en táctil gana antes que el blur del campo, que
+  // si no cerraba el menú antes de poder elegir. Mismo criterio que el
+  // autocompletado de direcciones.
+  menu.addEventListener("pointerdown", (e) => {
+    const item = e.target.closest(".ac-item[data-id]");
+    if (item) { e.preventDefault(); agregarTrabajadorSel(item.dataset.id); }
+  });
+  input.addEventListener("blur", () => setTimeout(cerrarMenuTrabajadores, 250));
+})();
 
 /* Al elegir cliente, su dirección se propone como dirección del trabajo (si está vacía) */
 document.getElementById("trabajoCliente").addEventListener("change", () => {
@@ -1699,8 +1771,10 @@ document.getElementById("trabajoCliente").addEventListener("change", () => {
 function limpiarFormularioTrabajo(){
   trabajoEditandoId = null;
   trabajoTrabSel = new Set();
+  cerrarMenuTrabajadores();
   ["trabajoTitulo", "trabajoFecha", "trabajoHoraInicio", "trabajoHoraFin", "trabajoDireccion",
-   "trabajoDireccion2", "trabajoLat", "trabajoLng", "trabajoPrecio", "trabajoCosto", "trabajoDescripcion"]
+   "trabajoDireccion2", "trabajoLat", "trabajoLng", "trabajoPrecio", "trabajoCosto",
+   "trabajoDescripcion", "trabajoBuscarTrabajador"]
     .forEach(id => document.getElementById(id).value = "");
   document.getElementById("trabajoEstado").value = "por_agendar";
   ["fieldTrabajoCliente", "fieldTrabajoTitulo", "fieldTrabajoFecha"].forEach(id => document.getElementById(id).classList.remove("error"));
