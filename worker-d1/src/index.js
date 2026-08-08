@@ -21,7 +21,10 @@
        consola de Claude: si algo se descontrola, se corta ahí.
    ========================================================================= */
 
-const MODELO = "claude-opus-5";
+/* Mismo modelo que usa DES, la otra app de Rene, donde ya demostró leer bien
+   comprobantes y PDF. Unas 6 veces más barato que Opus para esta tarea: copiar
+   datos de una captura no necesita razonamiento profundo. */
+const MODELO = "claude-haiku-4-5";
 const MAX_BYTES = 5 * 1024 * 1024;
 const TIPOS_OK = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"];
 
@@ -103,10 +106,11 @@ export default {
         body: JSON.stringify({
           model: MODELO,
           max_tokens: 4000,
-          // effort bajo: leer datos de una imagen no necesita razonamiento
-          // profundo, y así el costo por cliente se mantiene en centavos.
+          // Salida estructurada: la respuesta siempre tiene la forma exacta del
+          // formulario, sin parsear texto a mano.
+          // OJO: no agregar `effort` acá. Haiku 4.5 no lo acepta y devuelve 400.
+          // Si algún día se vuelve a un modelo Opus/Sonnet, ahí sí se puede usar.
           output_config: {
-            effort: "low",
             format: { type: "json_schema", schema: ESQUEMA_CLIENTE },
           },
           messages: [{ role: "user", content: [adjunto, { type: "text", text: INSTRUCCIONES }] }],
