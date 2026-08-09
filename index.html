@@ -408,7 +408,7 @@
         <div class="toolbar">
           <div class="search-box">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-            <input type="text" id="buscarCliente" data-i18n-ph="clientes_buscar" placeholder="Buscar…">
+            <input type="text" id="buscarCliente" data-i18n-ph="clientes_buscar" placeholder="Search by name, company or phone…">
           </div>
           <select class="filter" id="filtroCategoria"></select>
           <select class="filter" id="filtroEstado"></select>
@@ -467,7 +467,7 @@
           <div class="toolbar">
             <div class="search-box">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-              <input type="text" id="buscarProducto" data-i18n-ph="catalogo_buscar" placeholder="Buscar por nombre, código o marca…">
+              <input type="text" id="buscarProducto" data-i18n-ph="catalogo_buscar" placeholder="Search by name, code or brand…">
             </div>
             <select class="filter" id="filtroTipoProducto"></select>
             <select class="filter" id="filtroProveedorProducto"></select>
@@ -482,7 +482,7 @@
           <div class="toolbar">
             <div class="search-box">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-              <input type="text" id="buscarProveedor" data-i18n-ph="proveedores_buscar" placeholder="Buscar proveedor…">
+              <input type="text" id="buscarProveedor" data-i18n-ph="proveedores_buscar" placeholder="Search supplier…">
             </div>
           </div>
           <div class="cat-lista" id="proveedoresLista"></div>
@@ -588,7 +588,7 @@
             <p class="desc" data-i18n="config_categorias_texto">Creá, renombrá o eliminá las categorías.</p>
             <div class="chip-list" id="categoriasChipList"></div>
             <div class="add-row">
-              <input type="text" id="nuevaCategoriaInput" data-i18n-ph="config_categoria_nueva_ph" placeholder="Nueva categoría…">
+              <input type="text" id="nuevaCategoriaInput" data-i18n-ph="config_categoria_nueva_ph" placeholder="e.g. Commercial">
               <input type="color" id="nuevaCategoriaColor" value="#2E8FD9" style="width:44px;padding:2px;border:1px solid var(--line);border-radius:var(--radius-sm)">
               <button class="btn sm" id="btnAgregarCategoria"><span data-i18n="config_categoria_agregar">Agregar</span></button>
             </div>
@@ -641,12 +641,12 @@
             <p class="desc" data-i18n="config_integraciones_texto">Claves de servicios externos que usa la app.</p>
             <div class="field" style="margin-bottom:var(--sp-3)">
               <label data-i18n="config_maps_key">Clave de Google Maps</label>
-              <input type="text" id="mapsApiKeyInput" data-i18n-ph="config_maps_key_ph" placeholder="Pegá tu clave…">
+              <input type="text" id="mapsApiKeyInput" data-i18n-ph="config_maps_key_ph" placeholder="Your Google Maps key">
               <p class="hint" data-i18n="config_maps_ayuda">Se usa para mostrar el mapa al elegir la dirección de un cliente.</p>
             </div>
             <div class="field" style="margin-bottom:var(--sp-3)">
               <label data-i18n="config_worker">Lector de mensajes</label>
-              <input type="text" id="workerUrlInput" data-i18n-ph="config_worker_ph" placeholder="https://onestop-api.tu-cuenta.workers.dev">
+              <input type="text" id="workerUrlInput" data-i18n-ph="config_worker_ph" placeholder="https://onestop-api.your-account.workers.dev">
               <p class="hint" data-i18n="config_worker_ayuda">Dirección del Worker que lee capturas de pantalla. Sin esto, el botón de leer imagen no funciona.</p>
             </div>
             <button class="btn primary sm" id="btnGuardarMapsKey"><span data-i18n="config_guardar">Guardar</span></button>
@@ -911,7 +911,7 @@
         <input type="hidden" id="clienteLat"><input type="hidden" id="clienteLng">
       </div>
       <div class="field">
-        <input type="text" id="clienteDireccion2" data-i18n-ph="form_direccion_2_ph" placeholder="Floor, Apartment, Suite, etc">
+        <input type="text" id="clienteDireccion2" data-i18n-ph="form_direccion_2_ph" placeholder="e.g. Apt 4B">
       </div>
 
       <div class="field">
@@ -926,7 +926,7 @@
           <input type="text" id="clienteDireccionFact" data-i18n-ph="form_fact_ph" autocomplete="off">
         </div>
         <div class="field">
-          <input type="text" id="clienteDireccionFact2" data-i18n-ph="form_direccion_2_ph" placeholder="Floor, Apartment, Suite, etc">
+          <input type="text" id="clienteDireccionFact2" data-i18n-ph="form_direccion_2_ph" placeholder="e.g. Apt 4B">
         </div>
       </div>
 
@@ -1079,7 +1079,7 @@
         <input type="hidden" id="trabajoLat"><input type="hidden" id="trabajoLng">
       </div>
       <div class="field">
-        <input type="text" id="trabajoDireccion2" data-i18n-ph="form_direccion_2_ph" placeholder="Floor, Apartment, Suite, etc">
+        <input type="text" id="trabajoDireccion2" data-i18n-ph="form_direccion_2_ph" placeholder="e.g. Apt 4B">
       </div>
 
       <div class="field-row">
