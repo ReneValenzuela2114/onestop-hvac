@@ -286,18 +286,31 @@
   .segmented button + button{border-left:1px solid var(--line)}
   .segmented button.sel{background:var(--frio-600);color:#fff}
   .cat-resumen{font-size:12.5px;color:var(--muted);margin:0 0 var(--sp-3)}
-  .cat-lista{display:grid;gap:var(--sp-3)}
-  .cat-card{display:flex;align-items:flex-start;gap:var(--sp-3);width:100%;text-align:left;padding:var(--sp-4);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);cursor:pointer}
+  /* Una fila por producto: la lista se recorre de arriba abajo buscando uno,
+     y con tarjetas altas entraban cuatro en la pantalla del teléfono. */
+  /* minmax(0,1fr) por lo mismo que el min-width de abajo: una celda de grilla
+     tampoco se achica por debajo de su contenido si no se le dice. */
+  .cat-lista{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+  .cat-card{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);cursor:pointer}
   .cat-card:hover{border-color:var(--frio-500);box-shadow:var(--shadow-sm)}
   .cat-card.inactivo{opacity:.55}
-  .cat-card-main{flex:1;min-width:0}
-  .cat-card b{display:block;font-size:14.5px;font-weight:650;color:var(--ink);margin-bottom:3px}
-  .cat-card .cat-sub{font-size:12.5px;color:var(--muted);margin-bottom:6px;word-break:break-word}
-  .cat-card .cat-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-  .cat-precio{text-align:right;flex-shrink:0}
-  .cat-precio b{font-size:15px;font-weight:700;color:var(--ink);white-space:nowrap}
-  .cat-precio span{display:block;font-size:11.5px;color:var(--muted);white-space:nowrap}
-  .cat-tag{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  /* min-width:0 es obligatorio: sin él un hijo de flex nunca se achica por
+     debajo de su texto, y la fila entera se sale de la pantalla. */
+  .cat-card b{font-size:13.5px;font-weight:650;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0}
+  /* El detalle cede espacio primero: el nombre y el precio son lo que se busca */
+  .cat-card .cat-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 auto;min-width:0}
+  .cat-precio{margin-left:auto;flex-shrink:0;display:flex;align-items:baseline;gap:5px;white-space:nowrap}
+  .cat-precio b{font-size:13.5px;font-weight:700;color:var(--ink)}
+  .cat-precio span{font-size:11.5px;color:var(--muted)}
+  .cat-tag{flex-shrink:0;display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  /* En el teléfono queda lo que se busca —nombre y precio—; el detalle estorba.
+     La fila sube a ~44px, que es el mínimo cómodo para tocar con el dedo. */
+  @media (max-width: 560px){
+    .cat-card{padding:12px}
+    .cat-card .cat-sub{display:none}
+    .cat-card b{flex:1 1 auto}
+    .cat-precio > span{display:none}
+  }
   .cat-tag.equipo{background:#EAF3FB;color:var(--frio-700)}
   .cat-tag.material{background:#FDF0E9;color:#B44A18}
   .cat-tag.servicio{background:var(--success-soft);color:var(--success)}
@@ -2314,21 +2327,17 @@ function renderCatalogo(){
     const detalle = [
       p.codigo, p.marca, p.modelo,
       p.capacidad_btu ? formatoBtu(p.capacidad_btu) : "",
+      prov ? prov.nombre : "",
+      m.porcentaje !== null ? t("catalogo_margen_corto").replace("{p}", m.porcentaje) : "",
     ].filter(Boolean).join(" · ");
     return `<button type="button" class="cat-card${p.activo === false ? " inactivo" : ""}" onclick="abrirEdicionItemCatalogo('${p.id}')">
-      <div class="cat-card-main">
-        <b>${esc(p.nombre)}</b>
-        ${detalle ? `<div class="cat-sub">${esc(detalle)}</div>` : ""}
-        <div class="cat-meta">
-          <span class="cat-tag ${p.tipo}">${esc(t("catalogo_tipo_" + p.tipo))}</span>
-          ${prov ? `<span class="cat-sub" style="margin:0">${esc(prov.nombre)}</span>` : ""}
-          ${m.porcentaje !== null ? `<span class="cat-sub" style="margin:0">${t("catalogo_margen_corto").replace("{p}", m.porcentaje)}</span>` : ""}
-        </div>
-      </div>
-      <div class="cat-precio">
+      <span class="cat-tag ${p.tipo}">${esc(t("catalogo_tipo_" + p.tipo))}</span>
+      <b>${esc(p.nombre)}</b>
+      <span class="cat-sub">${esc(detalle)}</span>
+      <span class="cat-precio">
         <b>${esc(DB.dinero.formato(p.precio_centavos, CFG_LANG))}</b>
         <span>${esc(t("catalogo_por_unidad").replace("{u}", t("unidad_" + p.unidad)))}</span>
-      </div>
+      </span>
     </button>`;
   }).join("");
 }
@@ -2515,14 +2524,12 @@ function renderProveedores(){
     const n = DB.proveedores.productos(p.id).length;
     const detalle = [p.contacto, p.telefono, p.email].filter(Boolean).join(" · ");
     return `<button type="button" class="cat-card${p.activo === false ? " inactivo" : ""}" onclick="abrirEdicionProveedor('${p.id}')">
-      <div class="cat-card-main">
-        <b>${esc(p.nombre)}</b>
-        ${detalle ? `<div class="cat-sub">${esc(detalle)}</div>` : ""}
-      </div>
-      <div class="cat-precio">
+      <b>${esc(p.nombre)}</b>
+      <span class="cat-sub">${esc(detalle)}</span>
+      <span class="cat-precio">
         <b>${n}</b>
         <span>${esc(t(n === 1 ? "proveedores_producto" : "proveedores_productos"))}</span>
-      </div>
+      </span>
     </button>`;
   }).join("");
 }
