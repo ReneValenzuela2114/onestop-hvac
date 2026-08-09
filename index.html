@@ -277,6 +277,35 @@
   .chip button:hover{color:var(--danger)}
   /* Técnico ya asignado a un trabajo: se distingue de una categoría suelta */
   .chip.persona{background:#EAF3FB;border-color:#CFE2F2;color:var(--frio-700)}
+  /* ---- Catálogo ----
+     Tarjetas y no una tabla: la mayoría del uso es desde el teléfono, buscando
+     un producto para sumarlo a un trabajo. Una tabla obliga a desplazar de
+     costado; una tarjeta se lee de un vistazo y el toque es grande. */
+  .segmented{display:flex;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;width:fit-content;max-width:100%;margin-bottom:var(--sp-4)}
+  .segmented button{padding:9px 18px;border:none;background:var(--panel);font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap;cursor:pointer}
+  .segmented button + button{border-left:1px solid var(--line)}
+  .segmented button.sel{background:var(--frio-600);color:#fff}
+  .cat-resumen{font-size:12.5px;color:var(--muted);margin:0 0 var(--sp-3)}
+  .cat-lista{display:grid;gap:var(--sp-3)}
+  .cat-card{display:flex;align-items:flex-start;gap:var(--sp-3);width:100%;text-align:left;padding:var(--sp-4);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);cursor:pointer}
+  .cat-card:hover{border-color:var(--frio-500);box-shadow:var(--shadow-sm)}
+  .cat-card.inactivo{opacity:.55}
+  .cat-card-main{flex:1;min-width:0}
+  .cat-card b{display:block;font-size:14.5px;font-weight:650;color:var(--ink);margin-bottom:3px}
+  .cat-card .cat-sub{font-size:12.5px;color:var(--muted);margin-bottom:6px;word-break:break-word}
+  .cat-card .cat-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .cat-precio{text-align:right;flex-shrink:0}
+  .cat-precio b{font-size:15px;font-weight:700;color:var(--ink);white-space:nowrap}
+  .cat-precio span{display:block;font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .cat-tag{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  .cat-tag.equipo{background:#EAF3FB;color:var(--frio-700)}
+  .cat-tag.material{background:#FDF0E9;color:#B44A18}
+  .cat-tag.servicio{background:var(--success-soft);color:var(--success)}
+  .cat-margen{font-size:13px;color:var(--muted);margin:calc(var(--sp-2) * -1) 0 var(--sp-4);min-height:18px}
+  .cat-margen b{color:var(--success);font-weight:700}
+  .cat-margen.perdida b{color:var(--danger)}
+  .modal.sm{max-width:520px}
+  .spacer{flex:1}
   /* Fila del lector de mensajes, arriba del formulario de cliente */
   .ia-row{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;margin-bottom:var(--sp-4);padding-bottom:var(--sp-4);border-bottom:1px dashed var(--line)}
   .ia-estado{font-size:12.5px;color:var(--muted)}
@@ -416,10 +445,47 @@
 
       <!-- ============ TAB: Catálogo / Cotizaciones / Proyectos (placeholders) ============ -->
       <section id="tab-catalogo" class="tabpanel" style="display:none">
-        <div class="placeholder-tab">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"/></svg>
-          <h3 data-i18n="proximamente_titulo">Próximamente</h3>
-          <p data-i18n="proximamente_texto">Esta pestaña se termina en la siguiente etapa.</p>
+        <div class="page-head">
+          <div>
+            <h1 data-i18n="catalogo_titulo">Catálogo</h1>
+            <p data-i18n="catalogo_subtitulo">Equipos, materiales y servicios</p>
+          </div>
+          <button class="btn primary" id="btnNuevoItemCatalogo">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <span id="btnNuevoItemCatalogoLabel" data-i18n="catalogo_nuevo">Nuevo producto</span>
+          </button>
+        </div>
+
+        <!-- Productos y proveedores viven en la misma pestaña: se cargan juntos,
+             y estando acá no hay que ir a buscar el proveedor a otro lado. -->
+        <div class="segmented" id="catalogoVistas">
+          <button type="button" class="sel" data-vista="productos" data-i18n="catalogo_vista_productos">Productos</button>
+          <button type="button" data-vista="proveedores" data-i18n="catalogo_vista_proveedores">Proveedores</button>
+        </div>
+
+        <div id="catVistaProductos">
+          <div class="toolbar">
+            <div class="search-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" id="buscarProducto" data-i18n-ph="catalogo_buscar" placeholder="Buscar por nombre, código o marca…">
+            </div>
+            <select class="filter" id="filtroTipoProducto"></select>
+            <select class="filter" id="filtroProveedorProducto"></select>
+            <select class="filter" id="filtroMarcaProducto"></select>
+            <select class="filter" id="filtroActivoProducto"></select>
+          </div>
+          <p class="cat-resumen" id="catalogoResumen"></p>
+          <div class="cat-lista" id="catalogoLista"></div>
+        </div>
+
+        <div id="catVistaProveedores" style="display:none">
+          <div class="toolbar">
+            <div class="search-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" id="buscarProveedor" data-i18n-ph="proveedores_buscar" placeholder="Buscar proveedor…">
+            </div>
+          </div>
+          <div class="cat-lista" id="proveedoresLista"></div>
         </div>
       </section>
       <section id="tab-cotizaciones" class="tabpanel" style="display:none">
@@ -632,6 +698,166 @@
     <button class="bn-item" data-tab="proyectos"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 5-1.5L20.5 7 17 3.5 3.5 17 2 22Z"/></svg><span data-i18n="nav_proyectos">Proyectos</span></button>
   </div>
 </nav>
+
+<!-- ============ Modal: Producto del catálogo ============ -->
+<div class="modal-backdrop" id="modalItemCatalogo">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalItemCatalogoTitulo" data-i18n="catalogo_form_nuevo">Nuevo producto</h3>
+      <button class="btn icon ghost" data-close-modal="modalItemCatalogo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="itemCatalogoId">
+
+      <div class="field">
+        <label data-i18n="catalogo_tipo">Tipo</label>
+        <div class="segmented" id="itemTipo">
+          <button type="button" class="sel" data-tipo="equipo" data-i18n="catalogo_tipo_equipo">Equipo</button>
+          <button type="button" data-tipo="material" data-i18n="catalogo_tipo_material">Material</button>
+          <button type="button" data-tipo="servicio" data-i18n="catalogo_tipo_servicio">Servicio</button>
+        </div>
+      </div>
+
+      <div class="field" id="fieldItemNombre">
+        <label data-i18n="catalogo_nombre">Nombre</label>
+        <input type="text" id="itemNombre" data-i18n-ph="catalogo_nombre_ph">
+        <p class="error-msg" data-i18n="form_error_nombre">El nombre es obligatorio</p>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label data-i18n="catalogo_codigo">Código / SKU</label>
+          <input type="text" id="itemCodigo" data-i18n-ph="catalogo_codigo_ph">
+        </div>
+        <div class="field">
+          <label data-i18n="catalogo_unidad">Se vende por</label>
+          <select id="itemUnidad"></select>
+        </div>
+      </div>
+
+      <!-- Solo tiene sentido en equipos; se esconde para materiales y servicios -->
+      <div id="itemCamposEquipo">
+        <div class="field-row">
+          <div class="field">
+            <label data-i18n="catalogo_marca">Marca</label>
+            <input type="text" id="itemMarca" data-i18n-ph="catalogo_marca_ph" list="listaMarcas">
+            <datalist id="listaMarcas"></datalist>
+          </div>
+          <div class="field">
+            <label data-i18n="catalogo_modelo">Modelo</label>
+            <input type="text" id="itemModelo" data-i18n-ph="catalogo_modelo_ph">
+          </div>
+        </div>
+        <div class="field">
+          <label data-i18n="catalogo_capacidad">Capacidad (BTU)</label>
+          <input type="number" id="itemCapacidad" min="0" step="1000" data-i18n-ph="catalogo_capacidad_ph">
+          <p class="hint" id="itemCapacidadHint"></p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label data-i18n="catalogo_proveedor">Proveedor</label>
+        <div class="field-with-btn">
+          <select id="itemProveedor"></select>
+          <button class="btn sm" type="button" id="btnNuevoProveedorDesdeItem">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+        <p class="hint" data-i18n="catalogo_proveedor_ayuda">Sirve para filtrar los reportes por proveedor.</p>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label data-i18n="catalogo_costo">Costo (lo que pagás)</label>
+          <input type="number" id="itemCosto" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label data-i18n="catalogo_precio">Precio (lo que cobrás)</label>
+          <input type="number" id="itemPrecio" min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      <p class="cat-margen" id="itemMargen"></p>
+
+      <div class="field">
+        <label data-i18n="catalogo_descripcion">Descripción (opcional)</label>
+        <textarea id="itemDescripcion" rows="2" data-i18n-ph="catalogo_descripcion_ph"></textarea>
+      </div>
+
+      <div class="field">
+        <label class="check-row">
+          <input type="checkbox" id="itemActivo" checked>
+          <span data-i18n="catalogo_activo">Se sigue ofreciendo</span>
+        </label>
+        <p class="hint" data-i18n="catalogo_activo_ayuda">Desmarcalo para que deje de aparecer al cotizar, sin perder el historial.</p>
+      </div>
+
+      <p class="hint" id="itemAuditoria"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger ghost" id="btnEliminarItemCatalogo" style="display:none"><span data-i18n="eliminar">Eliminar</span></button>
+      <div class="spacer"></div>
+      <button class="btn ghost" data-close-modal="modalItemCatalogo"><span data-i18n="form_cancelar">Cancelar</span></button>
+      <button class="btn primary" id="btnGuardarItemCatalogo"><span data-i18n="form_guardar">Guardar</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Modal: Proveedor ============ -->
+<div class="modal-backdrop" id="modalProveedor">
+  <div class="modal sm">
+    <div class="modal-head">
+      <h3 id="modalProveedorTitulo" data-i18n="proveedores_form_nuevo">Nuevo proveedor</h3>
+      <button class="btn icon ghost" data-close-modal="modalProveedor"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="proveedorId">
+      <div class="field" id="fieldProveedorNombre">
+        <label data-i18n="proveedores_nombre">Nombre de la empresa</label>
+        <input type="text" id="proveedorNombre" data-i18n-ph="proveedores_nombre_ph">
+        <p class="error-msg" data-i18n="form_error_nombre">El nombre es obligatorio</p>
+      </div>
+      <div class="field">
+        <label data-i18n="proveedores_contacto">Persona de contacto</label>
+        <input type="text" id="proveedorContacto" data-i18n-ph="proveedores_contacto_ph">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label data-i18n="form_telefono">Teléfono</label>
+          <input type="tel" id="proveedorTelefono" data-i18n-ph="form_telefono_ph">
+        </div>
+        <div class="field">
+          <label data-i18n="form_email">Correo electrónico</label>
+          <input type="email" id="proveedorEmail" data-i18n-ph="form_email_ph">
+        </div>
+      </div>
+      <div class="field">
+        <label data-i18n="proveedores_sitio">Sitio web</label>
+        <input type="text" id="proveedorSitio" placeholder="https://">
+      </div>
+      <div class="field">
+        <label data-i18n="form_direccion">Dirección</label>
+        <input type="text" id="proveedorDireccion" data-i18n-ph="form_direccion_ph">
+      </div>
+      <div class="field">
+        <label data-i18n="form_notas">Notas</label>
+        <textarea id="proveedorNotas" rows="2" data-i18n-ph="proveedores_notas_ph"></textarea>
+      </div>
+      <div class="field">
+        <label class="check-row">
+          <input type="checkbox" id="proveedorActivo" checked>
+          <span data-i18n="proveedores_activo">Le seguimos comprando</span>
+        </label>
+      </div>
+      <p class="hint" id="proveedorResumen"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger ghost" id="btnEliminarProveedor" style="display:none"><span data-i18n="eliminar">Eliminar</span></button>
+      <div class="spacer"></div>
+      <button class="btn ghost" data-close-modal="modalProveedor"><span data-i18n="form_cancelar">Cancelar</span></button>
+      <button class="btn primary" id="btnGuardarProveedor"><span data-i18n="form_guardar">Guardar</span></button>
+    </div>
+  </div>
+</div>
 
 <!-- ============ Modal: Cliente (nuevo/editar) ============ -->
 <div class="modal-backdrop" id="modalCliente">
@@ -967,6 +1193,9 @@ function setLang(lang){
   // trabajo, lista de equipo). Si falta alguno, queda en el idioma anterior
   // hasta cambiar de pestaña.
   renderFiltros(); renderClientes(); renderCategoriasChips(); renderUsuarios(); renderTrabajos();
+  renderFiltrosCatalogo(); renderCatalogo(); renderProveedores();
+  document.getElementById("btnNuevoItemCatalogoLabel").textContent =
+    t(catalogoVista === "productos" ? "catalogo_nuevo" : "proveedores_nuevo");
 }
 document.querySelectorAll("#langSwitch button[data-lang]").forEach(b=>{
   b.addEventListener("click", ()=> setLang(b.dataset.lang));
@@ -1997,6 +2226,397 @@ document.getElementById("btnEliminarTrabajo").addEventListener("click", () => {
 });
 
 /* =========================================================================
+   CATÁLOGO · equipos, materiales, servicios y sus proveedores
+   -------------------------------------------------------------------------
+   Los filtros existen para los reportes: todo lo que acá se pueda filtrar,
+   mañana se puede agrupar en un reporte. Por eso tipo, proveedor y marca son
+   campos propios y no texto libre metido en el nombre.
+   ========================================================================= */
+let itemCatalogoEditandoId = null;
+let proveedorEditandoId = null;
+let catalogoVista = "productos";
+
+/* ---------- Vistas: productos / proveedores ---------- */
+document.getElementById("catalogoVistas").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-vista]");
+  if (!b) return;
+  catalogoVista = b.dataset.vista;
+  document.querySelectorAll("#catalogoVistas button").forEach(x => x.classList.toggle("sel", x === b));
+  const enProductos = catalogoVista === "productos";
+  document.getElementById("catVistaProductos").style.display = enProductos ? "" : "none";
+  document.getElementById("catVistaProveedores").style.display = enProductos ? "none" : "";
+  document.getElementById("btnNuevoItemCatalogoLabel").textContent =
+    t(enProductos ? "catalogo_nuevo" : "proveedores_nuevo");
+  if (enProductos) renderCatalogo(); else renderProveedores();
+});
+
+document.getElementById("btnNuevoItemCatalogo").addEventListener("click", () => {
+  if (catalogoVista === "productos") abrirNuevoItemCatalogo(); else abrirNuevoProveedor();
+});
+
+/* ---------- Filtros (se rearman al cambiar de idioma) ---------- */
+function renderFiltrosCatalogo(){
+  const opt = (v, txt, sel) => `<option value="${v}"${sel ? " selected" : ""}>${esc(txt)}</option>`;
+
+  const fTipo = document.getElementById("filtroTipoProducto");
+  const tipoAnt = fTipo.value;
+  fTipo.innerHTML = opt("", t("catalogo_filtro_tipo_todos"), !tipoAnt)
+    + DB.tiposCatalogo.map(x => opt(x, t("catalogo_tipo_" + x), x === tipoAnt)).join("");
+
+  const fProv = document.getElementById("filtroProveedorProducto");
+  const provAnt = fProv.value;
+  fProv.innerHTML = opt("", t("catalogo_filtro_proveedor_todos"), !provAnt)
+    + DB.proveedores.getAll().map(p => opt(p.id, p.nombre, p.id === provAnt)).join("");
+
+  const fMarca = document.getElementById("filtroMarcaProducto");
+  const marcaAnt = fMarca.value;
+  fMarca.innerHTML = opt("", t("catalogo_filtro_marca_todas"), !marcaAnt)
+    + DB.catalogo.marcas().map(m => opt(m, m, m === marcaAnt)).join("");
+
+  const fAct = document.getElementById("filtroActivoProducto");
+  const actAnt = fAct.value;
+  fAct.innerHTML = opt("", t("catalogo_filtro_todos"), !actAnt)
+    + opt("activos", t("catalogo_filtro_activos"), actAnt === "activos")
+    + opt("inactivos", t("catalogo_filtro_inactivos"), actAnt === "inactivos");
+}
+
+["buscarProducto", "filtroTipoProducto", "filtroProveedorProducto", "filtroMarcaProducto", "filtroActivoProducto"]
+  .forEach(id => document.getElementById(id).addEventListener("input", renderCatalogo));
+document.getElementById("buscarProveedor").addEventListener("input", renderProveedores);
+
+/* ---------- Lista de productos ---------- */
+function renderCatalogo(){
+  const soloActivo = document.getElementById("filtroActivoProducto").value;
+  let lista = DB.catalogo.buscar({
+    texto: document.getElementById("buscarProducto").value,
+    tipo: document.getElementById("filtroTipoProducto").value,
+    proveedor_id: document.getElementById("filtroProveedorProducto").value,
+    marca: document.getElementById("filtroMarcaProducto").value,
+  });
+  if (soloActivo === "activos") lista = lista.filter(p => p.activo !== false);
+  if (soloActivo === "inactivos") lista = lista.filter(p => p.activo === false);
+
+  const total = DB.catalogo.getAll().length;
+  document.getElementById("catalogoResumen").textContent =
+    total ? t("catalogo_resumen").replace("{n}", lista.length).replace("{total}", total) : "";
+
+  const cont = document.getElementById("catalogoLista");
+  if (!lista.length) {
+    cont.innerHTML = `<div class="placeholder-tab"><h3>${esc(t(total ? "catalogo_sin_resultados" : "catalogo_vacio_titulo"))}</h3>
+      <p>${esc(t(total ? "catalogo_sin_resultados_texto" : "catalogo_vacio_texto"))}</p></div>`;
+    return;
+  }
+
+  cont.innerHTML = lista.map(p => {
+    const prov = p.proveedor_id ? DB.proveedores.get(p.proveedor_id) : null;
+    const m = DB.catalogo.margen(p);
+    /* Detalle: solo lo que existe. Un "· · ·" con huecos se lee peor que nada. */
+    const detalle = [
+      p.codigo, p.marca, p.modelo,
+      p.capacidad_btu ? formatoBtu(p.capacidad_btu) : "",
+    ].filter(Boolean).join(" · ");
+    return `<button type="button" class="cat-card${p.activo === false ? " inactivo" : ""}" onclick="abrirEdicionItemCatalogo('${p.id}')">
+      <div class="cat-card-main">
+        <b>${esc(p.nombre)}</b>
+        ${detalle ? `<div class="cat-sub">${esc(detalle)}</div>` : ""}
+        <div class="cat-meta">
+          <span class="cat-tag ${p.tipo}">${esc(t("catalogo_tipo_" + p.tipo))}</span>
+          ${prov ? `<span class="cat-sub" style="margin:0">${esc(prov.nombre)}</span>` : ""}
+          ${m.porcentaje !== null ? `<span class="cat-sub" style="margin:0">${t("catalogo_margen_corto").replace("{p}", m.porcentaje)}</span>` : ""}
+        </div>
+      </div>
+      <div class="cat-precio">
+        <b>${esc(DB.dinero.formato(p.precio_centavos, CFG_LANG))}</b>
+        <span>${esc(t("catalogo_por_unidad").replace("{u}", t("unidad_" + p.unidad)))}</span>
+      </div>
+    </button>`;
+  }).join("");
+}
+
+/* 36000 → "36,000 BTU · 3 ton". Las toneladas son como se habla en HVAC. */
+function formatoBtu(btu){
+  const n = Number(btu) || 0;
+  const ton = n / 12000;
+  const tonTxt = Number.isInteger(ton) ? String(ton) : ton.toFixed(1);
+  return `${n.toLocaleString(CFG_LANG === "es" ? "es-US" : "en-US")} BTU · ${tonTxt} ${t("catalogo_ton")}`;
+}
+
+/* ---------- Formulario de producto ---------- */
+function limpiarFormularioItem(){
+  itemCatalogoEditandoId = null;
+  ["itemCatalogoId", "itemNombre", "itemCodigo", "itemMarca", "itemModelo",
+   "itemCapacidad", "itemCosto", "itemPrecio", "itemDescripcion"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("itemActivo").checked = true;
+  document.getElementById("itemAuditoria").textContent = "";
+  document.getElementById("fieldItemNombre").classList.remove("error");
+  seleccionarTipoItem("equipo");
+  document.getElementById("itemUnidad").value = "unidad";
+  document.getElementById("itemProveedor").value = "";
+  refrescarMargenItem();
+}
+
+function seleccionarTipoItem(tipo){
+  document.querySelectorAll("#itemTipo button").forEach(b => b.classList.toggle("sel", b.dataset.tipo === tipo));
+  // Marca, modelo y BTU solo aplican a equipos: mostrárselos a un servicio confunde
+  document.getElementById("itemCamposEquipo").style.display = tipo === "equipo" ? "" : "none";
+  if (tipo === "servicio") document.getElementById("itemUnidad").value = "hora";
+}
+function tipoItemSeleccionado(){
+  return document.querySelector("#itemTipo button.sel")?.dataset.tipo || "material";
+}
+document.getElementById("itemTipo").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-tipo]");
+  if (b) seleccionarTipoItem(b.dataset.tipo);
+});
+
+/* El margen se muestra mientras se escribe: es el número que decide si el
+   precio está bien puesto, y verlo después de guardar llega tarde. */
+function refrescarMargenItem(){
+  const costo = DB.dinero.aCentavos(document.getElementById("itemCosto").value);
+  const precio = DB.dinero.aCentavos(document.getElementById("itemPrecio").value);
+  const el = document.getElementById("itemMargen");
+  if (!isFinite(costo) || !isFinite(precio) || precio <= 0) { el.textContent = ""; el.className = "cat-margen"; return; }
+  const m = DB.catalogo.margen({ costo_centavos: costo, precio_centavos: precio });
+  el.className = "cat-margen" + (m.ganancia_centavos < 0 ? " perdida" : "");
+  el.innerHTML = t("catalogo_margen_detalle")
+    .replace("{g}", `<b>${esc(DB.dinero.formato(m.ganancia_centavos, CFG_LANG))}</b>`)
+    .replace("{p}", `<b>${m.porcentaje}%</b>`);
+}
+["itemCosto", "itemPrecio"].forEach(id => document.getElementById(id).addEventListener("input", refrescarMargenItem));
+
+document.getElementById("itemCapacidad").addEventListener("input", (e) => {
+  const n = parseInt(e.target.value, 10);
+  document.getElementById("itemCapacidadHint").textContent = n > 0 ? formatoBtu(n) : "";
+});
+
+function llenarSelectsItem(){
+  const u = document.getElementById("itemUnidad");
+  const uAnt = u.value;
+  u.innerHTML = DB.unidades.map(x => `<option value="${x}">${esc(t("unidad_" + x))}</option>`).join("");
+  if (uAnt) u.value = uAnt;
+
+  const p = document.getElementById("itemProveedor");
+  const pAnt = p.value;
+  p.innerHTML = `<option value="">${esc(t("catalogo_sin_proveedor"))}</option>`
+    + DB.proveedores.activos().map(x => `<option value="${x.id}">${esc(x.nombre)}</option>`).join("");
+  if (pAnt) p.value = pAnt;
+
+  document.getElementById("listaMarcas").innerHTML =
+    DB.catalogo.marcas().map(m => `<option value="${esc(m)}">`).join("");
+}
+
+function abrirNuevoItemCatalogo(){
+  llenarSelectsItem();
+  limpiarFormularioItem();
+  document.getElementById("modalItemCatalogoTitulo").textContent = t("catalogo_form_nuevo");
+  document.getElementById("btnEliminarItemCatalogo").style.display = "none";
+  abrirModal("modalItemCatalogo");
+}
+
+function abrirEdicionItemCatalogo(id){
+  const p = DB.catalogo.get(id);
+  if (!p) return;
+  llenarSelectsItem();
+  limpiarFormularioItem();
+  itemCatalogoEditandoId = id;
+  document.getElementById("itemCatalogoId").value = id;
+  document.getElementById("itemNombre").value = p.nombre || "";
+  document.getElementById("itemCodigo").value = p.codigo || "";
+  document.getElementById("itemMarca").value = p.marca || "";
+  document.getElementById("itemModelo").value = p.modelo || "";
+  document.getElementById("itemCapacidad").value = p.capacidad_btu ?? "";
+  document.getElementById("itemCapacidadHint").textContent = p.capacidad_btu ? formatoBtu(p.capacidad_btu) : "";
+  document.getElementById("itemCosto").value = DB.dinero.aTexto(p.costo_centavos);
+  document.getElementById("itemPrecio").value = DB.dinero.aTexto(p.precio_centavos);
+  document.getElementById("itemDescripcion").value = p.descripcion || "";
+  document.getElementById("itemActivo").checked = p.activo !== false;
+  seleccionarTipoItem(p.tipo);
+  document.getElementById("itemUnidad").value = p.unidad || "unidad";
+  document.getElementById("itemProveedor").value = p.proveedor_id || "";
+  document.getElementById("itemAuditoria").textContent = textoAuditoria(p);
+  refrescarMargenItem();
+  document.getElementById("modalItemCatalogoTitulo").textContent = t("catalogo_form_editar");
+  document.getElementById("btnEliminarItemCatalogo").style.display = "";
+  abrirModal("modalItemCatalogo");
+}
+
+/* Quién lo cargó y cuándo. Hoy el usuario es una etiqueta, no un login: sirve
+   para reportes internos, no como prueba de quién hizo qué. */
+function textoAuditoria(reg){
+  const quien = (id) => DB.usuarios.getAll().find(u => u.id === id)?.nombre || t("auditoria_desconocido");
+  const cuando = (ms) => new Date(ms).toLocaleString(CFG_LANG === "es" ? "es-US" : "en-US",
+    { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  let txt = t("auditoria_creado").replace("{quien}", quien(reg.creado_por)).replace("{cuando}", cuando(reg.creado));
+  if (reg.actualizado && reg.actualizado !== reg.creado) {
+    txt += " · " + t("auditoria_editado").replace("{quien}", quien(reg.actualizado_por)).replace("{cuando}", cuando(reg.actualizado));
+  }
+  return txt;
+}
+
+document.getElementById("btnGuardarItemCatalogo").addEventListener("click", () => {
+  const nombre = document.getElementById("itemNombre").value.trim();
+  document.getElementById("fieldItemNombre").classList.toggle("error", !nombre);
+  if (!nombre) return;
+
+  const capacidad = document.getElementById("itemCapacidad").value.trim();
+  const datos = {
+    tipo: tipoItemSeleccionado(),
+    nombre,
+    codigo: document.getElementById("itemCodigo").value.trim(),
+    marca: document.getElementById("itemMarca").value.trim(),
+    modelo: document.getElementById("itemModelo").value.trim(),
+    capacidad_btu: capacidad === "" ? null : parseInt(capacidad, 10),
+    proveedor_id: document.getElementById("itemProveedor").value || null,
+    unidad: document.getElementById("itemUnidad").value,
+    costo_centavos: DB.dinero.aCentavos(document.getElementById("itemCosto").value),
+    precio_centavos: DB.dinero.aCentavos(document.getElementById("itemPrecio").value),
+    descripcion: document.getElementById("itemDescripcion").value.trim(),
+    activo: document.getElementById("itemActivo").checked,
+  };
+
+  const ok = conAviso(() => itemCatalogoEditandoId
+    ? DB.catalogo.update(itemCatalogoEditandoId, datos)
+    : DB.catalogo.create(datos));
+  if (!ok) return;
+
+  cerrarModal("modalItemCatalogo");
+  toast(t(itemCatalogoEditandoId ? "toast_producto_actualizado" : "toast_producto_creado"));
+  renderFiltrosCatalogo();
+  renderCatalogo();
+});
+
+document.getElementById("btnEliminarItemCatalogo").addEventListener("click", () => {
+  const id = itemCatalogoEditandoId;
+  if (!id) return;
+  pedirConfirmacion("confirmar_producto_titulo", "confirmar_producto_texto", () => {
+    if (!conAviso(() => DB.catalogo.remove(id))) return;
+    cerrarModal("modalItemCatalogo");
+    toast(t("toast_producto_eliminado"));
+    renderFiltrosCatalogo();
+    renderCatalogo();
+  });
+});
+
+/* ---------- Proveedores ---------- */
+function renderProveedores(){
+  const q = document.getElementById("buscarProveedor").value.trim().toLowerCase();
+  const lista = DB.proveedores.getAll().filter(p => !q ||
+    [p.nombre, p.contacto, p.telefono, p.email].some(c => String(c || "").toLowerCase().includes(q)));
+
+  const cont = document.getElementById("proveedoresLista");
+  if (!lista.length) {
+    const vacio = !DB.proveedores.getAll().length;
+    cont.innerHTML = `<div class="placeholder-tab"><h3>${esc(t(vacio ? "proveedores_vacio_titulo" : "catalogo_sin_resultados"))}</h3>
+      <p>${esc(t(vacio ? "proveedores_vacio_texto" : "catalogo_sin_resultados_texto"))}</p></div>`;
+    return;
+  }
+
+  cont.innerHTML = lista.map(p => {
+    const n = DB.proveedores.productos(p.id).length;
+    const detalle = [p.contacto, p.telefono, p.email].filter(Boolean).join(" · ");
+    return `<button type="button" class="cat-card${p.activo === false ? " inactivo" : ""}" onclick="abrirEdicionProveedor('${p.id}')">
+      <div class="cat-card-main">
+        <b>${esc(p.nombre)}</b>
+        ${detalle ? `<div class="cat-sub">${esc(detalle)}</div>` : ""}
+      </div>
+      <div class="cat-precio">
+        <b>${n}</b>
+        <span>${esc(t(n === 1 ? "proveedores_producto" : "proveedores_productos"))}</span>
+      </div>
+    </button>`;
+  }).join("");
+}
+
+function limpiarFormularioProveedor(){
+  proveedorEditandoId = null;
+  ["proveedorId", "proveedorNombre", "proveedorContacto", "proveedorTelefono",
+   "proveedorEmail", "proveedorSitio", "proveedorDireccion", "proveedorNotas"]
+    .forEach(id => document.getElementById(id).value = "");
+  document.getElementById("proveedorActivo").checked = true;
+  document.getElementById("proveedorResumen").textContent = "";
+  document.getElementById("fieldProveedorNombre").classList.remove("error");
+}
+
+function abrirNuevoProveedor(){
+  limpiarFormularioProveedor();
+  document.getElementById("modalProveedorTitulo").textContent = t("proveedores_form_nuevo");
+  document.getElementById("btnEliminarProveedor").style.display = "none";
+  abrirModal("modalProveedor");
+}
+
+function abrirEdicionProveedor(id){
+  const p = DB.proveedores.get(id);
+  if (!p) return;
+  limpiarFormularioProveedor();
+  proveedorEditandoId = id;
+  document.getElementById("proveedorId").value = id;
+  document.getElementById("proveedorNombre").value = p.nombre || "";
+  document.getElementById("proveedorContacto").value = p.contacto || "";
+  document.getElementById("proveedorTelefono").value = p.telefono || "";
+  document.getElementById("proveedorEmail").value = p.email || "";
+  document.getElementById("proveedorSitio").value = p.sitio_web || "";
+  document.getElementById("proveedorDireccion").value = p.direccion || "";
+  document.getElementById("proveedorNotas").value = p.notas || "";
+  document.getElementById("proveedorActivo").checked = p.activo !== false;
+  const n = DB.proveedores.productos(id).length;
+  document.getElementById("proveedorResumen").textContent =
+    t("proveedores_resumen").replace("{n}", n) + " · " + textoAuditoria(p);
+  document.getElementById("modalProveedorTitulo").textContent = t("proveedores_form_editar");
+  document.getElementById("btnEliminarProveedor").style.display = "";
+  abrirModal("modalProveedor");
+}
+
+/* Desde el formulario de producto, sin perder lo que ya se escribió */
+document.getElementById("btnNuevoProveedorDesdeItem").addEventListener("click", abrirNuevoProveedor);
+
+document.getElementById("btnGuardarProveedor").addEventListener("click", () => {
+  const nombre = document.getElementById("proveedorNombre").value.trim();
+  document.getElementById("fieldProveedorNombre").classList.toggle("error", !nombre);
+  if (!nombre) return;
+
+  const datos = {
+    nombre,
+    contacto: document.getElementById("proveedorContacto").value.trim(),
+    telefono: document.getElementById("proveedorTelefono").value.trim(),
+    email: document.getElementById("proveedorEmail").value.trim(),
+    sitio_web: document.getElementById("proveedorSitio").value.trim(),
+    direccion: document.getElementById("proveedorDireccion").value.trim(),
+    notas: document.getElementById("proveedorNotas").value.trim(),
+    activo: document.getElementById("proveedorActivo").checked,
+  };
+
+  const guardado = conAviso(() => proveedorEditandoId
+    ? DB.proveedores.update(proveedorEditandoId, datos)
+    : DB.proveedores.create(datos));
+  if (!guardado) return;
+
+  const eraNuevo = !proveedorEditandoId;
+  cerrarModal("modalProveedor");
+  toast(t(eraNuevo ? "toast_proveedor_creado" : "toast_proveedor_actualizado"));
+  renderFiltrosCatalogo();
+  renderProveedores();
+  /* Si venía del formulario de producto, queda elegido: era lo que faltaba */
+  if (document.getElementById("modalItemCatalogo").classList.contains("open")) {
+    llenarSelectsItem();
+    if (eraNuevo && guardado.id) document.getElementById("itemProveedor").value = guardado.id;
+  } else {
+    renderCatalogo();
+  }
+});
+
+document.getElementById("btnEliminarProveedor").addEventListener("click", () => {
+  const id = proveedorEditandoId;
+  if (!id) return;
+  pedirConfirmacion("confirmar_proveedor_titulo", "confirmar_proveedor_texto", () => {
+    if (!conAviso(() => DB.proveedores.remove(id))) return;
+    cerrarModal("modalProveedor");
+    toast(t("toast_proveedor_eliminado"));
+    renderFiltrosCatalogo();
+    renderProveedores();
+  });
+});
+
+/* =========================================================================
    CONFIGURACIÓN
    ========================================================================= */
 /* Acordeón: abre/cierra cada grupo */
@@ -2319,6 +2939,9 @@ document.getElementById("respaldoFileInput").addEventListener("change", (e) => {
   renderClientes();
   renderCategoriasChips();
   renderUsuarios();
+  renderFiltrosCatalogo();
+  renderCatalogo();
+  renderProveedores();
   irATab("clientes");
 
   if ('serviceWorker' in navigator) {

@@ -43,8 +43,8 @@ un bundler salvo que el proyecto lo pida de verdad.
 
 1. **Ninguna pantalla toca `localStorage` directamente.** Todo pasa por `DB.*`
    (`DB.clientes`, `DB.trabajos`, `DB.usuarios`, `DB.categoriasClientes`,
-   `DB.archivos`, `DB.config`). Ese es el contrato que permite cambiar a D1 sin
-   tocar la UI.
+   `DB.catalogo`, `DB.proveedores`, `DB.archivos`, `DB.config`). Ese es el
+   contrato que permite cambiar a D1 sin tocar la UI.
 2. **La plata SIEMPRE en centavos enteros** (`precio_centavos`, `costo_centavos`).
    Nunca decimales: los flotantes no representan `0.10` exacto y los reportes
    terminan sin cuadrar. Convertir con `DB.dinero.aCentavos()` / `.aTexto()` /
@@ -52,6 +52,16 @@ un bundler salvo que el proyecto lo pida de verdad.
 3. **Nada se borra de verdad.** `remove()` marca `eliminado` (epoch ms) y
    `eliminado_por`. Toda lectura filtra los eliminados. Un trabajo tiene precio y
    costo: borrarlo sería borrar plata del historial de la empresa.
+
+   3b. **Al llevar un producto del catálogo a una cotización o un trabajo se
+   COPIA el precio, nunca se apunta al catálogo.** Si se apuntara, subir un
+   precio hoy cambiaría el total de una cotización que el cliente ya firmó. El
+   `catalogo_id` se guarda igual, pero solo para reportes. Las fotos del pasado
+   no se recalculan.
+
+   3c. **Las cantidades van en centésimas enteras** (`*_centesimas`), por la
+   misma razón que la plata: 12.5 pies se guarda como `1250`. Multiplicar
+   cantidad por precio se hace **siempre** con `DB.cantidad.porPrecio()`.
 4. **`data.js` y `worker-d1/schema.sql` van sincronizados.** Los campos de cada
    objeto JS son EXACTAMENTE las columnas de su tabla. Si se agrega un campo, se
    agrega en los dos lados en el mismo cambio.
@@ -93,7 +103,7 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Equipo** (alta de trabajadores, roles, usuario del dispositivo) | ✅ terminado, sin login real |
 | **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v2) |
 | **Lector de mensajes** (captura/PDF → campos del cliente, con Claude) | ✅ programado; falta desplegar el Worker |
-| **Catálogo** | ⛔ placeholder "Próximamente" |
+| **Catálogo** (equipos/materiales/servicios, proveedores, filtros para reportes) | ✅ terminado (esquema v3) |
 | **Cotizaciones** | ⛔ placeholder "Próximamente" |
 | **Base de datos D1 + Worker** | ⛔ solo existe `schema.sql`. No hay código de Worker ni `wrangler.toml` |
 | **R2** | ⛔ la tabla `archivos` y `DB.archivos` ya existen; falta el bucket. Hoy solo lo usa el logo |
@@ -181,9 +191,12 @@ porque una URL pública sin login expone la base de clientes.
    enteros, borrado suave, auditoría, validación, número de trabajo, tabla de
    archivos, respaldo.
 2. **Git.** `git init` + primer commit, antes de cualquier cambio grande.
-3. **Catálogo** (equipos y materiales con precio) → alimenta las **Cotizaciones**.
-   Se puede programar entero contra `localStorage`: la capa de datos ya tiene la
-   forma definitiva, así que no hay que rehacerlo cuando llegue la base.
+3. ~~**Catálogo**~~ ✅ hecho: equipos/materiales/servicios, proveedores como
+   tabla propia, y filtros por tipo, proveedor, marca y estado — pensados para
+   que los reportes puedan agrupar por lo mismo. Los campos de inventario
+   (`controlar_stock`, `stock_centesimas`, `stock_minimo_centesimas`,
+   `ubicacion`) **ya existen en el esquema pero no tienen pantalla**: cuando se
+   haga el control de inventario no hay que migrar nada.
 4. **Reportes** de ganancia por cliente / mes (`DB.trabajos.ganancia(tj)`).
 5. **D1 + Worker + login, todo junto al final.** Implica: `wrangler.toml`, un Worker
    con endpoints `/api/*`, reemplazar `AlmacenLocal` por uno que hable con el Worker,

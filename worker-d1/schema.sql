@@ -168,6 +168,80 @@ CREATE TABLE IF NOT EXISTS archivos (
 CREATE INDEX IF NOT EXISTS idx_archivos_entidad ON archivos(entidad, entidad_id);
 CREATE INDEX IF NOT EXISTS idx_archivos_vivos ON archivos(eliminado);
 
+-- ---- Proveedores ----
+-- A quién le compramos. Tabla propia y no un texto adentro del producto:
+-- así un reporte puede agrupar por proveedor, y corregir un teléfono se hace
+-- en un solo lugar en vez de en cada producto.
+CREATE TABLE IF NOT EXISTS proveedores (
+  id TEXT PRIMARY KEY,
+  nombre TEXT NOT NULL,
+  contacto TEXT NOT NULL DEFAULT '',   -- persona con quien se habla
+  telefono TEXT NOT NULL DEFAULT '',
+  email TEXT NOT NULL DEFAULT '',
+  sitio_web TEXT NOT NULL DEFAULT '',
+  direccion TEXT NOT NULL DEFAULT '',
+  notas TEXT NOT NULL DEFAULT '',
+  activo INTEGER NOT NULL DEFAULT 1,
+  creado INTEGER NOT NULL,
+  creado_por TEXT REFERENCES usuarios(id),
+  actualizado INTEGER NOT NULL,
+  actualizado_por TEXT REFERENCES usuarios(id),
+  eliminado INTEGER,
+  eliminado_por TEXT REFERENCES usuarios(id)
+);
+CREATE INDEX IF NOT EXISTS idx_proveedores_vivos ON proveedores(eliminado);
+
+-- ---- Catálogo: equipos, materiales y servicios ----
+-- Una sola tabla con `tipo`, no tres: los tres se buscan, se cotizan y se
+-- facturan igual.
+--
+-- ⚠️ Al llevar un producto a una cotización o un trabajo se COPIA el precio,
+-- nunca se apunta acá. Si se apuntara, subir un precio hoy cambiaría el total
+-- de una cotización que el cliente ya firmó. Las fotos del pasado no se
+-- recalculan.
+--
+-- capacidad_btu: entero (36000 = 3 toneladas). Permite buscar por capacidad.
+-- Los campos de stock existen desde ya para no migrar cuando llegue el
+-- control de inventario; hoy la app todavía no los muestra.
+CREATE TABLE IF NOT EXISTS catalogo (
+  id TEXT PRIMARY KEY,
+  tipo TEXT NOT NULL CHECK (tipo IN ('equipo','material','servicio')),
+  codigo TEXT NOT NULL DEFAULT '',     -- SKU interno; único entre los vivos
+  nombre TEXT NOT NULL,
+  descripcion TEXT NOT NULL DEFAULT '',
+  marca TEXT NOT NULL DEFAULT '',
+  modelo TEXT NOT NULL DEFAULT '',
+  capacidad_btu INTEGER,               -- NULL cuando no aplica (materiales, servicios)
+  proveedor_id TEXT REFERENCES proveedores(id),
+  unidad TEXT NOT NULL DEFAULT 'unidad'
+    CHECK (unidad IN ('unidad','pie','libra','galon','hora','juego')),
+  costo_centavos INTEGER NOT NULL DEFAULT 0 CHECK (costo_centavos >= 0),
+  precio_centavos INTEGER NOT NULL DEFAULT 0 CHECK (precio_centavos >= 0),
+  activo INTEGER NOT NULL DEFAULT 1,
+  -- Inventario (todavía sin pantalla). Las cantidades van en centésimas
+  -- enteras por la misma razón que la plata: 12.5 pies se guarda como 1250.
+  controlar_stock INTEGER NOT NULL DEFAULT 0,
+  stock_centesimas INTEGER NOT NULL DEFAULT 0,
+  stock_minimo_centesimas INTEGER NOT NULL DEFAULT 0,
+  ubicacion TEXT NOT NULL DEFAULT '',  -- bodega, camioneta, estante
+  creado INTEGER NOT NULL,
+  creado_por TEXT REFERENCES usuarios(id),
+  actualizado INTEGER NOT NULL,
+  actualizado_por TEXT REFERENCES usuarios(id),
+  eliminado INTEGER,
+  eliminado_por TEXT REFERENCES usuarios(id)
+);
+-- Índices pensados para los filtros de reportes que pidió Rene
+CREATE INDEX IF NOT EXISTS idx_catalogo_vivos ON catalogo(eliminado);
+CREATE INDEX IF NOT EXISTS idx_catalogo_tipo ON catalogo(tipo);
+CREATE INDEX IF NOT EXISTS idx_catalogo_proveedor ON catalogo(proveedor_id);
+CREATE INDEX IF NOT EXISTS idx_catalogo_marca ON catalogo(marca);
+-- El código identifica el producto contra la factura del proveedor: repetido
+-- vuelve ambiguo el reporte. Único solo entre los vivos, para que un borrado
+-- no bloquee reusar el código.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_catalogo_codigo
+  ON catalogo(codigo) WHERE codigo <> '' AND eliminado IS NULL;
+
 -- ---- Configuración general (clave/valor) ----
 -- idioma, logo_tamano, maps_api_key, usuario_actual_id, contador_trabajos,
 -- esquema_version, empresa_nombre, empresa_telefono, etc.

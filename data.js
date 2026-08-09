@@ -27,7 +27,7 @@
    - IDs: crypto.randomUUID(). Fechas de auditoría: epoch ms (Date.now()).
    ========================================================================= */
 
-const ESQUEMA_VERSION = 2;
+const ESQUEMA_VERSION = 3;
 
 const CLAVES = {
   clientes: "os_clientes_v1",
@@ -35,10 +35,12 @@ const CLAVES = {
   usuarios: "os_usuarios_v1",
   trabajos: "os_trabajos_v1",
   archivos: "os_archivos_v1",
+  proveedores: "os_proveedores_v1",
+  catalogo: "os_catalogo_v1",
   config: "os_config_v1",
 };
 
-const COLECCIONES = ["clientes", "categoriasClientes", "usuarios", "trabajos", "archivos"];
+const COLECCIONES = ["clientes", "categoriasClientes", "usuarios", "trabajos", "archivos", "proveedores", "catalogo"];
 
 /* Los bytes de los archivos (logo, y en el futuro fotos) no viven con los
    demás datos: van aparte, igual que van a vivir aparte en R2. */
@@ -92,6 +94,37 @@ const Dinero = {
   },
   esValido(centavos) {
     return Number.isInteger(centavos) && centavos >= 0;
+  },
+};
+
+/* =========================================================================
+   CANTIDAD · igual que el dinero, en centésimas enteras
+   -------------------------------------------------------------------------
+   "12.5 pies de tubería" se guarda como 1250. Misma razón que la plata: una
+   cantidad se suma y se resta muchas veces (entradas y salidas de bodega) y
+   se multiplica por el precio. Con decimales, cada operación arrastra un
+   error invisible; en enteros no hay error que arrastrar.
+
+   Para multiplicar cantidad por precio SIEMPRE usar `porPrecio`, nunca a mano.
+   ========================================================================= */
+const Cantidad = {
+  aCentesimas(valor) {
+    if (valor === "" || valor === null || valor === undefined) return 0;
+    const n = typeof valor === "number" ? valor : parseFloat(String(valor).replace(",", "."));
+    if (!isFinite(n) || n < 0) return NaN;
+    return Math.round(n * 100);
+  },
+  /* 1250 → "12.5" (sin ceros de relleno: las cantidades se leen mejor así) */
+  aTexto(centesimas) {
+    const n = (Math.round(centesimas || 0)) / 100;
+    return String(Number(n.toFixed(2)));
+  },
+  esValida(centesimas) {
+    return Number.isInteger(centesimas) && centesimas >= 0;
+  },
+  /* 12.5 pies × $4.50 → centavos exactos, sin pasar por decimales */
+  porPrecio(centesimas, precioCentavos) {
+    return Math.round(((Number(centesimas) || 0) * (Number(precioCentavos) || 0)) / 100);
   },
 };
 
@@ -157,7 +190,7 @@ let Almacen = AlmacenLocal;
 /* =========================================================================
    CAPA 2 · ESTADO en memoria
    ========================================================================= */
-let _estado = { clientes: [], categoriasClientes: [], usuarios: [], trabajos: [], archivos: [], config: {} };
+let _estado = { clientes: [], categoriasClientes: [], usuarios: [], trabajos: [], archivos: [], proveedores: [], catalogo: [], config: {} };
 let _iniciado = false;
 
 /* La UI registra acá qué hacer si falla un guardado (mostrar un aviso).
@@ -187,6 +220,8 @@ const ESTADOS_CLIENTE = ["activo", "inactivo"];
 const ESTADOS_TRABAJO_VALIDOS = ["por_agendar", "agendado", "en_curso", "terminado", "cancelado"];
 const TIPOS_ARCHIVO = ["foto", "documento", "firma", "logo"];
 const ENTIDADES_ARCHIVO = ["trabajo", "cliente", "usuario", "empresa"];
+const TIPOS_CATALOGO = ["equipo", "material", "servicio"];
+const UNIDADES = ["unidad", "pie", "libra", "galon", "hora", "juego"];
 
 const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const RE_FECHA = /^\d{4}-\d{2}-\d{2}$/;
@@ -226,6 +261,34 @@ const Validar = {
   categoria(d) {
     const e = [];
     if (!_texto(d.nombre)) e.push("error_nombre_requerido");
+    return e;
+  },
+  proveedor(d) {
+    const e = [];
+    if (!_texto(d.nombre)) e.push("error_nombre_requerido");
+    if (_texto(d.email) && !RE_EMAIL.test(_texto(d.email))) e.push("error_email_invalido");
+    return e;
+  },
+  catalogo(d) {
+    const e = [];
+    if (!_texto(d.nombre)) e.push("error_nombre_requerido");
+    if (d.tipo !== undefined && !TIPOS_CATALOGO.includes(d.tipo)) e.push("error_tipo_invalido");
+    if (d.unidad !== undefined && !UNIDADES.includes(d.unidad)) e.push("error_unidad_invalida");
+    if (d.proveedor_id && !Proveedores.get(d.proveedor_id)) e.push("error_proveedor_inexistente");
+    for (const campo of ["precio_centavos", "costo_centavos"]) {
+      if (d[campo] !== undefined && !Dinero.esValido(d[campo])) e.push("error_monto_invalido");
+    }
+    for (const campo of ["stock_centesimas", "stock_minimo_centesimas"]) {
+      if (d[campo] !== undefined && !Cantidad.esValida(d[campo])) e.push("error_cantidad_invalida");
+    }
+    if (d.capacidad_btu !== undefined && d.capacidad_btu !== null
+        && (!Number.isInteger(d.capacidad_btu) || d.capacidad_btu < 0)) e.push("error_capacidad_invalida");
+    /* El código es el que se busca y el que va a cruzar con facturas del
+       proveedor: dos productos con el mismo código vuelven ambiguo el reporte. */
+    const codigo = _texto(d.codigo);
+    if (codigo && _vivos("catalogo").some((x) => x.id !== d.id && _texto(x.codigo).toLowerCase() === codigo.toLowerCase())) {
+      e.push("error_codigo_repetido");
+    }
     return e;
   },
 };
@@ -371,6 +434,182 @@ const CategoriasClientes = {
     return _borradoSuave("categoriasClientes", id);
   },
 };
+
+/* ---------------- Proveedores (a quién le compramos) ----------------
+   Tabla propia, no un texto dentro del producto: así los reportes pueden
+   agrupar por proveedor y el teléfono se corrige en un solo lugar. */
+const CAMPOS_PROVEEDOR = ["nombre", "contacto", "telefono", "email", "sitio_web", "direccion", "notas", "activo"];
+
+const Proveedores = {
+  getAll() {
+    return _vivos("proveedores").slice().sort((a, b) => a.nombre.localeCompare(b.nombre));
+  },
+  activos() {
+    return this.getAll().filter((p) => p.activo !== false);
+  },
+  get(id) {
+    return _vivos("proveedores").find((p) => p.id === id) || null;
+  },
+  create(datos = {}) {
+    _exigir(Validar.proveedor(datos));
+    const item = {
+      id: _uuid(),
+      nombre: _texto(datos.nombre),
+      contacto: _texto(datos.contacto),
+      telefono: _texto(datos.telefono),
+      email: _texto(datos.email),
+      sitio_web: _texto(datos.sitio_web),
+      direccion: _texto(datos.direccion),
+      notas: _texto(datos.notas),
+      activo: datos.activo !== false,
+      ..._sellosNuevo(),
+    };
+    _estado.proveedores.push(item);
+    _persistir(Almacen.crear("proveedores", item));
+    return item;
+  },
+  update(id, datos) {
+    const item = this.get(id);
+    if (!item) return null;
+    const cambios = _tomar(datos, CAMPOS_PROVEEDOR);
+    _exigir(Validar.proveedor({ ...item, ...cambios }));
+    for (const c of CAMPOS_PROVEEDOR) {
+      if (c !== "activo" && cambios[c] !== undefined) cambios[c] = _texto(cambios[c]);
+    }
+    Object.assign(item, cambios, _sellosEdicion());
+    _persistir(Almacen.actualizar("proveedores", item));
+    return item;
+  },
+  /* Cuántos productos le compramos: sirve para el reporte y para no borrarlo */
+  productos(id) {
+    return _vivos("catalogo").filter((p) => p.proveedor_id === id);
+  },
+  enUso(id) {
+    return this.productos(id).length > 0;
+  },
+  remove(id) {
+    if (this.enUso(id)) throw new ErrorDatos("error_proveedor_con_productos");
+    return _borradoSuave("proveedores", id);
+  },
+};
+
+/* ---------------- Catálogo (equipos, materiales y servicios) ----------------
+   Una sola tabla con un campo `tipo`: los tres se buscan, se cotizan y se
+   facturan igual. Separarlos en tres tablas obligaría a repetir la misma
+   pantalla tres veces sin ganar nada.
+
+   ⚠️ Al llevar un producto a una cotización o un trabajo se COPIA el precio,
+   no se apunta acá. Si se apuntara, subir un precio hoy cambiaría el total de
+   una cotización que el cliente ya firmó. */
+const CAMPOS_CATALOGO = [
+  "tipo", "codigo", "nombre", "descripcion", "marca", "modelo", "capacidad_btu",
+  "proveedor_id", "unidad", "costo_centavos", "precio_centavos", "activo",
+  /* Inventario: los campos ya existen para no migrar después. Todavía sin pantalla. */
+  "controlar_stock", "stock_centesimas", "stock_minimo_centesimas", "ubicacion",
+];
+
+const Catalogo = {
+  getAll() {
+    return _vivos("catalogo").slice().sort((a, b) => a.nombre.localeCompare(b.nombre));
+  },
+  activos() {
+    return this.getAll().filter((p) => p.activo !== false);
+  },
+  get(id) {
+    return _vivos("catalogo").find((p) => p.id === id) || null;
+  },
+
+  /* Un solo buscador para toda la app: la pantalla de catálogo y, mañana, el
+     selector de productos de una cotización. Si hubiera dos, se irían separando. */
+  buscar({ texto = "", tipo = "", proveedor_id = "", marca = "", soloActivos = false } = {}) {
+    const q = _texto(texto).toLowerCase();
+    return this.getAll().filter((p) => {
+      if (soloActivos && p.activo === false) return false;
+      if (tipo && p.tipo !== tipo) return false;
+      if (proveedor_id && p.proveedor_id !== proveedor_id) return false;
+      if (marca && _texto(p.marca).toLowerCase() !== marca.toLowerCase()) return false;
+      if (!q) return true;
+      return [p.nombre, p.codigo, p.marca, p.modelo, p.descripcion]
+        .some((campo) => _texto(campo).toLowerCase().includes(q));
+    });
+  },
+
+  /* Las marcas que existen de verdad, para llenar el filtro sin inventarlas */
+  marcas() {
+    const vistas = new Map();
+    for (const p of this.getAll()) {
+      const m = _texto(p.marca);
+      if (m && !vistas.has(m.toLowerCase())) vistas.set(m.toLowerCase(), m);
+    }
+    return [...vistas.values()].sort((a, b) => a.localeCompare(b));
+  },
+
+  /* LA cuenta del margen. Una sola, para que no aparezcan dos que no coinciden.
+     `porcentaje` es null cuando no hay precio: cero por ciento sería mentira. */
+  margen(item) {
+    const costo = Number(item?.costo_centavos) || 0;
+    const precio = Number(item?.precio_centavos) || 0;
+    const ganancia = precio - costo;
+    return {
+      ganancia_centavos: ganancia,
+      porcentaje: precio > 0 ? Math.round((ganancia / precio) * 100) : null,
+    };
+  },
+
+  create(datos = {}) {
+    const limpio = _normalizarCatalogo(datos);
+    _exigir(Validar.catalogo(limpio));
+    const item = { id: _uuid(), ...limpio, ..._sellosNuevo() };
+    _estado.catalogo.push(item);
+    _persistir(Almacen.crear("catalogo", item));
+    return item;
+  },
+  update(id, datos) {
+    const item = this.get(id);
+    if (!item) return null;
+    const cambios = _normalizarCatalogo(_tomar(datos, CAMPOS_CATALOGO), item);
+    _exigir(Validar.catalogo({ ...item, ...cambios, id }));
+    Object.assign(item, cambios, _sellosEdicion());
+    _persistir(Almacen.actualizar("catalogo", item));
+    return item;
+  },
+  remove(id) {
+    return _borradoSuave("catalogo", id);
+  },
+};
+
+/* Deja cada campo en su tipo definitivo antes de validar y guardar.
+   `base` viene solo en las ediciones: sin él, un campo que no se mandó
+   quedaría en su valor por defecto y pisaría lo que ya estaba guardado. */
+function _normalizarCatalogo(d, base = null) {
+  const out = {};
+  const tiene = (c) => d[c] !== undefined || base === null;
+  const valor = (c, porDefecto) => (d[c] !== undefined ? d[c] : porDefecto);
+
+  /* Vacío toma el valor por defecto; un valor equivocado se deja pasar tal cual
+     para que la validación lo rechace. Corregirlo acá en silencio convertiría
+     un "herramienta" en "material" sin que nadie se entere, y ese es el error
+     que más tarda en aparecer. */
+  if (tiene("tipo")) { const v = valor("tipo"); out.tipo = (v === undefined || v === null || v === "") ? "material" : v; }
+  if (tiene("unidad")) { const v = valor("unidad"); out.unidad = (v === undefined || v === null || v === "") ? "unidad" : v; }
+  for (const c of ["codigo", "nombre", "descripcion", "marca", "modelo", "ubicacion"]) {
+    if (tiene(c)) out[c] = _texto(valor(c));
+  }
+  if (tiene("proveedor_id")) out.proveedor_id = valor("proveedor_id") || null;
+  if (tiene("capacidad_btu")) {
+    const n = _numeroONulo(valor("capacidad_btu"));
+    out.capacidad_btu = n === null ? null : Math.round(n);
+  }
+  for (const c of ["costo_centavos", "precio_centavos"]) {
+    if (tiene(c)) out[c] = Math.round(Number(valor(c, 0)) || 0);
+  }
+  for (const c of ["stock_centesimas", "stock_minimo_centesimas"]) {
+    if (tiene(c)) out[c] = Math.round(Number(valor(c, 0)) || 0);
+  }
+  if (tiene("controlar_stock")) out.controlar_stock = valor("controlar_stock") === true;
+  if (tiene("activo")) out.activo = valor("activo") !== false;
+  return out;
+}
 
 /* ---------------- Usuarios (directorio + rol, sin login todavía) ---------------- */
 const CAMPOS_USUARIO = ["nombre", "telefono", "email", "rol", "activo"];
@@ -626,6 +865,22 @@ function _migrar() {
     delete _estado.config.logo_url;
   }
 
+  /* --- v2 → v3: aparecen proveedores y catálogo ---
+     No hay datos viejos que convertir: las dos colecciones nacen vacías. Lo
+     que sí se hace es completar los campos de inventario en cualquier producto
+     que ya existiera, para que nadie lea `undefined` cuando llegue esa pantalla. */
+  if (desde < 3) {
+    if (!Array.isArray(_estado.proveedores)) _estado.proveedores = [];
+    if (!Array.isArray(_estado.catalogo)) _estado.catalogo = [];
+    _estado.catalogo.forEach((p) => {
+      if (p.controlar_stock === undefined) p.controlar_stock = false;
+      if (p.stock_centesimas === undefined) p.stock_centesimas = 0;
+      if (p.stock_minimo_centesimas === undefined) p.stock_minimo_centesimas = 0;
+      if (p.ubicacion === undefined) p.ubicacion = "";
+      if (p.proveedor_id === undefined) p.proveedor_id = null;
+    });
+  }
+
   _estado.config.esquema_version = ESQUEMA_VERSION;
   return true;
 }
@@ -655,14 +910,13 @@ const Respaldo = {
       app: "onestop-hvac",
       esquema_version: ESQUEMA_VERSION,
       exportado: Date.now(),
-      datos: {
-        clientes: _estado.clientes,
-        categoriasClientes: _estado.categoriasClientes,
-        usuarios: _estado.usuarios,
-        trabajos: _estado.trabajos,
-        archivos: _estado.archivos,
-        config: _estado.config,
-      },
+      /* Se arma desde COLECCIONES, no a mano: cuando se enumeraban una por
+         una, agregar una tabla nueva y olvidarse de esta línea dejaba un
+         respaldo incompleto sin que nada avisara. */
+      datos: COLECCIONES.reduce((acc, col) => {
+        acc[col] = _estado[col];
+        return acc;
+      }, { config: _estado.config }),
       bytes: _estado.archivos.reduce((acc, a) => {
         const b = localStorage.getItem(PREFIJO_BYTES + a.r2_clave);
         if (b) acc[a.r2_clave] = b;
@@ -719,9 +973,16 @@ const DB = {
   usuarios: Usuarios,
   trabajos: Trabajos,
   archivos: Archivos,
+  proveedores: Proveedores,
+  catalogo: Catalogo,
   config: Config,
   respaldo: Respaldo,
   dinero: Dinero,
+  cantidad: Cantidad,
+  /* Listas cerradas: las pantallas arman sus menús desde acá, así no aparece
+     un tipo o una unidad que la validación después rechaza. */
+  tiposCatalogo: TIPOS_CATALOGO,
+  unidades: UNIDADES,
   ErrorDatos,
 
   alFallarGuardado(fn) { _alFallarGuardado = fn; },
