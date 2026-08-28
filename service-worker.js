@@ -1,11 +1,26 @@
 /* One Stop Heating and Cooling — Service Worker
- * Red primero para HTML (siempre la versión más nueva), caché primero para
- * estáticos. La API/D1 nunca se cachea (ver API_PREFIX). Al publicar una
- * versión nueva: subir CACHE de v1 a v2 para que los usuarios reciban lo
- * nuevo sin quedar pegados en lo viejo.
+ *
+ * EL CÓDIGO DE LA APP VIAJA JUNTO O NO VIAJA.
+ * index.html, data.js e i18n.js cambian en el mismo cambio y se necesitan
+ * entre ellos: el HTML nuevo llama a funciones que solo existen en el data.js
+ * nuevo. Si el HTML viene de la red y el JS del caché, la app queda a medias
+ * —el botón está pero no hace nada— y no se ve ningún error.
+ * Pasó de verdad al publicar Cotizaciones. Por eso los tres van RED PRIMERO,
+ * con el caché únicamente como respaldo para trabajar sin señal.
+ *
+ * Lo que no cambia entre versiones (íconos, manifest) sí va caché primero:
+ * es lo que hace que la app abra al instante.
+ *
+ * La API nunca se cachea (ver API_PREFIX).
+ *
+ * Al publicar: subir CACHE de vNN a vNN+1.
  */
-const CACHE = 'onestop-shell-v21';
+const CACHE = 'onestop-shell-v22';
 const API_PREFIX = '/api';
+
+/* Los tres archivos que forman la app y tienen que coincidir entre sí */
+const CODIGO_DE_LA_APP = ['/', '/index.html', '/data.js', '/i18n.js'];
+
 const SHELL = [
   './',
   './index.html',
@@ -31,25 +46,47 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+/* ¿Es uno de los tres archivos que forman la app? */
+function esCodigoDeLaApp(url) {
+  const ruta = url.pathname.replace(/\/index\.html$/, '/');
+  return CODIGO_DE_LA_APP.some((p) => ruta.endsWith(p) || url.pathname.endsWith(p));
+}
+
+/* Red primero: si hay señal, siempre la versión más nueva. Sin señal, la
+   última que se guardó — que es coherente porque se guardó completa. */
+function redPrimero(req, claveCache) {
+  return fetch(req)
+    .then((res) => {
+      const copia = res.clone();
+      caches.open(CACHE).then((c) => c.put(claveCache || req, copia));
+      return res;
+    })
+    .catch(() => caches.match(claveCache || req).then((hit) => hit || caches.match('./index.html')));
+}
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // Google Maps y fuentes: directo a la red
-  if (url.pathname.startsWith(API_PREFIX)) return;  // datos propios (futuro Worker/D1): nunca se cachean
+  if (url.pathname.startsWith(API_PREFIX)) return;  // datos propios (Worker/D1): nunca se cachean
 
   if (req.mode === 'navigate') {
-    e.respondWith(
-      fetch(req)
-        .then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./index.html', copy)); return res; })
-        .catch(() => caches.match('./index.html'))
-    );
+    e.respondWith(redPrimero(req, './index.html'));
     return;
   }
 
+  if (esCodigoDeLaApp(url)) {
+    e.respondWith(redPrimero(req));
+    return;
+  }
+
+  /* Íconos y manifest: caché primero, que es lo que hace que abra al instante */
   e.respondWith(
     caches.match(req).then((hit) => hit || fetch(req).then((res) => {
-      const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); return res;
+      const copia = res.clone();
+      caches.open(CACHE).then((c) => c.put(req, copia));
+      return res;
     }))
   );
 });
