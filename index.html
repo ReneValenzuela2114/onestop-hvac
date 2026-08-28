@@ -319,6 +319,47 @@
   .cat-margen.perdida b{color:var(--danger)}
   .modal.sm{max-width:520px}
   .spacer{flex:1}
+
+  /* ---- Cotizaciones ----
+     Cada renglón en una línea: nombre · cantidad × precio = subtotal · quitar.
+     Cantidad y precio se editan ahí mismo, sin abrir nada. */
+  .cot-filas{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:var(--sp-3)}
+  .cot-fila{display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm)}
+  .cot-fila .cot-nombre{flex:1 1 auto;min-width:0;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cot-fila input{width:66px;flex-shrink:0;padding:5px 7px;font-size:12.5px;text-align:right}
+  .cot-fila .cot-signo{font-size:12px;color:var(--muted);flex-shrink:0}
+  .cot-fila .cot-sub{width:88px;flex-shrink:0;text-align:right;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
+  .cot-fila .cot-quitar{flex-shrink:0;border:none;background:none;padding:4px;display:flex;color:var(--muted);cursor:pointer}
+  .cot-fila .cot-quitar:hover{color:var(--danger)}
+  .cot-totales{margin-top:var(--sp-4);padding-top:var(--sp-3);border-top:1px solid var(--line);display:grid;gap:6px;font-size:13px}
+  .cot-totales > div{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);color:var(--muted)}
+  .cot-totales b{color:var(--ink);font-weight:700;white-space:nowrap}
+  .cot-imp label{display:flex;align-items:center;gap:6px;color:var(--muted)}
+  .cot-imp input{width:64px;padding:4px 7px;font-size:12.5px;text-align:right}
+  .cot-total{padding-top:6px;border-top:1px solid var(--line-soft);font-size:15px}
+  .cot-total b{font-size:17px}
+  .cot-ganancia b{color:var(--success)}
+  .cot-ganancia.perdida b{color:var(--danger)}
+  /* Chips de estado, en la lista y en las fichas del cliente */
+  .cot-estado{flex-shrink:0;display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  .cot-estado.borrador{background:var(--line-soft);color:var(--muted)}
+  .cot-estado.enviada{background:#EAF3FB;color:var(--frio-700)}
+  .cot-estado.aprobada{background:var(--success-soft);color:var(--success)}
+  .cot-estado.rechazada{background:var(--danger-soft,#FDECEA);color:var(--danger)}
+  .cot-estado.vencida{background:#FDF0E9;color:#B44A18}
+  .cot-num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--muted);flex-shrink:0}
+  /* En el teléfono el renglón pasa a dos líneas: el nombre arriba, y abajo
+     cantidad × precio = subtotal. En una sola línea el nombre quedaba en ocho
+     caracteres, y los campos tan angostos que no se podían tocar. Cargar
+     cotizaciones es trabajo de computadora; en el teléfono se consultan y se
+     ajusta alguna cantidad, y para eso conviene que el campo sea tocable. */
+  @media (max-width: 560px){
+    .cot-fila{flex-wrap:wrap;gap:6px;padding:8px 9px}
+    .cot-fila .cot-nombre{flex:1 0 100%;line-height:1.25}
+    .cot-fila input{width:72px;min-height:38px;font-size:13px}
+    .cot-fila .cot-sub{margin-left:auto;width:auto}
+    .cot-fila .cot-quitar{padding:8px}
+  }
   /* Fila del lector de mensajes, arriba del formulario de cliente */
   .ia-row{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;margin-bottom:var(--sp-4);padding-bottom:var(--sp-4);border-bottom:1px dashed var(--line)}
   .ia-estado{font-size:12.5px;color:var(--muted)}
@@ -502,11 +543,27 @@
         </div>
       </section>
       <section id="tab-cotizaciones" class="tabpanel" style="display:none">
-        <div class="placeholder-tab">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
-          <h3 data-i18n="proximamente_titulo">Próximamente</h3>
-          <p data-i18n="proximamente_texto">Esta pestaña se termina en la siguiente etapa.</p>
+        <div class="page-head">
+          <div>
+            <h1 data-i18n="cot_titulo">Cotizaciones</h1>
+            <p data-i18n="cot_subtitulo">Presupuestos por cliente</p>
+          </div>
+          <button class="btn primary" id="btnNuevaCotizacion">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <span data-i18n="cot_nueva">Nueva cotización</span>
+          </button>
         </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="buscarCotizacion" data-i18n-ph="cot_buscar" placeholder="Search by number, client or title…">
+          </div>
+          <select class="filter" id="filtroClienteCot"></select>
+          <select class="filter" id="filtroEstadoCot"></select>
+        </div>
+        <p class="cat-resumen" id="cotResumen"></p>
+        <div class="cat-lista" id="cotizacionesLista"></div>
       </section>
       <section id="tab-proyectos" class="tabpanel" style="display:none">
         <div class="page-head">
@@ -711,6 +768,82 @@
     <button class="bn-item" data-tab="proyectos"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 5-1.5L20.5 7 17 3.5 3.5 17 2 22Z"/></svg><span data-i18n="nav_proyectos">Proyectos</span></button>
   </div>
 </nav>
+
+<!-- ============ Modal: Cotización ============ -->
+<div class="modal-backdrop" id="modalCotizacion">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalCotizacionTitulo" data-i18n="cot_form_nueva">Nueva cotización</h3>
+      <button class="btn icon ghost" data-close-modal="modalCotizacion"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cotizacionId">
+
+      <div class="field" id="fieldCotCliente">
+        <label data-i18n="form_trabajo_cliente">Cliente</label>
+        <select id="cotCliente"></select>
+        <p class="error-msg" data-i18n="form_error_cliente">Elegí un cliente</p>
+      </div>
+
+      <div class="field" id="fieldCotTitulo">
+        <label data-i18n="cot_titulo_campo">Título</label>
+        <input type="text" id="cotTitulo" data-i18n-ph="cot_titulo_ph" placeholder="e.g. Condenser replacement">
+        <p class="error-msg" data-i18n="form_error_titulo">El título es obligatorio</p>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label data-i18n="cot_estado">Estado</label>
+          <select id="cotEstado"></select>
+        </div>
+        <div class="field">
+          <label data-i18n="cot_valida_hasta">Válida hasta</label>
+          <input type="date" id="cotValidaHasta">
+        </div>
+      </div>
+
+      <!-- ---- Renglones ---- -->
+      <div class="field">
+        <label data-i18n="cot_renglones">Productos y servicios</label>
+        <div class="ac-anchor">
+          <input type="text" id="cotBuscarProducto" data-i18n-ph="cot_agregar_ph" placeholder="Search the catalog to add…" autocomplete="off">
+          <div class="ac-menu" id="cotProductoMenu" style="display:none"></div>
+        </div>
+        <div class="cot-filas" id="cotFilas"></div>
+        <p class="hint" id="cotSinFilas" data-i18n="cot_sin_renglones">Buscá un producto del catálogo para agregarlo.</p>
+      </div>
+
+      <!-- ---- Totales ---- -->
+      <div class="cot-totales">
+        <div><span data-i18n="cot_subtotal">Subtotal</span><b id="cotSubtotal">$0.00</b></div>
+        <div class="cot-imp">
+          <label>
+            <span data-i18n="cot_impuesto">Impuesto</span>
+            <input type="number" id="cotImpuesto" min="0" max="100" step="0.01" placeholder="0">
+            <span>%</span>
+          </label>
+          <b id="cotImpuestoMonto">$0.00</b>
+        </div>
+        <div class="cot-total"><span data-i18n="cot_total">Total</span><b id="cotTotal">$0.00</b></div>
+        <div class="cot-ganancia"><span data-i18n="cot_ganancia">Ganancia estimada</span><b id="cotGanancia">$0.00</b></div>
+      </div>
+
+      <div class="field">
+        <label data-i18n="cot_notas">Notas para el cliente</label>
+        <textarea id="cotNotas" rows="2" data-i18n-ph="cot_notas_ph" placeholder="e.g. includes one year of warranty"></textarea>
+      </div>
+
+      <p class="hint" id="cotAuditoria"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger ghost" id="btnEliminarCotizacion" style="display:none"><span data-i18n="eliminar">Eliminar</span></button>
+      <div class="spacer"></div>
+      <button class="btn ghost" data-close-modal="modalCotizacion"><span data-i18n="form_cancelar">Cancelar</span></button>
+      <button class="btn" id="btnAprobarCotizacion" style="display:none"><span data-i18n="cot_aprobar">Aprobar y crear trabajo</span></button>
+      <button class="btn primary" id="btnGuardarCotizacion"><span data-i18n="form_guardar">Guardar</span></button>
+    </div>
+  </div>
+</div>
 
 <!-- ============ Modal: Producto del catálogo ============ -->
 <div class="modal-backdrop" id="modalItemCatalogo">
@@ -960,8 +1093,19 @@
         <label data-i18n="form_notas">Notas internas</label>
         <textarea id="clienteNotas" data-i18n-ph="form_notas_ph"></textarea>
       </div>
+
+      <!-- Historial del cliente: sus cotizaciones y trabajos, sin salir de acá.
+           Solo al editar uno existente; en uno nuevo todavía no hay nada. -->
+      <div id="clienteHistorial" style="display:none">
+        <div class="field">
+          <label data-i18n="cliente_historial">Cotizaciones y trabajos</label>
+          <div class="cat-lista" id="clienteHistorialLista"></div>
+        </div>
+      </div>
     </div>
     <div class="modal-foot">
+      <button class="btn ghost" id="btnCotizarCliente" style="display:none"><span data-i18n="cliente_nueva_cot">Nueva cotización</span></button>
+      <div class="spacer"></div>
       <button class="btn ghost" data-close-modal="modalCliente"><span data-i18n="form_cancelar">Cancelar</span></button>
       <button class="btn primary" id="btnGuardarCliente"><span data-i18n="form_guardar">Guardar cliente</span></button>
     </div>
@@ -1207,6 +1351,7 @@ function setLang(lang){
   // hasta cambiar de pestaña.
   renderFiltros(); renderClientes(); renderCategoriasChips(); renderUsuarios(); renderTrabajos();
   renderFiltrosCatalogo(); renderCatalogo(); renderProveedores();
+  renderFiltrosCotizaciones(); renderCotizaciones();
   document.getElementById("btnNuevoItemCatalogoLabel").textContent =
     t(catalogoVista === "productos" ? "catalogo_nuevo" : "proveedores_nuevo");
 }
@@ -1510,6 +1655,8 @@ function abrirNuevoCliente(){
   limpiarFormularioCliente();
   document.getElementById("modalClienteTitulo").textContent = t("form_nuevo_titulo");
   document.getElementById("btnGuardarCliente").querySelector("span").textContent = t("form_guardar");
+  renderHistorialCliente(null);
+  document.getElementById("btnCotizarCliente").style.display = "none";
   abrirModal("modalCliente");
   activarAutocompletadoDireccion();
   clienteFormBase = serializarFormularioCliente();
@@ -1538,6 +1685,8 @@ function abrirEdicionCliente(id){
   document.getElementById("fieldNombre").classList.remove("error");
   document.getElementById("modalClienteTitulo").textContent = t("form_editar_titulo");
   document.getElementById("btnGuardarCliente").querySelector("span").textContent = t("form_guardar_cambios");
+  renderHistorialCliente(id);
+  document.getElementById("btnCotizarCliente").style.display = "";
   abrirModal("modalCliente");
   activarAutocompletadoDireccion();
   clienteFormBase = serializarFormularioCliente();
@@ -2235,6 +2384,351 @@ document.getElementById("btnEliminarTrabajo").addEventListener("click", () => {
       cerrarModal("modalTrabajo");
       renderTrabajos();
     });
+  });
+});
+
+/* =========================================================================
+   COTIZACIONES
+   -------------------------------------------------------------------------
+   Los renglones se editan en memoria (cotFilas) y recién se guardan al tocar
+   Guardar: así se puede cambiar cantidades y quitar cosas sin dejar la
+   cotización a medio escribir si alguien cierra el modal.
+
+   Cada renglón LLEVA SU COPIA del precio del catálogo. Subir un precio mañana
+   no cambia una cotización ya firmada.
+   ========================================================================= */
+let cotizacionEditandoId = null;
+let cotFilas = [];
+
+function renderFiltrosCotizaciones(){
+  const opt = (v, txt, sel) => `<option value="${v}"${sel ? " selected" : ""}>${esc(txt)}</option>`;
+
+  const fCli = document.getElementById("filtroClienteCot");
+  const cliAnt = fCli.value;
+  fCli.innerHTML = opt("", t("cot_filtro_cliente_todos"), !cliAnt)
+    + DB.clientes.getAll().map(c => opt(c.id, c.nombre, c.id === cliAnt)).join("");
+
+  const fEst = document.getElementById("filtroEstadoCot");
+  const estAnt = fEst.value;
+  fEst.innerHTML = opt("", t("cot_filtro_estado_todos"), !estAnt)
+    + DB.estadosCotizacion.map(e => opt(e, t("cot_estado_" + e), e === estAnt)).join("");
+}
+
+["buscarCotizacion", "filtroClienteCot", "filtroEstadoCot"]
+  .forEach(id => document.getElementById(id).addEventListener("input", renderCotizaciones));
+
+function renderCotizaciones(){
+  const q = document.getElementById("buscarCotizacion").value.trim().toLowerCase();
+  const cli = document.getElementById("filtroClienteCot").value;
+  const est = document.getElementById("filtroEstadoCot").value;
+
+  const lista = DB.cotizaciones.getAll().filter(c => {
+    if (cli && c.cliente_id !== cli) return false;
+    if (est && c.estado !== est) return false;
+    if (!q) return true;
+    const cliente = DB.clientes.get(c.cliente_id);
+    return [`cot-${c.numero}`, String(c.numero), c.titulo, cliente?.nombre]
+      .some(x => String(x || "").toLowerCase().includes(q));
+  });
+
+  const total = DB.cotizaciones.getAll().length;
+  document.getElementById("cotResumen").textContent =
+    total ? t("catalogo_resumen").replace("{n}", lista.length).replace("{total}", total) : "";
+
+  const cont = document.getElementById("cotizacionesLista");
+  if (!lista.length) {
+    cont.innerHTML = `<div class="placeholder-tab"><h3>${esc(t(total ? "catalogo_sin_resultados" : "cot_vacio_titulo"))}</h3>
+      <p>${esc(t(total ? "catalogo_sin_resultados_texto" : "cot_vacio_texto"))}</p></div>`;
+    return;
+  }
+
+  cont.innerHTML = lista.map(c => {
+    const cliente = DB.clientes.get(c.cliente_id);
+    const tot = DB.cotizaciones.totales(c);
+    return `<button type="button" class="cat-card" onclick="abrirEdicionCotizacion('${c.id}')">
+      <span class="cot-num">${esc(numeroCot(c))}</span>
+      <b>${esc(cliente ? cliente.nombre : t("auditoria_desconocido"))}</b>
+      <span class="cat-sub">${esc(c.titulo)}</span>
+      <span class="cot-estado ${c.estado}">${esc(t("cot_estado_" + c.estado))}</span>
+      <span class="cat-precio"><b>${esc(DB.dinero.formato(tot.total_centavos, CFG_LANG))}</b></span>
+    </button>`;
+  }).join("");
+}
+
+function numeroCot(c){ return "COT-" + String(c.numero).padStart(3, "0"); }
+
+/* ---------- Historial del cliente: sus cotizaciones y sus trabajos ----------
+   Todo cuelga de cliente_id, así que se responde "¿qué tiene este cliente?"
+   sin salir de su ficha. */
+function renderHistorialCliente(clienteId){
+  const caja = document.getElementById("clienteHistorial");
+  const cont = document.getElementById("clienteHistorialLista");
+  if (!clienteId) { caja.style.display = "none"; return; }
+  caja.style.display = "";
+
+  const cots = DB.cotizaciones.deCliente(clienteId);
+  const trabajos = DB.trabajos.deCliente(clienteId).slice().sort((a, b) => b.numero - a.numero);
+
+  if (!cots.length && !trabajos.length) {
+    cont.innerHTML = `<p class="hint" style="margin:0">${esc(t("cliente_historial_vacio"))}</p>`;
+    return;
+  }
+
+  const filaCot = (c) => {
+    const tot = DB.cotizaciones.totales(c);
+    return `<button type="button" class="cat-card" onclick="cerrarModal('modalCliente');abrirEdicionCotizacion('${c.id}')">
+      <span class="cot-num">${esc(numeroCot(c))}</span>
+      <b>${esc(c.titulo)}</b>
+      <span class="cot-estado ${c.estado}">${esc(t("cot_estado_" + c.estado))}</span>
+      <span class="cat-precio"><b>${esc(DB.dinero.formato(tot.total_centavos, CFG_LANG))}</b></span>
+    </button>`;
+  };
+  const filaTrabajo = (tj) => `<button type="button" class="cat-card" onclick="cerrarModal('modalCliente');abrirEdicionTrabajo('${tj.id}')">
+      <span class="cot-num">#${tj.numero}</span>
+      <b>${esc(tj.titulo)}</b>
+      <span class="cot-estado ${tj.estado === "terminado" ? "aprobada" : tj.estado === "cancelado" ? "rechazada" : "enviada"}">${esc(t("estado_" + tj.estado))}</span>
+      <span class="cat-precio"><b>${esc(DB.dinero.formato(tj.precio_centavos, CFG_LANG))}</b></span>
+    </button>`;
+
+  cont.innerHTML = cots.map(filaCot).join("") + trabajos.map(filaTrabajo).join("");
+}
+
+document.getElementById("btnCotizarCliente").addEventListener("click", () => {
+  const id = document.getElementById("clienteId").value;
+  if (!id) return;
+  cerrarModal("modalCliente");
+  abrirNuevaCotizacion(id);
+});
+
+/* ---------- Buscador del catálogo dentro de la cotización ---------- */
+function renderMenuProductosCot(){
+  const input = document.getElementById("cotBuscarProducto");
+  const menu = document.getElementById("cotProductoMenu");
+  const lista = DB.catalogo.buscar({ texto: input.value, soloActivos: true }).slice(0, 30);
+  if (lista.length) {
+    menu.innerHTML = lista.map(p => `<div class="ac-item" data-id="${p.id}">
+      <b>${esc(p.nombre)}</b> <span>${esc(DB.dinero.formato(p.precio_centavos, CFG_LANG))} · ${esc(t("unidad_" + p.unidad))}</span>
+    </div>`).join("");
+  } else {
+    const vacio = !DB.catalogo.activos().length;
+    menu.innerHTML = `<div class="ac-item" style="color:var(--muted);cursor:default">${esc(t(vacio ? "cot_catalogo_vacio" : "catalogo_sin_resultados"))}</div>`;
+  }
+  menu.style.display = "block";
+}
+function cerrarMenuProductosCot(){ document.getElementById("cotProductoMenu").style.display = "none"; }
+
+(() => {
+  const input = document.getElementById("cotBuscarProducto");
+  const menu = document.getElementById("cotProductoMenu");
+  input.addEventListener("focus", renderMenuProductosCot);
+  input.addEventListener("input", renderMenuProductosCot);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.stopPropagation(); cerrarMenuProductosCot(); }
+  });
+  // pointerdown por lo mismo que en el buscador de técnicos: en táctil gana
+  // antes que el blur, que si no cerraba el menú antes de poder elegir.
+  menu.addEventListener("pointerdown", (e) => {
+    const item = e.target.closest(".ac-item[data-id]");
+    if (!item) return;
+    e.preventDefault();
+    const fila = DB.cotizaciones.filaDesdeCatalogo(item.dataset.id);
+    if (fila) { cotFilas.push(fila); renderFilasCot(); }
+    input.value = "";
+    renderMenuProductosCot();
+    input.focus();
+  });
+  input.addEventListener("blur", () => setTimeout(cerrarMenuProductosCot, 250));
+})();
+
+/* ---------- Renglones y totales ---------- */
+function renderFilasCot(){
+  const cont = document.getElementById("cotFilas");
+  document.getElementById("cotSinFilas").style.display = cotFilas.length ? "none" : "";
+  cont.innerHTML = cotFilas.map((f, i) => {
+    const sub = DB.cantidad.porPrecio(f.cantidad_centesimas, f.precio_centavos);
+    return `<div class="cot-fila" data-i="${i}">
+      <span class="cot-nombre" title="${esc(f.nombre)}">${esc(f.nombre)}</span>
+      <input type="number" class="cot-cant" min="0" step="0.01" value="${DB.cantidad.aTexto(f.cantidad_centesimas)}" aria-label="${esc(t("cot_cantidad"))}">
+      <span class="cot-signo">×</span>
+      <input type="number" class="cot-precio-in" min="0" step="0.01" value="${DB.dinero.aTexto(f.precio_centavos)}" aria-label="${esc(t("catalogo_precio"))}">
+      <span class="cot-sub">${esc(DB.dinero.formato(sub, CFG_LANG))}</span>
+      <button type="button" class="cot-quitar" aria-label="${esc(t("eliminar"))}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>`;
+  }).join("");
+  refrescarTotalesCot();
+}
+
+document.getElementById("cotFilas").addEventListener("input", (e) => {
+  const fila = e.target.closest(".cot-fila");
+  if (!fila) return;
+  const f = cotFilas[parseInt(fila.dataset.i, 10)];
+  if (!f) return;
+  if (e.target.classList.contains("cot-cant")) f.cantidad_centesimas = DB.cantidad.aCentesimas(e.target.value);
+  if (e.target.classList.contains("cot-precio-in")) f.precio_centavos = DB.dinero.aCentavos(e.target.value);
+  // Solo se repinta el subtotal de esa fila: repintar todo movería el cursor
+  const sub = DB.cantidad.porPrecio(f.cantidad_centesimas || 0, f.precio_centavos || 0);
+  fila.querySelector(".cot-sub").textContent = DB.dinero.formato(sub, CFG_LANG);
+  refrescarTotalesCot();
+});
+
+document.getElementById("cotFilas").addEventListener("click", (e) => {
+  const btn = e.target.closest(".cot-quitar");
+  if (!btn) return;
+  cotFilas.splice(parseInt(btn.closest(".cot-fila").dataset.i, 10), 1);
+  renderFilasCot();
+});
+
+document.getElementById("cotImpuesto").addEventListener("input", refrescarTotalesCot);
+
+/* Los totales de la pantalla salen de la MISMA función que los guardados:
+   una sola cuenta, para que lo que se ve al editar sea lo que queda grabado. */
+function refrescarTotalesCot(){
+  const cot = {
+    impuesto_centesimas: Math.round((parseFloat(document.getElementById("cotImpuesto").value) || 0) * 100),
+  };
+  let subtotal = 0, costo = 0;
+  for (const f of cotFilas) {
+    subtotal += DB.cantidad.porPrecio(f.cantidad_centesimas || 0, f.precio_centavos || 0);
+    costo += DB.cantidad.porPrecio(f.cantidad_centesimas || 0, f.costo_centavos || 0);
+  }
+  const impuesto = Math.round((subtotal * (cot.impuesto_centesimas || 0)) / 10000);
+  const ganancia = subtotal - costo;
+  document.getElementById("cotSubtotal").textContent = DB.dinero.formato(subtotal, CFG_LANG);
+  document.getElementById("cotImpuestoMonto").textContent = DB.dinero.formato(impuesto, CFG_LANG);
+  document.getElementById("cotTotal").textContent = DB.dinero.formato(subtotal + impuesto, CFG_LANG);
+  document.getElementById("cotGanancia").textContent = DB.dinero.formato(ganancia, CFG_LANG);
+  document.querySelector(".cot-ganancia").classList.toggle("perdida", ganancia < 0);
+}
+
+/* ---------- Abrir / guardar ---------- */
+function llenarSelectsCot(){
+  const cli = document.getElementById("cotCliente");
+  const cliAnt = cli.value;
+  cli.innerHTML = `<option value="">${esc(t("form_trabajo_cliente_ph"))}</option>`
+    + DB.clientes.getAll().map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join("");
+  if (cliAnt) cli.value = cliAnt;
+
+  const est = document.getElementById("cotEstado");
+  const estAnt = est.value;
+  est.innerHTML = DB.estadosCotizacion.map(e => `<option value="${e}">${esc(t("cot_estado_" + e))}</option>`).join("");
+  est.value = estAnt || "borrador";
+}
+
+function limpiarFormularioCot(){
+  cotizacionEditandoId = null;
+  cotFilas = [];
+  ["cotizacionId", "cotTitulo", "cotValidaHasta", "cotNotas"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("cotCliente").value = "";
+  document.getElementById("cotEstado").value = "borrador";
+  document.getElementById("cotImpuesto").value = "";
+  document.getElementById("cotBuscarProducto").value = "";
+  document.getElementById("cotAuditoria").textContent = "";
+  document.getElementById("fieldCotCliente").classList.remove("error");
+  document.getElementById("fieldCotTitulo").classList.remove("error");
+  cerrarMenuProductosCot();
+  renderFilasCot();
+}
+
+function abrirNuevaCotizacion(clienteId = ""){
+  llenarSelectsCot();
+  limpiarFormularioCot();
+  if (clienteId) document.getElementById("cotCliente").value = clienteId;
+  document.getElementById("modalCotizacionTitulo").textContent = t("cot_form_nueva");
+  document.getElementById("btnEliminarCotizacion").style.display = "none";
+  document.getElementById("btnAprobarCotizacion").style.display = "none";
+  abrirModal("modalCotizacion");
+}
+
+function abrirEdicionCotizacion(id){
+  const c = DB.cotizaciones.get(id);
+  if (!c) return;
+  llenarSelectsCot();
+  limpiarFormularioCot();
+  cotizacionEditandoId = id;
+  document.getElementById("cotizacionId").value = id;
+  document.getElementById("cotCliente").value = c.cliente_id || "";
+  document.getElementById("cotTitulo").value = c.titulo || "";
+  document.getElementById("cotEstado").value = c.estado;
+  document.getElementById("cotValidaHasta").value = c.valida_hasta || "";
+  document.getElementById("cotImpuesto").value = c.impuesto_centesimas ? (c.impuesto_centesimas / 100) : "";
+  document.getElementById("cotNotas").value = c.notas || "";
+  cotFilas = DB.cotizaciones.items(id).map(i => ({
+    catalogo_id: i.catalogo_id, nombre: i.nombre, descripcion: i.descripcion, unidad: i.unidad,
+    cantidad_centesimas: i.cantidad_centesimas, precio_centavos: i.precio_centavos, costo_centavos: i.costo_centavos,
+  }));
+  renderFilasCot();
+  document.getElementById("cotAuditoria").textContent =
+    (c.trabajo_id && DB.trabajos.get(c.trabajo_id)
+      ? t("cot_ya_tiene_trabajo").replace("{n}", DB.trabajos.get(c.trabajo_id).numero) + " · " : "")
+    + textoAuditoria(c);
+  document.getElementById("modalCotizacionTitulo").textContent = t("cot_form_editar") + " · " + numeroCot(c);
+  document.getElementById("btnEliminarCotizacion").style.display = "";
+  document.getElementById("btnAprobarCotizacion").style.display = c.trabajo_id ? "none" : "";
+  abrirModal("modalCotizacion");
+}
+
+document.getElementById("btnNuevaCotizacion").addEventListener("click", () => abrirNuevaCotizacion());
+
+/* Guardar escribe encabezado y renglones juntos: si algo falla, no puede
+   quedar la cotización con la mitad de los renglones. */
+function guardarCotizacion(){
+  const cliente_id = document.getElementById("cotCliente").value;
+  const titulo = document.getElementById("cotTitulo").value.trim();
+  document.getElementById("fieldCotCliente").classList.toggle("error", !cliente_id);
+  document.getElementById("fieldCotTitulo").classList.toggle("error", !titulo);
+  if (!cliente_id || !titulo) return null;
+
+  const datos = {
+    cliente_id, titulo,
+    estado: document.getElementById("cotEstado").value,
+    valida_hasta: document.getElementById("cotValidaHasta").value || null,
+    impuesto_centesimas: Math.round((parseFloat(document.getElementById("cotImpuesto").value) || 0) * 100),
+    notas: document.getElementById("cotNotas").value.trim(),
+  };
+
+  return conAviso(() => {
+    const cot = cotizacionEditandoId
+      ? DB.cotizaciones.update(cotizacionEditandoId, datos)
+      : DB.cotizaciones.create({ ...datos, fecha: hoyISO() });
+    DB.cotizaciones.guardarItems(cot.id, cotFilas);
+    return cot;
+  });
+}
+
+document.getElementById("btnGuardarCotizacion").addEventListener("click", () => {
+  const cot = guardarCotizacion();
+  if (!cot) return;
+  cerrarModal("modalCotizacion");
+  toast(t(cotizacionEditandoId ? "toast_cot_actualizada" : "toast_cot_creada"));
+  renderFiltrosCotizaciones();
+  renderCotizaciones();
+});
+
+document.getElementById("btnAprobarCotizacion").addEventListener("click", () => {
+  const cot = guardarCotizacion();
+  if (!cot) return;
+  pedirConfirmacion("cot_aprobar_titulo", "cot_aprobar_texto", () => {
+    const trabajo = conAviso(() => DB.cotizaciones.aprobar(cot.id));
+    if (!trabajo) return;
+    cerrarModal("modalCotizacion");
+    toast(t("toast_cot_aprobada").replace("{n}", trabajo.numero));
+    renderFiltrosCotizaciones();
+    renderCotizaciones();
+    renderTrabajos();
+  }, "cot_aprobar_btn");
+});
+
+document.getElementById("btnEliminarCotizacion").addEventListener("click", () => {
+  const id = cotizacionEditandoId;
+  if (!id) return;
+  pedirConfirmacion("cot_eliminar_titulo", "cot_eliminar_texto", () => {
+    if (!conAviso(() => DB.cotizaciones.remove(id))) return;
+    cerrarModal("modalCotizacion");
+    toast(t("toast_cot_eliminada"));
+    renderFiltrosCotizaciones();
+    renderCotizaciones();
   });
 });
 
@@ -2949,6 +3443,8 @@ document.getElementById("respaldoFileInput").addEventListener("change", (e) => {
   renderFiltrosCatalogo();
   renderCatalogo();
   renderProveedores();
+  renderFiltrosCotizaciones();
+  renderCotizaciones();
   irATab("clientes");
 
   if ('serviceWorker' in navigator) {

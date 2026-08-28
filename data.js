@@ -27,7 +27,7 @@
    - IDs: crypto.randomUUID(). Fechas de auditoría: epoch ms (Date.now()).
    ========================================================================= */
 
-const ESQUEMA_VERSION = 3;
+const ESQUEMA_VERSION = 4;
 
 const CLAVES = {
   clientes: "os_clientes_v1",
@@ -37,10 +37,12 @@ const CLAVES = {
   archivos: "os_archivos_v1",
   proveedores: "os_proveedores_v1",
   catalogo: "os_catalogo_v1",
+  cotizaciones: "os_cotizaciones_v1",
+  cotizacionItems: "os_cotizacion_items_v1",
   config: "os_config_v1",
 };
 
-const COLECCIONES = ["clientes", "categoriasClientes", "usuarios", "trabajos", "archivos", "proveedores", "catalogo"];
+const COLECCIONES = ["clientes", "categoriasClientes", "usuarios", "trabajos", "archivos", "proveedores", "catalogo", "cotizaciones", "cotizacionItems"];
 
 /* Los bytes de los archivos (logo, y en el futuro fotos) no viven con los
    demás datos: van aparte, igual que van a vivir aparte en R2. */
@@ -220,6 +222,7 @@ const ESTADOS_CLIENTE = ["activo", "inactivo"];
 const ESTADOS_TRABAJO_VALIDOS = ["por_agendar", "agendado", "en_curso", "terminado", "cancelado"];
 const TIPOS_ARCHIVO = ["foto", "documento", "firma", "logo"];
 const ENTIDADES_ARCHIVO = ["trabajo", "cliente", "usuario", "empresa"];
+const ESTADOS_COTIZACION = ["borrador", "enviada", "aprobada", "rechazada", "vencida"];
 const TIPOS_CATALOGO = ["equipo", "material", "servicio"];
 const UNIDADES = ["unidad", "pie", "libra", "galon", "hora", "juego"];
 
@@ -261,6 +264,33 @@ const Validar = {
   categoria(d) {
     const e = [];
     if (!_texto(d.nombre)) e.push("error_nombre_requerido");
+    return e;
+  },
+  cotizacion(d) {
+    const e = [];
+    if (!d.cliente_id) e.push("error_cliente_requerido");
+    else if (!Clientes.get(d.cliente_id)) e.push("error_cliente_inexistente");
+    if (!_texto(d.titulo)) e.push("error_titulo_requerido");
+    if (d.estado !== undefined && !ESTADOS_COTIZACION.includes(d.estado)) e.push("error_estado_invalido");
+    for (const campo of ["fecha", "valida_hasta"]) {
+      if (d[campo] && !RE_FECHA.test(d[campo])) e.push("error_fecha_invalida");
+    }
+    /* El impuesto se guarda en centésimas de por ciento: 7.25% es 725. Igual
+       que la plata, entero, para que no se arrastre error al calcular. */
+    if (d.impuesto_centesimas !== undefined
+        && (!Number.isInteger(d.impuesto_centesimas) || d.impuesto_centesimas < 0 || d.impuesto_centesimas > 10000)) {
+      e.push("error_impuesto_invalido");
+    }
+    return e;
+  },
+  cotizacionItem(d) {
+    const e = [];
+    if (!_texto(d.nombre)) e.push("error_nombre_requerido");
+    if (d.unidad !== undefined && !UNIDADES.includes(d.unidad)) e.push("error_unidad_invalida");
+    if (!Cantidad.esValida(d.cantidad_centesimas) || d.cantidad_centesimas <= 0) e.push("error_cantidad_invalida");
+    for (const campo of ["precio_centavos", "costo_centavos"]) {
+      if (d[campo] !== undefined && !Dinero.esValido(d[campo])) e.push("error_monto_invalido");
+    }
     return e;
   },
   proveedor(d) {
@@ -432,6 +462,184 @@ const CategoriasClientes = {
   remove(id) {
     if (this.enUso(id)) return false;
     return _borradoSuave("categoriasClientes", id);
+  },
+};
+
+/* ---------------- Cotizaciones ----------------
+   Dos tablas: el encabezado y sus renglones, una fila por renglón. Nunca la
+   lista entera metida como texto adentro de la cotización.
+
+   ⚠️ CADA RENGLÓN GUARDA SU PROPIA COPIA del nombre y del precio. El
+   `catalogo_id` queda solo para reportes ("¿qué se vende más?"). Si el renglón
+   apuntara al catálogo, subir un precio hoy cambiaría el total de una
+   cotización que el cliente ya firmó. Las fotos del pasado no se recalculan. */
+const CAMPOS_COTIZACION = ["cliente_id", "titulo", "descripcion", "estado", "fecha",
+  "valida_hasta", "impuesto_centesimas", "notas", "trabajo_id"];
+
+const Cotizaciones = {
+  getAll() {
+    return _vivos("cotizaciones").slice().sort((a, b) => b.numero - a.numero);
+  },
+  get(id) {
+    return _vivos("cotizaciones").find((c) => c.id === id) || null;
+  },
+  deCliente(clienteId) {
+    return this.getAll().filter((c) => c.cliente_id === clienteId);
+  },
+
+  /* Consecutivo y legible: "COT-014". Nunca retrocede ni se reusa, aunque se
+     borre una cotización: un número entregado a un cliente es para siempre. */
+  _siguienteNumero() {
+    const n = (parseInt(_estado.config.contador_cotizaciones, 10) || 0) + 1;
+    Config.set("contador_cotizaciones", n);
+    return n;
+  },
+
+  /* ---------- Renglones ---------- */
+  items(cotizacionId) {
+    return _vivos("cotizacionItems")
+      .filter((i) => i.cotizacion_id === cotizacionId)
+      .sort((a, b) => a.orden - b.orden);
+  },
+
+  /* Reemplaza el conjunto completo de renglones. Se hace así y no agregando
+     encima porque editar una cotización es dejarla como se ve en pantalla:
+     con lo agregado, lo cambiado y sin lo que se quitó. */
+  guardarItems(cotizacionId, filas) {
+    const cot = this.get(cotizacionId);
+    if (!cot) return null;
+    const limpias = (filas || []).map((f, i) => {
+      const item = {
+        nombre: _texto(f.nombre),
+        descripcion: _texto(f.descripcion),
+        unidad: UNIDADES.includes(f.unidad) ? f.unidad : "unidad",
+        cantidad_centesimas: Math.round(Number(f.cantidad_centesimas) || 0),
+        precio_centavos: Math.round(Number(f.precio_centavos) || 0),
+        costo_centavos: Math.round(Number(f.costo_centavos) || 0),
+        catalogo_id: f.catalogo_id || null,
+        orden: i,
+      };
+      _exigir(Validar.cotizacionItem(item));
+      return item;
+    });
+
+    /* Se valida TODO antes de escribir nada: si el renglón 5 está mal, no
+       puede quedar la cotización con los primeros cuatro y sin el resto. */
+    const viejos = _estado.cotizacionItems.filter((i) => i.cotizacion_id === cotizacionId);
+    for (const v of viejos) {
+      const idx = _estado.cotizacionItems.indexOf(v);
+      if (idx >= 0) _estado.cotizacionItems.splice(idx, 1);
+    }
+    for (const l of limpias) {
+      _estado.cotizacionItems.push({ id: _uuid(), cotizacion_id: cotizacionId, ...l, ..._sellosNuevo() });
+    }
+    Object.assign(cot, _sellosEdicion());
+    _persistir(Promise.all([
+      Almacen.actualizar("cotizacionItems"),
+      Almacen.actualizar("cotizaciones"),
+    ]));
+    return this.items(cotizacionId);
+  },
+
+  /* ---------- LA cuenta del total ----------
+     Una sola función para toda la app. Si mañana cambia cómo se calcula, se
+     cambia acá y no en cinco lugares que se van separando sin que nadie note.
+     Todo en centavos enteros de punta a punta. */
+  totales(cotizacionOId) {
+    const cot = typeof cotizacionOId === "string" ? this.get(cotizacionOId) : cotizacionOId;
+    const filas = cot ? this.items(cot.id) : [];
+    let subtotal = 0, costo = 0;
+    for (const f of filas) {
+      subtotal += Cantidad.porPrecio(f.cantidad_centesimas, f.precio_centavos);
+      costo += Cantidad.porPrecio(f.cantidad_centesimas, f.costo_centavos);
+    }
+    const tasa = Number(cot?.impuesto_centesimas) || 0; // 725 = 7.25%
+    const impuesto = Math.round((subtotal * tasa) / 10000);
+    return {
+      renglones: filas.length,
+      subtotal_centavos: subtotal,
+      impuesto_centavos: impuesto,
+      total_centavos: subtotal + impuesto,
+      costo_centavos: costo,
+      ganancia_centavos: subtotal - costo,
+    };
+  },
+
+  /* Un renglón nuevo a partir de un producto del catálogo: acá es donde se
+     hace la copia del precio. */
+  filaDesdeCatalogo(catalogoId, cantidadCentesimas = 100) {
+    const p = Catalogo.get(catalogoId);
+    if (!p) return null;
+    return {
+      catalogo_id: p.id,
+      nombre: p.nombre,
+      descripcion: p.descripcion || "",
+      unidad: p.unidad || "unidad",
+      cantidad_centesimas: Math.round(Number(cantidadCentesimas) || 100),
+      precio_centavos: p.precio_centavos || 0,
+      costo_centavos: p.costo_centavos || 0,
+    };
+  },
+
+  create(datos = {}) {
+    const limpio = {
+      cliente_id: datos.cliente_id || null,
+      titulo: _texto(datos.titulo),
+      descripcion: _texto(datos.descripcion),
+      estado: ESTADOS_COTIZACION.includes(datos.estado) ? datos.estado : "borrador",
+      fecha: datos.fecha || null,
+      valida_hasta: datos.valida_hasta || null,
+      impuesto_centesimas: Math.round(Number(datos.impuesto_centesimas) || 0),
+      notas: _texto(datos.notas),
+      trabajo_id: null,
+    };
+    _exigir(Validar.cotizacion(limpio));
+    const item = { id: _uuid(), numero: this._siguienteNumero(), ...limpio, ..._sellosNuevo() };
+    _estado.cotizaciones.push(item);
+    _persistir(Almacen.crear("cotizaciones", item));
+    return item;
+  },
+
+  update(id, datos) {
+    const item = this.get(id);
+    if (!item) return null;
+    const cambios = _tomar(datos, CAMPOS_COTIZACION);
+    for (const c of ["titulo", "descripcion", "notas"]) {
+      if (cambios[c] !== undefined) cambios[c] = _texto(cambios[c]);
+    }
+    if (cambios.impuesto_centesimas !== undefined) {
+      cambios.impuesto_centesimas = Math.round(Number(cambios.impuesto_centesimas) || 0);
+    }
+    _exigir(Validar.cotizacion({ ...item, ...cambios }));
+    Object.assign(item, cambios, _sellosEdicion());
+    _persistir(Almacen.actualizar("cotizaciones", item));
+    return item;
+  },
+
+  /* Aprobar crea el trabajo con el total ya puesto, y los deja enlazados.
+     Así el circuito queda cerrado: cliente → cotización → trabajo → reporte. */
+  aprobar(id) {
+    const cot = this.get(id);
+    if (!cot) return null;
+    if (cot.trabajo_id && Trabajos.get(cot.trabajo_id)) {
+      this.update(id, { estado: "aprobada" });
+      return Trabajos.get(cot.trabajo_id);
+    }
+    const t = this.totales(cot);
+    const trabajo = Trabajos.create({
+      cliente_id: cot.cliente_id,
+      titulo: cot.titulo,
+      descripcion: cot.descripcion,
+      estado: "por_agendar",
+      precio_centavos: t.total_centavos,
+      costo_centavos: t.costo_centavos,
+    });
+    this.update(id, { estado: "aprobada", trabajo_id: trabajo.id });
+    return trabajo;
+  },
+
+  remove(id) {
+    return _borradoSuave("cotizaciones", id);
   },
 };
 
@@ -881,6 +1089,15 @@ function _migrar() {
     });
   }
 
+  /* --- v3 → v4: aparecen las cotizaciones y sus renglones ---
+     Nacen vacías, no hay datos viejos que convertir. Se deja el contador de
+     numeración arrancado en cero para que la primera sea la COT-1. */
+  if (desde < 4) {
+    if (!Array.isArray(_estado.cotizaciones)) _estado.cotizaciones = [];
+    if (!Array.isArray(_estado.cotizacionItems)) _estado.cotizacionItems = [];
+    if (_estado.config.contador_cotizaciones === undefined) _estado.config.contador_cotizaciones = 0;
+  }
+
   _estado.config.esquema_version = ESQUEMA_VERSION;
   return true;
 }
@@ -975,6 +1192,7 @@ const DB = {
   archivos: Archivos,
   proveedores: Proveedores,
   catalogo: Catalogo,
+  cotizaciones: Cotizaciones,
   config: Config,
   respaldo: Respaldo,
   dinero: Dinero,
@@ -983,6 +1201,7 @@ const DB = {
      un tipo o una unidad que la validación después rechaza. */
   tiposCatalogo: TIPOS_CATALOGO,
   unidades: UNIDADES,
+  estadosCotizacion: ESTADOS_COTIZACION,
   ErrorDatos,
 
   alFallarGuardado(fn) { _alFallarGuardado = fn; },

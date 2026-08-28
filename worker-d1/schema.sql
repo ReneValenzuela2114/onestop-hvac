@@ -242,6 +242,78 @@ CREATE INDEX IF NOT EXISTS idx_catalogo_marca ON catalogo(marca);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_catalogo_codigo
   ON catalogo(codigo) WHERE codigo <> '' AND eliminado IS NULL;
 
+-- ---- Cotizaciones ----
+-- numero: consecutivo y legible ("COT-14"). Nunca retrocede ni se reusa,
+-- aunque se borre una cotización: un número entregado a un cliente es para
+-- siempre. El contador vive en configuracion.contador_cotizaciones.
+--
+-- impuesto_centesimas: centésimas de por ciento, 7.25% es 725. Entero por la
+-- misma razón que la plata. Se guarda en la cotización, no en configuración,
+-- para que cambiar la tasa mañana no altere una cotización ya firmada.
+--
+-- trabajo_id: se llena al aprobarla. Cierra el circuito cliente → cotización
+-- → trabajo → reporte.
+--
+-- Los totales NO se guardan: se calculan desde los renglones con una sola
+-- función (DB.cotizaciones.totales). Guardar un total además de los renglones
+-- es tener dos verdades que tarde o temprano dejan de coincidir.
+CREATE TABLE IF NOT EXISTS cotizaciones (
+  id TEXT PRIMARY KEY,
+  numero INTEGER NOT NULL UNIQUE,
+  cliente_id TEXT NOT NULL REFERENCES clientes(id),
+  titulo TEXT NOT NULL,
+  descripcion TEXT NOT NULL DEFAULT '',
+  estado TEXT NOT NULL DEFAULT 'borrador'
+    CHECK (estado IN ('borrador','enviada','aprobada','rechazada','vencida')),
+  fecha TEXT,                          -- 'YYYY-MM-DD'
+  valida_hasta TEXT,                   -- 'YYYY-MM-DD'
+  impuesto_centesimas INTEGER NOT NULL DEFAULT 0
+    CHECK (impuesto_centesimas >= 0 AND impuesto_centesimas <= 10000),
+  notas TEXT NOT NULL DEFAULT '',
+  trabajo_id TEXT REFERENCES trabajos(id),
+  creado INTEGER NOT NULL,
+  creado_por TEXT REFERENCES usuarios(id),
+  actualizado INTEGER NOT NULL,
+  actualizado_por TEXT REFERENCES usuarios(id),
+  eliminado INTEGER,
+  eliminado_por TEXT REFERENCES usuarios(id)
+);
+CREATE INDEX IF NOT EXISTS idx_cotizaciones_vivas ON cotizaciones(eliminado);
+CREATE INDEX IF NOT EXISTS idx_cotizaciones_cliente ON cotizaciones(cliente_id);
+CREATE INDEX IF NOT EXISTS idx_cotizaciones_estado ON cotizaciones(estado);
+
+-- ---- Renglones de cotización ----
+-- Una fila por renglón, nunca la lista entera como texto adentro de la
+-- cotización.
+--
+-- ⚠️ nombre, precio_centavos y costo_centavos son una COPIA de lo que decía
+-- el catálogo el día que se armó la cotización. catalogo_id queda solo para
+-- reportes ("¿qué producto se vende más?"). Si el renglón leyera el precio del
+-- catálogo, subirlo hoy cambiaría el total de una cotización ya firmada.
+--
+-- cantidad_centesimas: 12.5 pies es 1250, entero como la plata.
+CREATE TABLE IF NOT EXISTS cotizacion_items (
+  id TEXT PRIMARY KEY,
+  cotizacion_id TEXT NOT NULL REFERENCES cotizaciones(id),
+  catalogo_id TEXT REFERENCES catalogo(id),   -- solo para reportes; puede ser NULL
+  orden INTEGER NOT NULL DEFAULT 0,
+  nombre TEXT NOT NULL,
+  descripcion TEXT NOT NULL DEFAULT '',
+  unidad TEXT NOT NULL DEFAULT 'unidad'
+    CHECK (unidad IN ('unidad','pie','libra','galon','hora','juego')),
+  cantidad_centesimas INTEGER NOT NULL CHECK (cantidad_centesimas > 0),
+  precio_centavos INTEGER NOT NULL DEFAULT 0 CHECK (precio_centavos >= 0),
+  costo_centavos INTEGER NOT NULL DEFAULT 0 CHECK (costo_centavos >= 0),
+  creado INTEGER NOT NULL,
+  creado_por TEXT REFERENCES usuarios(id),
+  actualizado INTEGER NOT NULL,
+  actualizado_por TEXT REFERENCES usuarios(id),
+  eliminado INTEGER,
+  eliminado_por TEXT REFERENCES usuarios(id)
+);
+CREATE INDEX IF NOT EXISTS idx_cot_items_cotizacion ON cotizacion_items(cotizacion_id, orden);
+CREATE INDEX IF NOT EXISTS idx_cot_items_catalogo ON cotizacion_items(catalogo_id);
+
 -- ---- Configuración general (clave/valor) ----
 -- idioma, logo_tamano, maps_api_key, usuario_actual_id, contador_trabajos,
 -- esquema_version, empresa_nombre, empresa_telefono, etc.

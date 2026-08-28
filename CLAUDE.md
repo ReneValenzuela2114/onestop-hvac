@@ -10,7 +10,7 @@ inglés por defecto.
 
 ```
 OneStop-HVAC/
-├── index.html             ← TODO: markup + CSS + lógica de pantallas (~2100 líneas)
+├── index.html             ← TODO: markup + CSS + lógica de pantallas (~3400 líneas)
 ├── data.js                ← capa de datos (hoy localStorage, mañana fetch al Worker)
 ├── i18n.js                ← traducciones ES/EN (ningún texto suelto en el HTML)
 ├── service-worker.js      ← PWA: red-primero para HTML, caché para estáticos
@@ -43,8 +43,8 @@ un bundler salvo que el proyecto lo pida de verdad.
 
 1. **Ninguna pantalla toca `localStorage` directamente.** Todo pasa por `DB.*`
    (`DB.clientes`, `DB.trabajos`, `DB.usuarios`, `DB.categoriasClientes`,
-   `DB.catalogo`, `DB.proveedores`, `DB.archivos`, `DB.config`). Ese es el
-   contrato que permite cambiar a D1 sin tocar la UI.
+   `DB.catalogo`, `DB.proveedores`, `DB.cotizaciones`, `DB.archivos`,
+   `DB.config`). Ese es el contrato que permite cambiar a D1 sin tocar la UI.
 2. **La plata SIEMPRE en centavos enteros** (`precio_centavos`, `costo_centavos`).
    Nunca decimales: los flotantes no representan `0.10` exacto y los reportes
    terminan sin cuadrar. Convertir con `DB.dinero.aCentavos()` / `.aTexto()` /
@@ -62,6 +62,15 @@ un bundler salvo que el proyecto lo pida de verdad.
    3c. **Las cantidades van en centésimas enteras** (`*_centesimas`), por la
    misma razón que la plata: 12.5 pies se guarda como `1250`. Multiplicar
    cantidad por precio se hace **siempre** con `DB.cantidad.porPrecio()`.
+
+   3d. **Los totales no se guardan, se calculan** — y con **una sola función**
+   (`DB.cotizaciones.totales()`). Guardar un total además de los renglones es
+   tener dos verdades que tarde o temprano dejan de coincidir. La misma
+   función alimenta la pantalla y el guardado.
+
+   3e. **El impuesto se guarda en la cotización, no en configuración**
+   (`impuesto_centesimas`, 7.25% = `725`). Si viviera en configuración,
+   cambiar la tasa mañana alteraría el total de una cotización ya firmada.
 4. **`data.js` y `worker-d1/schema.sql` van sincronizados.** Los campos de cada
    objeto JS son EXACTAMENTE las columnas de su tabla. Si se agrega un campo, se
    agrega en los dos lados en el mismo cambio.
@@ -77,7 +86,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v15**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v21**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
@@ -93,7 +102,7 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 
 ---
 
-## 3. Estado real (25 jul 2026)
+## 3. Estado real (28 ago 2026)
 
 | Módulo | Estado |
 |---|---|
@@ -101,11 +110,12 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Clientes** (alta/edición/borrado, categorías, filtros, búsqueda, Google Maps + autocompletado) | ✅ terminado |
 | **Trabajos** (calendario mensual, "por agendar", modal completo, precio/costo, asignar trabajadores) | ✅ terminado |
 | **Equipo** (alta de trabajadores, roles, usuario del dispositivo) | ✅ terminado, sin login real |
-| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v2) |
+| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v4) |
 | **Lector de mensajes** (captura/PDF → campos del cliente, con Claude) | ✅ programado; falta desplegar el Worker |
 | **Catálogo** (equipos/materiales/servicios, proveedores, filtros para reportes) | ✅ terminado (esquema v3) |
-| **Cotizaciones** | ⛔ placeholder "Próximamente" |
-| **Base de datos D1 + Worker** | ⛔ solo existe `schema.sql`. No hay código de Worker ni `wrangler.toml` |
+| **Cotizaciones** (renglones del catálogo, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v4) |
+| **Worker en Cloudflare** | ✅ desplegado en la cuenta de Rene · hoy sirve el lector de mensajes |
+| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v4), pero todavía sin desplegar |
 | **R2** | ⛔ la tabla `archivos` y `DB.archivos` ya existen; falta el bucket. Hoy solo lo usa el logo |
 | **Login / permisos reales** | ⛔ hoy los roles son solo etiquetas de interfaz |
 | **Reportes** (cuánto se ganó por cliente / por mes) | ⛔ los datos ya están, falta la pantalla |
@@ -124,11 +134,9 @@ serio hasta que exista D1.**
   una clave de navegador es pública por diseño, pero **tiene que estar restringida
   por dominio (HTTP referrer) en Google Cloud Console**, si no cualquiera la usa y
   la factura la paga Rene. Verificar antes de publicar.
-- **El proyecto no está bajo control de versiones** (no hay `.git`). Un archivo de
-  2000 líneas sin historial es riesgoso: un error grande no tiene vuelta atrás.
-- **Cambiar de idioma no repinta todas las pestañas.** `setLang()` refresca clientes
-  y filtros, pero no el calendario, las tarjetas de trabajo ni la lista de equipo:
-  hay que cambiar de pestaña para verlos traducidos. Verificado en el navegador.
+- **`index.html` pasó las 3.000 líneas** y lleva markup, CSS y la lógica de todas
+  las pantallas. Todavía se navega, pero es lo próximo que va a doler. Partirlo
+  conviene hacerlo **junto con D1**, no antes: ese cambio ya toca la capa de datos.
 - **Naming inconsistente**: la pestaña se llama `proyectos` en el HTML pero el módulo,
   la tabla y los textos son "trabajos"/"jobs". Unificar a `trabajos` cuando se toque.
 - **El Worker queda con una dirección pública hasta que exista el login.** Se filtra
@@ -197,13 +205,22 @@ porque una URL pública sin login expone la base de clientes.
    (`controlar_stock`, `stock_centesimas`, `stock_minimo_centesimas`,
    `ubicacion`) **ya existen en el esquema pero no tienen pantalla**: cuando se
    haga el control de inventario no hay que migrar nada.
-4. **Reportes** de ganancia por cliente / mes (`DB.trabajos.ganancia(tj)`).
-5. **D1 + Worker + login, todo junto al final.** Implica: `wrangler.toml`, un Worker
+4. ~~**Cotizaciones**~~ ✅ hecho: renglones tomados del catálogo con el precio
+   copiado, impuesto como porcentaje único, y **aprobar crea el trabajo** con
+   el total ya puesto. Desde la ficha del cliente se ven sus cotizaciones y
+   sus trabajos juntos.
+   ⚠️ El impuesto es **un porcentaje sobre todo**. Si algún día la mano de obra
+   tiene que quedar exenta (que es lo correcto en California), hace falta una
+   marca por renglón — y eso ya es migrar cotizaciones firmadas.
+5. **Reportes** de ganancia por cliente / mes (`DB.trabajos.ganancia(tj)`,
+   `DB.cotizaciones.totales()`). Los datos ya están y son filtrables por
+   cliente, estado, tipo, proveedor y marca.
+6. **D1 + Worker + login, todo junto al final.** Implica: `wrangler.toml`, un Worker
    con endpoints `/api/*`, reemplazar `AlmacenLocal` por uno que hable con el Worker,
    y `DB.iniciar()` cargando de la red. Las pantallas no se tocan.
    ⚠️ **El login va en el mismo paso, no después**: una API abierta expone la base
    de clientes (nombres, direcciones y teléfonos de California) a cualquiera.
-6. **R2** para fotos de trabajos: bucket **privado** con links firmados que expiran,
+7. **R2** para fotos de trabajos: bucket **privado** con links firmados que expiran,
    y `Archivos.url()` devolviendo esos links en vez del contenido local.
 
 ---
