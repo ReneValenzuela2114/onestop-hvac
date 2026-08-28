@@ -323,12 +323,24 @@
   /* ---- Cotizaciones ----
      Cada renglón en una línea: nombre · cantidad × precio = subtotal · quitar.
      Cantidad y precio se editan ahí mismo, sin abrir nada. */
-  .cot-filas{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:var(--sp-3)}
+  .cot-filas{display:grid;grid-template-columns:minmax(0,1fr);gap:5px}
+  /* La cabecera usa los MISMOS anchos que la fila, para que cada número quede
+     debajo de su título. Si se cambia un ancho, se cambia en los dos lados. */
+  /* El padding lleva 1px extra de cada lado para compensar el borde que sí
+     tiene la fila: sin eso las columnas quedan corridas justo 1px. */
+  .cot-cabecera{display:flex;align-items:center;gap:7px;padding:0 10px 6px;margin-top:var(--sp-3);border-bottom:1px solid var(--line)}
+  .cot-cabecera span{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .cot-cabecera .cot-nombre{flex:1 1 auto;min-width:0}
+  .cot-cabecera .cot-col-cant{width:66px;flex-shrink:0;text-align:right}
+  .cot-cabecera .cot-col-precio{width:78px;flex-shrink:0;text-align:right}
+  .cot-cabecera .cot-col-total{width:92px;flex-shrink:0;text-align:right}
+  .cot-cabecera .cot-col-hueco{width:22px;flex-shrink:0}
   .cot-fila{display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm)}
   .cot-fila .cot-nombre{flex:1 1 auto;min-width:0;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .cot-fila input{width:66px;flex-shrink:0;padding:5px 7px;font-size:12.5px;text-align:right}
-  .cot-fila .cot-signo{font-size:12px;color:var(--muted);flex-shrink:0}
-  .cot-fila .cot-sub{width:88px;flex-shrink:0;text-align:right;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
+  .cot-fila .cot-unidad{display:block;font-size:11px;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0}
+  .cot-fila .cot-cant{width:66px;flex-shrink:0;padding:5px 7px;font-size:12.5px;text-align:right}
+  .cot-fila .cot-precio-in{width:78px;flex-shrink:0;padding:5px 7px;font-size:12.5px;text-align:right}
+  .cot-fila .cot-sub{width:92px;flex-shrink:0;text-align:right;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
   .cot-fila .cot-quitar{flex-shrink:0;border:none;background:none;padding:4px;display:flex;color:var(--muted);cursor:pointer}
   .cot-fila .cot-quitar:hover{color:var(--danger)}
   .cot-totales{margin-top:var(--sp-4);padding-top:var(--sp-3);border-top:1px solid var(--line);display:grid;gap:6px;font-size:13px}
@@ -353,12 +365,34 @@
      caracteres, y los campos tan angostos que no se podían tocar. Cargar
      cotizaciones es trabajo de computadora; en el teléfono se consultan y se
      ajusta alguna cantidad, y para eso conviene que el campo sea tocable. */
+  /* En pantalla ancha la cabecera dice qué es cada columna, así que las
+     etiquetas de adentro sobran. */
+  .cot-etq{display:none}
   @media (max-width: 560px){
+    /* Acá la fila se parte en dos líneas y la cabecera ya no puede quedar
+       encima de sus números: se esconde y cada campo lleva su etiqueta al
+       lado. Una cabecera corrida confunde más que no tenerla. */
+    .cot-cabecera{display:none !important}
+    .cot-etq{display:inline;font-size:11px;color:var(--muted);flex-shrink:0}
     .cot-fila{flex-wrap:wrap;gap:6px;padding:8px 9px}
     .cot-fila .cot-nombre{flex:1 0 100%;line-height:1.25}
-    .cot-fila input{width:72px;min-height:38px;font-size:13px}
-    .cot-fila .cot-sub{margin-left:auto;width:auto}
-    .cot-fila .cot-quitar{padding:8px}
+    /* Dos líneas parejas, no tres desprolijas: arriba el nombre con la × a su
+       derecha, abajo cantidad, precio y total. Se ordena con `order` porque en
+       el HTML la × va al final; achicando anchos nunca entraba y terminaba
+       cayéndose sola a una tercera línea. */
+    .cot-fila{gap:6px}
+    .cot-fila .cot-nombre{flex:1 1 calc(100% - 132px);order:1}
+    .cot-fila .cot-sub{order:2;width:94px;flex-shrink:0}
+    .cot-fila .cot-quitar{order:3;padding:6px;align-self:flex-start}
+    .cot-fila .cot-etq,
+    .cot-fila .cot-cant,
+    .cot-fila .cot-precio-in{order:4}
+    /* Anchos según lo que se escribe de verdad en cada campo: una cantidad son
+       dos o tres cifras ("25", "12.5"), un precio puede ser "2400.00". Con los
+       dos del mismo ancho, un precio de cuatro cifras empujaba el total a otra
+       línea. */
+    .cot-fila .cot-cant{width:52px;min-height:38px;font-size:13px}
+    .cot-fila .cot-precio-in{width:64px;min-height:38px;font-size:13px}
   }
   /* Fila del lector de mensajes, arriba del formulario de cliente */
   .ia-row{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;margin-bottom:var(--sp-4);padding-bottom:var(--sp-4);border-bottom:1px dashed var(--line)}
@@ -819,6 +853,15 @@
         <div class="ac-anchor">
           <input type="text" id="cotBuscarProducto" data-i18n-ph="cot_agregar_ph" placeholder="Search the catalog to add…" autocomplete="off">
           <div class="ac-menu" id="cotProductoMenu" style="display:none"></div>
+        </div>
+        <!-- Encabezado de columnas: sin esto los tres números de cada renglón
+             no dicen qué son. Se oculta cuando no hay renglones. -->
+        <div class="cot-cabecera" id="cotCabecera" style="display:none">
+          <span class="cot-nombre" data-i18n="cot_col_producto">Producto</span>
+          <span class="cot-col-cant" data-i18n="cot_col_cantidad">Cant.</span>
+          <span class="cot-col-precio" data-i18n="cot_col_precio">Precio unit.</span>
+          <span class="cot-col-total" data-i18n="cot_col_total">Total</span>
+          <span class="cot-col-hueco"></span>
         </div>
         <div class="cot-filas" id="cotFilas"></div>
         <p class="hint" id="cotSinFilas" data-i18n="cot_sin_renglones">Buscá un producto del catálogo para agregarlo.</p>
@@ -2555,13 +2598,19 @@ function cerrarMenuProductosCot(){ document.getElementById("cotProductoMenu").st
 function renderFilasCot(){
   const cont = document.getElementById("cotFilas");
   document.getElementById("cotSinFilas").style.display = cotFilas.length ? "none" : "";
+  document.getElementById("cotCabecera").style.display = cotFilas.length ? "" : "none";
   cont.innerHTML = cotFilas.map((f, i) => {
     const sub = DB.cantidad.porPrecio(f.cantidad_centesimas, f.precio_centavos);
+    /* Debajo del nombre va la unidad: "por pie" o "por hora" explica de qué
+       son la cantidad y el precio de esa fila, que cambia según el producto. */
     return `<div class="cot-fila" data-i="${i}">
-      <span class="cot-nombre" title="${esc(f.nombre)}">${esc(f.nombre)}</span>
-      <input type="number" class="cot-cant" min="0" step="0.01" value="${DB.cantidad.aTexto(f.cantidad_centesimas)}" aria-label="${esc(t("cot_cantidad"))}">
-      <span class="cot-signo">×</span>
-      <input type="number" class="cot-precio-in" min="0" step="0.01" value="${DB.dinero.aTexto(f.precio_centavos)}" aria-label="${esc(t("catalogo_precio"))}">
+      <span class="cot-nombre" title="${esc(f.nombre)}">${esc(f.nombre)}
+        <span class="cot-unidad">${esc(t("catalogo_por_unidad").replace("{u}", t("unidad_" + f.unidad)))}</span>
+      </span>
+      <span class="cot-etq">${esc(t("cot_col_cantidad"))}</span>
+      <input type="number" class="cot-cant" min="0" step="0.01" value="${DB.cantidad.aTexto(f.cantidad_centesimas)}" aria-label="${esc(t("cot_col_cantidad"))}">
+      <span class="cot-etq">${esc(t("cot_precio_corto"))}</span>
+      <input type="number" class="cot-precio-in" min="0" step="0.01" value="${DB.dinero.aTexto(f.precio_centavos)}" aria-label="${esc(t("cot_col_precio"))}">
       <span class="cot-sub">${esc(DB.dinero.formato(sub, CFG_LANG))}</span>
       <button type="button" class="cot-quitar" aria-label="${esc(t("eliminar"))}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -3392,58 +3441,44 @@ document.getElementById("logoTamanoSlider").addEventListener("input", (e) => {
 
    ⚠️ Esto sale antes de que la empresa la use de verdad: un botón que mete
    diez clientes inventados no puede estar al alcance con datos reales. */
-const CLIENTES_DEMO = [
-  { nombre: "Carlos Ruiz", telefono: "(661) 555-0142", email: "carlos.ruiz@ejemplo.com", direccion: "1420 Oak St, Bakersfield, CA 93301" },
-  { nombre: "María Delgado", telefono: "(661) 555-0177", email: "maria.delgado@ejemplo.com", direccion: "738 Chester Ave, Bakersfield, CA 93301" },
-  { nombre: "James Whitaker", empresa: "Whitaker Property Group", telefono: "(661) 555-0198", email: "james@whitakerpg.com", direccion: "2210 Truxtun Ave, Bakersfield, CA 93301" },
-  { nombre: "Ana Solís", telefono: "(661) 555-0110", email: "ana.solis@ejemplo.com", direccion: "905 Niles St, Bakersfield, CA 93305" },
-  { nombre: "Robert Chen", empresa: "Chen Family Dental", telefono: "(661) 555-0163", email: "office@chendental.com", direccion: "4501 Ming Ave, Bakersfield, CA 93309" },
-  { nombre: "Luis Herrera", telefono: "(661) 555-0129", email: "luis.herrera@ejemplo.com", direccion: "312 Brundage Ln, Bakersfield, CA 93304" },
-  { nombre: "Patricia Nolan", telefono: "(661) 555-0185", email: "patricia.nolan@ejemplo.com", direccion: "1876 Panorama Dr, Bakersfield, CA 93305" },
-  { nombre: "Miguel Ángel Torres", empresa: "Torres Auto Repair", telefono: "(661) 555-0154", email: "miguel@torresauto.com", direccion: "620 Union Ave, Bakersfield, CA 93307" },
-  { nombre: "Sandra Kim", telefono: "(661) 555-0136", email: "sandra.kim@ejemplo.com", direccion: "3390 Stockdale Hwy, Bakersfield, CA 93309" },
-  { nombre: "Daniel O'Brien", empresa: "O'Brien Rentals", telefono: "(661) 555-0171", email: "dan@obrienrentals.com", direccion: "1155 Real Rd, Bakersfield, CA 93309" },
-];
+/* Se baja el archivo solo al tocar el botón: no pesa nada al abrir la app, y
+   el día que se quite esta función se borra el archivo y esta sección. */
+async function traerDatosEjemplo(){
+  const r = await fetch("datos-ejemplo.json", { cache: "no-cache" });
+  if (!r.ok) throw new DB.ErrorDatos("config_demo_error");
+  return r.json();
+}
 
-const PROVEEDORES_DEMO = [
-  { nombre: "Ferguson HVAC Supply", contacto: "Mike Torres", telefono: "(661) 555-0300", email: "mike@fergusonhvac.com", direccion: "2800 Pierce Rd, Bakersfield, CA" },
-  { nombre: "Baker Distributing", contacto: "Sheila Grant", telefono: "(661) 555-0311", email: "sgrant@bakerdist.com", direccion: "1500 E Brundage Ln, Bakersfield, CA" },
-];
+document.getElementById("btnCargarDemo").addEventListener("click", async () => {
+  const boton = document.getElementById("btnCargarDemo");
+  boton.disabled = true;
+  let datos;
+  try {
+    datos = await traerDatosEjemplo();
+  } catch {
+    boton.disabled = false;
+    toast(t("config_demo_error"), true);
+    return;
+  }
+  boton.disabled = false;
 
-/* Precios de referencia del rubro, en dólares. Costo y precio separados para
-   que el margen que muestra la app tenga sentido al mirarlo. */
-const CATALOGO_DEMO = [
-  { tipo: "equipo", codigo: "GSX-36", nombre: "Condensadora 3 toneladas", marca: "Goodman", modelo: "GSX140361", capacidad_btu: 36000, unidad: "unidad", costo: 1800, precio: 2400, prov: 0 },
-  { tipo: "equipo", codigo: "ARUF-37", nombre: "Manejadora 3 toneladas", marca: "Goodman", modelo: "ARUF37C14", capacidad_btu: 36000, unidad: "unidad", costo: 950, precio: 1350, prov: 0 },
-  { tipo: "equipo", codigo: "GMVC-80", nombre: "Horno de gas 80,000 BTU", marca: "Goodman", modelo: "GMVC800804CN", capacidad_btu: 80000, unidad: "unidad", costo: 1100, precio: 1580, prov: 0 },
-  { tipo: "equipo", codigo: "MSZ-12", nombre: "Mini split 12,000 BTU", marca: "Mitsubishi", modelo: "MSZ-GL12NA", capacidad_btu: 12000, unidad: "unidad", costo: 1250, precio: 1790, prov: 1 },
-  { tipo: "equipo", codigo: "T6-WIFI", nombre: "Termostato Wi-Fi programable", marca: "Honeywell", modelo: "T6 Pro", unidad: "unidad", costo: 95, precio: 189, prov: 1 },
-  { tipo: "material", codigo: "CU-38", nombre: "Tubería de cobre 3/8\"", marca: "Mueller", unidad: "pie", costo: 2.75, precio: 4.5, prov: 0 },
-  { tipo: "material", codigo: "R410A", nombre: "Refrigerante R-410A", marca: "Chemours", unidad: "libra", costo: 9.5, precio: 18, prov: 1 },
-  { tipo: "material", codigo: "FLT-1625", nombre: "Filtro 16x25x1 MERV 11", marca: "Filtrete", unidad: "unidad", costo: 8, precio: 19, prov: 1 },
-  { tipo: "material", codigo: "DUCT-8", nombre: "Ducto flexible aislado 8\"", marca: "Atco", unidad: "pie", costo: 3.2, precio: 6.5, prov: 0 },
-  { tipo: "servicio", codigo: "MO-INST", nombre: "Mano de obra de instalación", unidad: "hora", costo: 40, precio: 95 },
-  { tipo: "servicio", codigo: "MANT", nombre: "Mantenimiento preventivo", unidad: "hora", costo: 35, precio: 89 },
-  { tipo: "servicio", codigo: "DIAG", nombre: "Visita de diagnóstico", unidad: "unidad", costo: 25, precio: 89 },
-];
-
-document.getElementById("btnCargarDemo").addEventListener("click", () => {
   /* Los códigos del catálogo son únicos, así que cargarlos dos veces falla a
      mitad de camino: quedaban los clientes puestos y los productos no. Se
      comprueba antes en vez de dejar las cosas a medias. */
-  if (DB.catalogo.getAll().some(p => p.codigo === CATALOGO_DEMO[0].codigo)) {
+  if (DB.catalogo.getAll().some(p => p.codigo === datos.catalogo[0].codigo)) {
     toast(t("config_demo_ya_estan"), true);
     return;
   }
+
   pedirConfirmacion("config_demo_titulo", "config_demo_confirma", () => {
     const creado = conAviso(() => {
       const cats = DB.categoriasClientes.getAll();
-      const provs = PROVEEDORES_DEMO.map(p => DB.proveedores.create(p));
-      CLIENTES_DEMO.forEach((c, i) => DB.clientes.create({
+      const provs = datos.proveedores.map(p => DB.proveedores.create(p));
+      datos.clientes.forEach((c, i) => DB.clientes.create({
         ...c,
         categoria_id: cats.length ? cats[i % cats.length].id : null,
       }));
-      CATALOGO_DEMO.forEach(p => DB.catalogo.create({
+      datos.catalogo.forEach(p => DB.catalogo.create({
         tipo: p.tipo, codigo: p.codigo, nombre: p.nombre,
         marca: p.marca || "", modelo: p.modelo || "",
         capacidad_btu: p.capacidad_btu ?? null,
@@ -3456,12 +3491,19 @@ document.getElementById("btnCargarDemo").addEventListener("click", () => {
     });
     if (!creado) return;
     toast(t("toast_demo_cargado")
-      .replace("{c}", CLIENTES_DEMO.length)
-      .replace("{p}", CATALOGO_DEMO.length));
+      .replace("{c}", datos.clientes.length)
+      .replace("{p}", datos.catalogo.length));
     renderFiltros(); renderClientes();
     renderFiltrosCatalogo(); renderCatalogo(); renderProveedores();
     renderFiltrosCotizaciones(); renderCotizaciones();
   }, "config_demo_cargar");
+
+  /* Las cantidades del aviso salen del archivo, no escritas a mano: si mañana
+     se agregan más ejemplos, el texto no queda mintiendo. */
+  document.getElementById("confirmarTexto").textContent = t("config_demo_confirma")
+    .replace("{c}", datos.clientes.length)
+    .replace("{p}", datos.catalogo.length)
+    .replace("{v}", datos.proveedores.length);
 });
 
 /* ---------- Respaldo: descargar / restaurar ----------

@@ -15,7 +15,7 @@
  *
  * Al publicar: subir CACHE de vNN a vNN+1.
  */
-const CACHE = 'onestop-shell-v24';
+const CACHE = 'onestop-shell-v26';
 const API_PREFIX = '/api';
 
 /* Los tres archivos que forman la app y tienen que coincidir entre sí */
@@ -26,6 +26,7 @@ const SHELL = [
   './index.html',
   './data.js',
   './i18n.js',
+  './datos-ejemplo.json',
   './manifest.webmanifest',
   './assets/apple-touch-icon.png',
   './assets/icon-192.png',
