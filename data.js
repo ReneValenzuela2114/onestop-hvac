@@ -626,12 +626,18 @@ const Cotizaciones = {
       return Trabajos.get(cot.trabajo_id);
     }
     const t = this.totales(cot);
+    /* Al trabajo va el SUBTOTAL, sin impuesto. El impuesto no es plata de la
+       empresa: se cobra y se entrega. Si fuera al precio del trabajo,
+       `DB.trabajos.ganancia()` lo contaría como ganancia y todos los reportes
+       de "cuánto se ganó" saldrían inflados por la tasa. El total con
+       impuesto sigue estando en la cotización, que es el papel que firma el
+       cliente. */
     const trabajo = Trabajos.create({
       cliente_id: cot.cliente_id,
       titulo: cot.titulo,
       descripcion: cot.descripcion,
       estado: "por_agendar",
-      precio_centavos: t.total_centavos,
+      precio_centavos: t.subtotal_centavos,
       costo_centavos: t.costo_centavos,
     });
     this.update(id, { estado: "aprobada", trabajo_id: trabajo.id });

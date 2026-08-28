@@ -15,7 +15,7 @@
  *
  * Al publicar: subir CACHE de vNN a vNN+1.
  */
-const CACHE = 'onestop-shell-v22';
+const CACHE = 'onestop-shell-v24';
 const API_PREFIX = '/api';
 
 /* Los tres archivos que forman la app y tienen que coincidir entre sí */
@@ -53,9 +53,15 @@ function esCodigoDeLaApp(url) {
 }
 
 /* Red primero: si hay señal, siempre la versión más nueva. Sin señal, la
-   última que se guardó — que es coherente porque se guardó completa. */
+   última que se guardó — que es coherente porque se guardó completa.
+
+   `cache: 'no-cache'` no significa "no guardes": significa "preguntale al
+   servidor si cambió antes de usar lo guardado". Sin esto, el navegador le
+   contesta al service worker desde SU propio caché y volvemos al mismo
+   problema: HTML nuevo con JavaScript viejo. Si no cambió, el servidor
+   responde 304 y no se baja nada. */
 function redPrimero(req, claveCache) {
-  return fetch(req)
+  return fetch(new Request(req.url, { cache: "no-cache", credentials: "same-origin" }))
     .then((res) => {
       const copia = res.clone();
       caches.open(CACHE).then((c) => c.put(claveCache || req, copia));

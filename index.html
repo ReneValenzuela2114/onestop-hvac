@@ -749,6 +749,17 @@
             </div>
           </div>
 
+          <!-- Datos de ejemplo: para probar la app sin cargar todo a mano.
+               ⚠️ Quitar esta sección antes de que la empresa la use de verdad. -->
+          <div class="config-section">
+            <h3 data-i18n="config_demo">Datos de ejemplo</h3>
+            <p class="desc" data-i18n="config_demo_texto">Agrega clientes y productos inventados para probar la app. No borra nada de lo que ya tengas.</p>
+            <button class="btn sm" id="btnCargarDemo">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              <span data-i18n="config_demo_cargar">Cargar datos de ejemplo</span>
+            </button>
+          </div>
+
             </div></div>
           </div>
 
@@ -3373,6 +3384,84 @@ document.getElementById("btnQuitarLogo").addEventListener("click", () => {
 document.getElementById("logoTamanoSlider").addEventListener("input", (e) => {
   DB.config.set("logo_tamano", e.target.value);
   aplicarLogo();
+});
+
+/* ---------- Datos de ejemplo ----------
+   Para probar la app sin cargar veinte cosas a mano. AGREGA, no reemplaza:
+   nunca puede borrar lo que ya haya adentro.
+
+   ⚠️ Esto sale antes de que la empresa la use de verdad: un botón que mete
+   diez clientes inventados no puede estar al alcance con datos reales. */
+const CLIENTES_DEMO = [
+  { nombre: "Carlos Ruiz", telefono: "(661) 555-0142", email: "carlos.ruiz@ejemplo.com", direccion: "1420 Oak St, Bakersfield, CA 93301" },
+  { nombre: "María Delgado", telefono: "(661) 555-0177", email: "maria.delgado@ejemplo.com", direccion: "738 Chester Ave, Bakersfield, CA 93301" },
+  { nombre: "James Whitaker", empresa: "Whitaker Property Group", telefono: "(661) 555-0198", email: "james@whitakerpg.com", direccion: "2210 Truxtun Ave, Bakersfield, CA 93301" },
+  { nombre: "Ana Solís", telefono: "(661) 555-0110", email: "ana.solis@ejemplo.com", direccion: "905 Niles St, Bakersfield, CA 93305" },
+  { nombre: "Robert Chen", empresa: "Chen Family Dental", telefono: "(661) 555-0163", email: "office@chendental.com", direccion: "4501 Ming Ave, Bakersfield, CA 93309" },
+  { nombre: "Luis Herrera", telefono: "(661) 555-0129", email: "luis.herrera@ejemplo.com", direccion: "312 Brundage Ln, Bakersfield, CA 93304" },
+  { nombre: "Patricia Nolan", telefono: "(661) 555-0185", email: "patricia.nolan@ejemplo.com", direccion: "1876 Panorama Dr, Bakersfield, CA 93305" },
+  { nombre: "Miguel Ángel Torres", empresa: "Torres Auto Repair", telefono: "(661) 555-0154", email: "miguel@torresauto.com", direccion: "620 Union Ave, Bakersfield, CA 93307" },
+  { nombre: "Sandra Kim", telefono: "(661) 555-0136", email: "sandra.kim@ejemplo.com", direccion: "3390 Stockdale Hwy, Bakersfield, CA 93309" },
+  { nombre: "Daniel O'Brien", empresa: "O'Brien Rentals", telefono: "(661) 555-0171", email: "dan@obrienrentals.com", direccion: "1155 Real Rd, Bakersfield, CA 93309" },
+];
+
+const PROVEEDORES_DEMO = [
+  { nombre: "Ferguson HVAC Supply", contacto: "Mike Torres", telefono: "(661) 555-0300", email: "mike@fergusonhvac.com", direccion: "2800 Pierce Rd, Bakersfield, CA" },
+  { nombre: "Baker Distributing", contacto: "Sheila Grant", telefono: "(661) 555-0311", email: "sgrant@bakerdist.com", direccion: "1500 E Brundage Ln, Bakersfield, CA" },
+];
+
+/* Precios de referencia del rubro, en dólares. Costo y precio separados para
+   que el margen que muestra la app tenga sentido al mirarlo. */
+const CATALOGO_DEMO = [
+  { tipo: "equipo", codigo: "GSX-36", nombre: "Condensadora 3 toneladas", marca: "Goodman", modelo: "GSX140361", capacidad_btu: 36000, unidad: "unidad", costo: 1800, precio: 2400, prov: 0 },
+  { tipo: "equipo", codigo: "ARUF-37", nombre: "Manejadora 3 toneladas", marca: "Goodman", modelo: "ARUF37C14", capacidad_btu: 36000, unidad: "unidad", costo: 950, precio: 1350, prov: 0 },
+  { tipo: "equipo", codigo: "GMVC-80", nombre: "Horno de gas 80,000 BTU", marca: "Goodman", modelo: "GMVC800804CN", capacidad_btu: 80000, unidad: "unidad", costo: 1100, precio: 1580, prov: 0 },
+  { tipo: "equipo", codigo: "MSZ-12", nombre: "Mini split 12,000 BTU", marca: "Mitsubishi", modelo: "MSZ-GL12NA", capacidad_btu: 12000, unidad: "unidad", costo: 1250, precio: 1790, prov: 1 },
+  { tipo: "equipo", codigo: "T6-WIFI", nombre: "Termostato Wi-Fi programable", marca: "Honeywell", modelo: "T6 Pro", unidad: "unidad", costo: 95, precio: 189, prov: 1 },
+  { tipo: "material", codigo: "CU-38", nombre: "Tubería de cobre 3/8\"", marca: "Mueller", unidad: "pie", costo: 2.75, precio: 4.5, prov: 0 },
+  { tipo: "material", codigo: "R410A", nombre: "Refrigerante R-410A", marca: "Chemours", unidad: "libra", costo: 9.5, precio: 18, prov: 1 },
+  { tipo: "material", codigo: "FLT-1625", nombre: "Filtro 16x25x1 MERV 11", marca: "Filtrete", unidad: "unidad", costo: 8, precio: 19, prov: 1 },
+  { tipo: "material", codigo: "DUCT-8", nombre: "Ducto flexible aislado 8\"", marca: "Atco", unidad: "pie", costo: 3.2, precio: 6.5, prov: 0 },
+  { tipo: "servicio", codigo: "MO-INST", nombre: "Mano de obra de instalación", unidad: "hora", costo: 40, precio: 95 },
+  { tipo: "servicio", codigo: "MANT", nombre: "Mantenimiento preventivo", unidad: "hora", costo: 35, precio: 89 },
+  { tipo: "servicio", codigo: "DIAG", nombre: "Visita de diagnóstico", unidad: "unidad", costo: 25, precio: 89 },
+];
+
+document.getElementById("btnCargarDemo").addEventListener("click", () => {
+  /* Los códigos del catálogo son únicos, así que cargarlos dos veces falla a
+     mitad de camino: quedaban los clientes puestos y los productos no. Se
+     comprueba antes en vez de dejar las cosas a medias. */
+  if (DB.catalogo.getAll().some(p => p.codigo === CATALOGO_DEMO[0].codigo)) {
+    toast(t("config_demo_ya_estan"), true);
+    return;
+  }
+  pedirConfirmacion("config_demo_titulo", "config_demo_confirma", () => {
+    const creado = conAviso(() => {
+      const cats = DB.categoriasClientes.getAll();
+      const provs = PROVEEDORES_DEMO.map(p => DB.proveedores.create(p));
+      CLIENTES_DEMO.forEach((c, i) => DB.clientes.create({
+        ...c,
+        categoria_id: cats.length ? cats[i % cats.length].id : null,
+      }));
+      CATALOGO_DEMO.forEach(p => DB.catalogo.create({
+        tipo: p.tipo, codigo: p.codigo, nombre: p.nombre,
+        marca: p.marca || "", modelo: p.modelo || "",
+        capacidad_btu: p.capacidad_btu ?? null,
+        unidad: p.unidad,
+        proveedor_id: p.prov !== undefined ? provs[p.prov].id : null,
+        costo_centavos: DB.dinero.aCentavos(p.costo),
+        precio_centavos: DB.dinero.aCentavos(p.precio),
+      }));
+      return true;
+    });
+    if (!creado) return;
+    toast(t("toast_demo_cargado")
+      .replace("{c}", CLIENTES_DEMO.length)
+      .replace("{p}", CATALOGO_DEMO.length));
+    renderFiltros(); renderClientes();
+    renderFiltrosCatalogo(); renderCatalogo(); renderProveedores();
+    renderFiltrosCotizaciones(); renderCotizaciones();
+  }, "config_demo_cargar");
 });
 
 /* ---------- Respaldo: descargar / restaurar ----------

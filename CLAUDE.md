@@ -71,6 +71,12 @@ un bundler salvo que el proyecto lo pida de verdad.
    3e. **El impuesto se guarda en la cotización, no en configuración**
    (`impuesto_centesimas`, 7.25% = `725`). Si viviera en configuración,
    cambiar la tasa mañana alteraría el total de una cotización ya firmada.
+
+   3f. **El impuesto NO es ganancia.** Al aprobar una cotización, al trabajo va
+   el **subtotal sin impuesto**: el impuesto se cobra y se entrega, no es plata
+   de la empresa. Si fuera al precio del trabajo, `DB.trabajos.ganancia()` lo
+   contaría como ganancia y todos los reportes saldrían inflados por la tasa.
+   El total con impuesto vive en la cotización, que es el papel del cliente.
 4. **`data.js` y `worker-d1/schema.sql` van sincronizados.** Los campos de cada
    objeto JS son EXACTAMENTE las columnas de su tabla. Si se agrega un campo, se
    agrega en los dos lados en el mismo cambio.
@@ -86,7 +92,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v21**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v24**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
@@ -137,6 +143,10 @@ serio hasta que exista D1.**
 - **`index.html` pasó las 3.000 líneas** y lleva markup, CSS y la lógica de todas
   las pantallas. Todavía se navega, pero es lo próximo que va a doler. Partirlo
   conviene hacerlo **junto con D1**, no antes: ese cambio ya toca la capa de datos.
+- **El botón "Cargar datos de ejemplo"** (Configuración → Datos) mete 10 clientes
+  y 12 productos inventados. Es para probar la app. **Sacarlo antes de que la
+  empresa la use de verdad**: un botón que inventa clientes no puede estar al
+  alcance con datos reales adentro.
 - **Naming inconsistente**: la pestaña se llama `proyectos` en el HTML pero el módulo,
   la tabla y los textos son "trabajos"/"jobs". Unificar a `trabajos` cuando se toque.
 - **El Worker queda con una dirección pública hasta que exista el login.** Se filtra

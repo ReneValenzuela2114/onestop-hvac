@@ -189,6 +189,14 @@ const I18N = {
 
     trabajo_numero: "Trabajo",
 
+    config_demo: "Datos de ejemplo",
+    config_demo_texto: "Agrega clientes y productos inventados para probar la app. No borra nada de lo que ya tengas.",
+    config_demo_cargar: "Cargar datos de ejemplo",
+    config_demo_titulo: "¿Cargar datos de ejemplo?",
+    config_demo_confirma: "Se agregan 10 clientes, 12 productos y 2 proveedores inventados. Lo que ya tenés no se toca. Después los podés borrar uno por uno.",
+    toast_demo_cargado: "Listo: {c} clientes y {p} productos de ejemplo",
+    config_demo_ya_estan: "Los datos de ejemplo ya están cargados",
+
     cliente_historial: "Cotizaciones y trabajos",
     cliente_historial_vacio: "Todavía no tiene cotizaciones ni trabajos.",
     cliente_nueva_cot: "Nueva cotización",
@@ -575,6 +583,14 @@ const I18N = {
     rol_tecnico: "Technician",
 
     trabajo_numero: "Job",
+
+    config_demo: "Sample data",
+    config_demo_texto: "Adds made-up clients and products so you can try the app. Nothing you already have is removed.",
+    config_demo_cargar: "Load sample data",
+    config_demo_titulo: "Load sample data?",
+    config_demo_confirma: "This adds 10 made-up clients, 12 products and 2 suppliers. What you already have is left untouched. You can delete them one by one afterwards.",
+    toast_demo_cargado: "Done: {c} sample clients and {p} products",
+    config_demo_ya_estan: "Sample data is already loaded",
 
     cliente_historial: "Quotes and jobs",
     cliente_historial_vacio: "No quotes or jobs yet.",
