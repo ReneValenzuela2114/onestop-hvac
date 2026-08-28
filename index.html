@@ -343,11 +343,16 @@
   .cot-fila .cot-sub{width:92px;flex-shrink:0;text-align:right;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
   .cot-fila .cot-quitar{flex-shrink:0;border:none;background:none;padding:4px;display:flex;color:var(--muted);cursor:pointer}
   .cot-fila .cot-quitar:hover{color:var(--danger)}
+  .cot-validez{display:flex;align-items:center;gap:8px}
+  /* min-height para que queden como el resto de los campos de la app (37-39px)
+     y se puedan tocar con el dedo; sin esto quedaban en 22px. */
+  .cot-validez input{width:76px;min-height:38px;text-align:right}
+  .cot-validez span{font-size:13px;color:var(--muted)}
   .cot-totales{margin-top:var(--sp-4);padding-top:var(--sp-3);border-top:1px solid var(--line);display:grid;gap:6px;font-size:13px}
   .cot-totales > div{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);color:var(--muted)}
   .cot-totales b{color:var(--ink);font-weight:700;white-space:nowrap}
   .cot-imp label{display:flex;align-items:center;gap:6px;color:var(--muted)}
-  .cot-imp input{width:64px;padding:4px 7px;font-size:12.5px;text-align:right}
+  .cot-imp input{width:64px;min-height:38px;padding:4px 7px;font-size:12.5px;text-align:right}
   .cot-total{padding-top:6px;border-top:1px solid var(--line-soft);font-size:15px}
   .cot-total b{font-size:17px}
   .cot-ganancia b{color:var(--success)}
@@ -841,9 +846,16 @@
           <label data-i18n="cot_estado">Estado</label>
           <select id="cotEstado"></select>
         </div>
+        <!-- Se escriben los días, no la fecha: es más rápido que abrir un
+             calendario y es como se piensa ("vale 30 días"). Lo que se GUARDA
+             es la fecha, que es el dato que ve el cliente y no debe moverse. -->
         <div class="field">
-          <label data-i18n="cot_valida_hasta">Válida hasta</label>
-          <input type="date" id="cotValidaHasta">
+          <label data-i18n="cot_validez">Validez</label>
+          <div class="cot-validez">
+            <input type="number" id="cotValidezDias" min="0" max="365" step="1" value="30">
+            <span data-i18n="cot_validez_dias">días</span>
+          </div>
+          <p class="hint" id="cotValidezHasta"></p>
         </div>
       </div>
 
@@ -2511,6 +2523,38 @@ function renderCotizaciones(){
 
 function numeroCot(c){ return "COT-" + String(c.numero).padStart(3, "0"); }
 
+/* ---------- Validez: se escriben días, se guarda la fecha ----------
+   Se suma con Date.UTC y no con `new Date(texto)`, porque un "2026-08-28"
+   suelto se interpreta como medianoche UTC y en California puede volver al
+   día anterior. Con UTC de punta a punta la fecha nunca se corre. */
+const VALIDEZ_DIAS_POR_DEFECTO = 30;
+
+function sumarDias(fechaISO, dias){
+  const [a, m, d] = String(fechaISO || hoyISO()).split("-").map(Number);
+  const t = Date.UTC(a, m - 1, d) + (Number(dias) || 0) * 86400000;
+  const f = new Date(t);
+  return `${f.getUTCFullYear()}-${String(f.getUTCMonth() + 1).padStart(2, "0")}-${String(f.getUTCDate()).padStart(2, "0")}`;
+}
+
+function diasEntre(desdeISO, hastaISO){
+  const p = (s) => { const [a, m, d] = String(s).split("-").map(Number); return Date.UTC(a, m - 1, d); };
+  return Math.round((p(hastaISO) - p(desdeISO)) / 86400000);
+}
+
+/* Muestra en texto la fecha que va a leer el cliente */
+function refrescarValidezCot(){
+  const dias = parseInt(document.getElementById("cotValidezDias").value, 10);
+  const el = document.getElementById("cotValidezHasta");
+  if (!isFinite(dias) || dias < 0) { el.textContent = ""; return; }
+  const base = cotizacionEditandoId ? (DB.cotizaciones.get(cotizacionEditandoId)?.fecha || hoyISO()) : hoyISO();
+  const hasta = sumarDias(base, dias);
+  const [a, m, d] = hasta.split("-").map(Number);
+  const texto = new Date(Date.UTC(a, m - 1, d)).toLocaleDateString(CFG_LANG === "es" ? "es-US" : "en-US",
+    { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  el.textContent = t("cot_validez_hasta").replace("{f}", texto);
+}
+document.getElementById("cotValidezDias").addEventListener("input", refrescarValidezCot);
+
 /* ---------- Historial del cliente: sus cotizaciones y sus trabajos ----------
    Todo cuelga de cliente_id, así que se responde "¿qué tiene este cliente?"
    sin salir de su ficha. */
@@ -2679,7 +2723,8 @@ function llenarSelectsCot(){
 function limpiarFormularioCot(){
   cotizacionEditandoId = null;
   cotFilas = [];
-  ["cotizacionId", "cotTitulo", "cotValidaHasta", "cotNotas"].forEach(id => document.getElementById(id).value = "");
+  ["cotizacionId", "cotTitulo", "cotNotas"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("cotValidezDias").value = VALIDEZ_DIAS_POR_DEFECTO;
   document.getElementById("cotCliente").value = "";
   document.getElementById("cotEstado").value = "borrador";
   document.getElementById("cotImpuesto").value = "";
@@ -2688,6 +2733,7 @@ function limpiarFormularioCot(){
   document.getElementById("fieldCotCliente").classList.remove("error");
   document.getElementById("fieldCotTitulo").classList.remove("error");
   cerrarMenuProductosCot();
+  refrescarValidezCot();
   renderFilasCot();
 }
 
@@ -2711,7 +2757,9 @@ function abrirEdicionCotizacion(id){
   document.getElementById("cotCliente").value = c.cliente_id || "";
   document.getElementById("cotTitulo").value = c.titulo || "";
   document.getElementById("cotEstado").value = c.estado;
-  document.getElementById("cotValidaHasta").value = c.valida_hasta || "";
+  document.getElementById("cotValidezDias").value = c.valida_hasta
+    ? Math.max(0, diasEntre(c.fecha || hoyISO(), c.valida_hasta))
+    : VALIDEZ_DIAS_POR_DEFECTO;
   document.getElementById("cotImpuesto").value = c.impuesto_centesimas ? (c.impuesto_centesimas / 100) : "";
   document.getElementById("cotNotas").value = c.notas || "";
   cotFilas = DB.cotizaciones.items(id).map(i => ({
@@ -2719,6 +2767,9 @@ function abrirEdicionCotizacion(id){
     cantidad_centesimas: i.cantidad_centesimas, precio_centavos: i.precio_centavos, costo_centavos: i.costo_centavos,
   }));
   renderFilasCot();
+  /* Después de fijar los días: si no, el texto de abajo sigue mostrando la
+     fecha que calculó limpiarFormularioCot() con los 30 por defecto. */
+  refrescarValidezCot();
   document.getElementById("cotAuditoria").textContent =
     (c.trabajo_id && DB.trabajos.get(c.trabajo_id)
       ? t("cot_ya_tiene_trabajo").replace("{n}", DB.trabajos.get(c.trabajo_id).numero) + " · " : "")
@@ -2743,7 +2794,9 @@ function guardarCotizacion(){
   const datos = {
     cliente_id, titulo,
     estado: document.getElementById("cotEstado").value,
-    valida_hasta: document.getElementById("cotValidaHasta").value || null,
+    valida_hasta: sumarDias(
+      cotizacionEditandoId ? (DB.cotizaciones.get(cotizacionEditandoId)?.fecha || hoyISO()) : hoyISO(),
+      parseInt(document.getElementById("cotValidezDias").value, 10) || 0),
     impuesto_centesimas: Math.round((parseFloat(document.getElementById("cotImpuesto").value) || 0) * 100),
     notas: document.getElementById("cotNotas").value.trim(),
   };
