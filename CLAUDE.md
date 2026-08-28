@@ -93,13 +93,18 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v27**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v28**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
    en `fecha`, `HH:MM` 24h en `hora_inicio`/`hora_fin`.
 10. **Escapar siempre** lo que venga del usuario al armar HTML: `esc(valor)`.
 11. **Hosting: Cloudflare.** Pages para el estático, Workers + D1 + R2 para los datos.
+12. **El PDF se arma con HTML + `window.print()`**, igual que DES. Sin librerías.
+    Lo fijo (empresa, presentación, términos, firma) vive en `DB.config` y se
+    escribe una vez; lo variable sale de la cotización. Todo lo que venga del
+    usuario pasa por `textoAHtml()`, que escapa y respeta los saltos de línea:
+    un `<` pegado en los términos rompería el documento entero.
 
 ### Cambiar la forma de los datos
 
@@ -121,6 +126,7 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Lector de mensajes** (captura/PDF → campos del cliente, con Claude) | ✅ programado; falta desplegar el Worker |
 | **Catálogo** (equipos/materiales/servicios, proveedores, filtros para reportes) | ✅ terminado (esquema v3) |
 | **Cotizaciones** (renglones del catálogo, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v4) |
+| **Cotización impresa / PDF** (datos de empresa, presentación, términos, firma) | ✅ terminado · igual que DES: HTML + impresión del navegador |
 | **Worker en Cloudflare** | ✅ desplegado en la cuenta de Rene · hoy sirve el lector de mensajes |
 | **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v4), pero todavía sin desplegar |
 | **R2** | ⛔ la tabla `archivos` y `DB.archivos` ya existen; falta el bucket. Hoy solo lo usa el logo |

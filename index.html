@@ -764,6 +764,83 @@
             </div></div>
           </div>
 
+          <!-- Todo lo que sale impreso en la cotización se configura acá y se
+               guarda una sola vez: sirve para todas las cotizaciones. -->
+          <div class="config-group">
+            <button class="config-group-head" type="button">
+              <span class="cfg-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg></span>
+              <span class="cfg-txt"><b data-i18n="config_grupo_pdf">Cotización impresa</b><span data-i18n="config_grupo_pdf_desc">Datos de la empresa, términos y firma</span></span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="config-group-body"><div class="config-group-inner">
+
+          <div class="config-section">
+            <h3 data-i18n="config_pdf_empresa">Datos de la empresa</h3>
+            <p class="desc" data-i18n="config_pdf_empresa_texto">Aparecen en el encabezado de cada cotización impresa.</p>
+            <div class="field"><label data-i18n="config_pdf_nombre">Nombre</label>
+              <input type="text" id="pdfEmpresaNombre" data-i18n-ph="config_pdf_nombre_ph" placeholder="e.g. One Stop Heating and Cooling"></div>
+            <div class="field-row">
+              <div class="field"><label data-i18n="form_telefono">Teléfono</label>
+                <input type="tel" id="pdfEmpresaTelefono" data-i18n-ph="form_telefono_ph" placeholder="(555) 555-5555"></div>
+              <div class="field"><label data-i18n="form_email">Correo</label>
+                <input type="email" id="pdfEmpresaEmail" data-i18n-ph="form_email_ph" placeholder="name@example.com"></div>
+            </div>
+            <div class="field"><label data-i18n="form_direccion">Dirección</label>
+              <input type="text" id="pdfEmpresaDireccion" data-i18n-ph="config_pdf_direccion_ph" placeholder="e.g. 2800 Pierce Rd, Bakersfield, CA"></div>
+            <div class="field-row">
+              <div class="field"><label data-i18n="config_pdf_web">Sitio web</label>
+                <input type="text" id="pdfEmpresaWeb" placeholder="https://"></div>
+              <div class="field"><label data-i18n="config_pdf_licencia">Licencia</label>
+                <input type="text" id="pdfEmpresaLicencia" data-i18n-ph="config_pdf_licencia_ph" placeholder="e.g. CSLB #1234567"></div>
+            </div>
+          </div>
+
+          <div class="config-section">
+            <h3 data-i18n="config_pdf_textos">Textos de la cotización</h3>
+            <p class="desc" data-i18n="config_pdf_textos_texto">Se escriben una vez y salen en todas las cotizaciones.</p>
+            <div class="field">
+              <label data-i18n="config_pdf_intro">Texto de presentación</label>
+              <textarea id="pdfIntro" rows="3" data-i18n-ph="config_pdf_intro_ph" placeholder="e.g. Thank you for the opportunity. Below is the detail of the proposed work."></textarea>
+              <p class="hint" data-i18n="config_pdf_intro_ayuda">Va arriba del detalle. Sirve para saludar o explicar el alcance del trabajo.</p>
+            </div>
+            <div class="field">
+              <label data-i18n="config_pdf_terminos">Términos y condiciones</label>
+              <textarea id="pdfTerminos" rows="7" data-i18n-ph="config_pdf_terminos_ph" placeholder="Paste your terms and conditions here…"></textarea>
+              <label class="check-row">
+                <input type="checkbox" id="pdfTerminosHojaAparte" checked>
+                <span data-i18n="config_pdf_terminos_hoja">Ponerlos en una hoja aparte</span>
+              </label>
+              <p class="hint" data-i18n="config_pdf_terminos_ayuda">Si lo desmarcás, salen a continuación de la cotización en la misma hoja.</p>
+            </div>
+          </div>
+
+          <div class="config-section">
+            <h3 data-i18n="config_pdf_firma">Firma del cliente</h3>
+            <p class="desc" data-i18n="config_pdf_firma_texto">Espacio al final para que el cliente firme la aceptación. Queda como respaldo.</p>
+            <label class="check-row">
+              <input type="checkbox" id="pdfFirma" checked>
+              <span data-i18n="config_pdf_firma_incluir">Incluir espacio de firma</span>
+            </label>
+            <div class="field" style="margin-top:var(--sp-3)">
+              <label data-i18n="config_pdf_firma_texto_campo">Texto de aceptación</label>
+              <textarea id="pdfFirmaTexto" rows="2" data-i18n-ph="config_pdf_firma_ph" placeholder="e.g. I accept this quote and authorize the work described."></textarea>
+            </div>
+          </div>
+
+          <div class="config-section">
+            <h3 data-i18n="config_pdf_hoja">Hoja</h3>
+            <div class="field-row">
+              <div class="field"><label data-i18n="config_pdf_margen">Margen (pulgadas)</label>
+                <input type="number" id="pdfMargen" min="0.25" max="2" step="0.05" value="0.6"></div>
+              <div class="field"><label data-i18n="config_pdf_logo">Tamaño del logo (px)</label>
+                <input type="number" id="pdfLogoTamano" min="20" max="140" step="2" value="56"></div>
+            </div>
+            <button class="btn primary sm" id="btnGuardarPdf"><span data-i18n="config_guardar">Guardar</span></button>
+          </div>
+
+            </div></div>
+          </div>
+
           <div class="config-group">
             <button class="config-group-head" type="button">
               <span class="cfg-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg></span>
@@ -903,6 +980,10 @@
     </div>
     <div class="modal-foot">
       <button class="btn danger ghost" id="btnEliminarCotizacion" style="display:none"><span data-i18n="eliminar">Eliminar</span></button>
+      <button class="btn ghost" id="btnPdfCotizacion">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+        <span data-i18n="cot_pdf">Ver PDF</span>
+      </button>
       <div class="spacer"></div>
       <button class="btn ghost" data-close-modal="modalCotizacion"><span data-i18n="form_cancelar">Cancelar</span></button>
       <button class="btn" id="btnAprobarCotizacion" style="display:none"><span data-i18n="cot_aprobar">Aprobar y crear trabajo</span></button>
@@ -2846,6 +2927,233 @@ document.getElementById("btnEliminarCotizacion").addEventListener("click", () =>
 });
 
 /* =========================================================================
+   COTIZACIÓN IMPRESA (PDF)
+   -------------------------------------------------------------------------
+   Mismo camino que DES: se arma un HTML completo en una ventana nueva y se
+   usa "Imprimir → Guardar como PDF" del navegador. Sin librerías, sin
+   dependencias, y funciona sin internet.
+
+   Todo lo fijo (datos de la empresa, presentación, términos, firma) sale de
+   Configuración y se escribe una sola vez. Lo variable sale de la cotización.
+   ========================================================================= */
+function cfgPdf(){
+  return {
+    nombre: DB.config.get("pdf_empresa_nombre", ""),
+    telefono: DB.config.get("pdf_empresa_telefono", ""),
+    email: DB.config.get("pdf_empresa_email", ""),
+    direccion: DB.config.get("pdf_empresa_direccion", ""),
+    web: DB.config.get("pdf_empresa_web", ""),
+    licencia: DB.config.get("pdf_empresa_licencia", ""),
+    intro: DB.config.get("pdf_intro", ""),
+    terminos: DB.config.get("pdf_terminos", ""),
+    terminosHojaAparte: DB.config.get("pdf_terminos_hoja_aparte", true) !== false,
+    firma: DB.config.get("pdf_firma", true) !== false,
+    firmaTexto: DB.config.get("pdf_firma_texto", ""),
+    margen: parseFloat(DB.config.get("pdf_margen", 0.6)) || 0.6,
+    logoTamano: parseInt(DB.config.get("pdf_logo_tamano", 56), 10) || 56,
+  };
+}
+
+function fechaLarga(fechaISO){
+  if (!fechaISO) return "";
+  const [a, m, d] = String(fechaISO).split("-").map(Number);
+  return new Date(Date.UTC(a, m - 1, d)).toLocaleDateString(CFG_LANG === "es" ? "es-US" : "en-US",
+    { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+/* Los saltos de línea que escribió la persona se respetan; el resto se escapa.
+   Sin esto, un "<" en los términos rompería el documento entero. */
+function textoAHtml(txt){
+  return esc(txt).replace(/\n/g, "<br>");
+}
+
+function abrirPdfCotizacion(cotId){
+  const cot = DB.cotizaciones.get(cotId);
+  if (!cot) return;
+  const cli = DB.clientes.get(cot.cliente_id);
+  const items = DB.cotizaciones.items(cot.id);
+  const tot = DB.cotizaciones.totales(cot);
+  const cfg = cfgPdf();
+  const logo = DB.archivos.url(DB.archivos.logoEmpresa());
+  const money = (c) => DB.dinero.formato(c, CFG_LANG);
+
+  const filas = items.map(i => `<tr>
+      <td>${esc(i.nombre)}${i.descripcion ? `<span class="d">${esc(i.descripcion)}</span>` : ""}</td>
+      <td class="c">${esc(DB.cantidad.aTexto(i.cantidad_centesimas))} ${esc(t("unidad_" + i.unidad))}</td>
+      <td class="n">${esc(money(i.precio_centavos))}</td>
+      <td class="n b">${esc(money(DB.cantidad.porPrecio(i.cantidad_centesimas, i.precio_centavos)))}</td>
+    </tr>`).join("");
+
+  const bloqueTerminos = cfg.terminos ? `
+    <section class="terminos ${cfg.terminosHojaAparte ? "hoja-aparte" : ""}">
+      <h2>${esc(t("pdf_terminos_titulo"))}</h2>
+      <div class="tx">${textoAHtml(cfg.terminos)}</div>
+    </section>` : "";
+
+  const bloqueFirma = cfg.firma ? `
+    <section class="firma">
+      ${cfg.firmaTexto ? `<p class="acepta">${textoAHtml(cfg.firmaTexto)}</p>` : ""}
+      <div class="lineas">
+        <div class="linea"><span>${esc(t("pdf_firma_cliente"))}</span></div>
+        <div class="linea corta"><span>${esc(t("pdf_firma_fecha"))}</span></div>
+      </div>
+    </section>` : "";
+
+  const html = `<!doctype html>
+<html lang="${CFG_LANG}">
+<head>
+<meta charset="utf-8">
+<title>${esc(numeroCot(cot))} · ${esc(cli ? cli.nombre : "")}</title>
+<style>
+  :root{ --ink:#16202B; --muted:#6B7A8D; --line:#DCE3EA; --azul:#1F6FB2; --azulsuave:#EAF3FB; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#EDF1F5;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink)}
+  .bar{position:sticky;top:0;z-index:9;display:flex;align-items:center;justify-content:space-between;gap:12px;
+       background:var(--ink);color:#fff;padding:10px 16px;font-size:13px}
+  .bar button{background:#fff;color:var(--ink);border:none;border-radius:7px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer}
+  .hoja{width:8.5in;min-height:11in;margin:20px auto;background:#fff;padding:0.6in;box-shadow:0 4px 24px rgba(20,32,48,.14)}
+  .enc{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding-bottom:14px;border-bottom:2px solid var(--ink)}
+  .enc .logo img{height:${cfg.logoTamano}px;width:auto;max-width:240px;object-fit:contain}
+  .enc .marca{font-size:19px;font-weight:800;letter-spacing:-.2px}
+  .enc .datos{font-size:11px;color:var(--muted);line-height:1.65;text-align:right}
+  .titulo{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin:18px 0 4px}
+  .titulo h1{margin:0;font-size:22px;letter-spacing:-.3px}
+  .titulo .num{font-size:13px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .meta{display:flex;gap:26px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-bottom:16px}
+  .meta b{color:var(--ink);font-weight:700}
+  .paraquien{background:var(--azulsuave);border-radius:9px;padding:11px 14px;margin-bottom:14px}
+  .paraquien .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--azul);font-weight:800}
+  .paraquien .n{font-size:15px;font-weight:700;margin-top:2px}
+  .paraquien .d{font-size:11.5px;color:var(--muted);line-height:1.5}
+  .intro{font-size:12px;line-height:1.6;margin:0 0 14px;white-space:pre-line}
+  table{width:100%;border-collapse:collapse}
+  thead th{background:var(--ink);color:#fff;font-size:9.5px;text-transform:uppercase;letter-spacing:.8px;padding:8px 11px;text-align:left}
+  thead th.c{text-align:center;width:110px}
+  thead th.n{text-align:right;width:105px}
+  tbody td{padding:8px 11px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:top}
+  tbody td.c{text-align:center;color:var(--muted)}
+  tbody td.n{text-align:right;font-variant-numeric:tabular-nums}
+  tbody td.b{font-weight:700}
+  tbody td .d{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+  tbody tr:nth-child(even){background:#F8FAFC}
+  .totwrap{display:flex;justify-content:flex-end;margin-top:14px}
+  .tot{width:58%}
+  .tot .r{display:flex;justify-content:space-between;padding:5px 12px;font-size:12.5px;color:var(--muted)}
+  .tot .r b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .tot .grand{display:flex;justify-content:space-between;align-items:center;background:var(--ink);color:#fff;border-radius:9px;padding:11px 14px;margin-top:5px}
+  .tot .grand span{font-size:11.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+  .tot .grand b{font-size:19px;font-weight:800}
+  .notas{margin-top:16px;border-left:3px solid var(--azul);background:var(--azulsuave);border-radius:0 9px 9px 0;padding:10px 14px}
+  .notas h4{margin:0 0 4px;font-size:9.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--azul)}
+  .notas p{margin:0;font-size:11.5px;line-height:1.55}
+  .terminos{margin-top:22px;padding-top:14px;border-top:1px solid var(--line)}
+  .terminos h2{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted)}
+  .terminos .tx{font-size:10.5px;line-height:1.6;color:#3B4757}
+  .firma{margin-top:30px;padding-top:14px;border-top:1px solid var(--line)}
+  .firma .acepta{font-size:11.5px;line-height:1.6;margin:0 0 26px}
+  .firma .lineas{display:flex;gap:36px;align-items:flex-end}
+  .firma .linea{flex:1;border-top:1.5px solid var(--ink);padding-top:6px}
+  .firma .linea.corta{flex:0 0 190px}
+  .firma .linea span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px}
+  .pie{margin-top:26px;text-align:center;font-size:10px;color:var(--muted)}
+
+  @media print{
+    /* El margen de la hoja lo pone la impresora, no el padding del div */
+    @page{ size:Letter; margin:${cfg.margen}in }
+    body{background:#fff}
+    .bar{display:none}
+    .hoja{width:auto;min-height:auto;margin:0;padding:0;box-shadow:none}
+    /* Nada de esto se puede partir a la mitad entre dos hojas */
+    tbody tr,.totwrap,.notas,.firma,.paraquien{break-inside:avoid}
+    thead{display:table-header-group}
+    .terminos.hoja-aparte{break-before:page;margin-top:0;padding-top:0;border-top:none}
+  }
+</style>
+</head>
+<body>
+<div class="bar">
+  <span>${esc(t("pdf_barra_ayuda"))}</span>
+  <button onclick="window.print()">${esc(t("pdf_barra_boton"))}</button>
+</div>
+
+<div class="hoja">
+  <header class="enc">
+    <div class="logo">${logo ? `<img src="${esc(logo)}" alt="">` : `<div class="marca">${esc(cfg.nombre || "")}</div>`}</div>
+    <div class="datos">
+      ${logo && cfg.nombre ? `<div style="font-weight:800;color:var(--ink);font-size:13px">${esc(cfg.nombre)}</div>` : ""}
+      ${cfg.direccion ? `<div>${esc(cfg.direccion)}</div>` : ""}
+      ${cfg.telefono ? `<div>${esc(cfg.telefono)}</div>` : ""}
+      ${cfg.email ? `<div>${esc(cfg.email)}</div>` : ""}
+      ${cfg.web ? `<div>${esc(cfg.web)}</div>` : ""}
+      ${cfg.licencia ? `<div>${esc(cfg.licencia)}</div>` : ""}
+    </div>
+  </header>
+
+  <div class="titulo">
+    <h1>${esc(cot.titulo)}</h1>
+    <span class="num">${esc(numeroCot(cot))}</span>
+  </div>
+  <div class="meta">
+    <span>${esc(t("pdf_fecha"))}: <b>${esc(fechaLarga(cot.fecha))}</b></span>
+    ${cot.valida_hasta ? `<span>${esc(t("cot_valida_hasta"))}: <b>${esc(fechaLarga(cot.valida_hasta))}</b></span>` : ""}
+  </div>
+
+  <div class="paraquien">
+    <div class="k">${esc(t("pdf_para"))}</div>
+    <div class="n">${esc(cli ? cli.nombre : "")}</div>
+    <div class="d">
+      ${cli && cli.empresa ? esc(cli.empresa) + "<br>" : ""}
+      ${cli && cli.direccion ? esc(cli.direccion) + "<br>" : ""}
+      ${cli && cli.telefono ? esc(cli.telefono) : ""}${cli && cli.telefono && cli.email ? " · " : ""}${cli && cli.email ? esc(cli.email) : ""}
+    </div>
+  </div>
+
+  ${cfg.intro ? `<p class="intro">${textoAHtml(cfg.intro)}</p>` : ""}
+
+  <table>
+    <thead><tr>
+      <th>${esc(t("cot_col_producto"))}</th>
+      <th class="c">${esc(t("cot_col_cantidad"))}</th>
+      <th class="n">${esc(t("cot_col_precio"))}</th>
+      <th class="n">${esc(t("cot_col_total"))}</th>
+    </tr></thead>
+    <tbody>${filas}</tbody>
+  </table>
+
+  <div class="totwrap"><div class="tot">
+    <div class="r"><span>${esc(t("cot_subtotal"))}</span><b>${esc(money(tot.subtotal_centavos))}</b></div>
+    ${tot.impuesto_centavos ? `<div class="r"><span>${esc(t("cot_impuesto"))} (${(cot.impuesto_centesimas / 100)}%)</span><b>${esc(money(tot.impuesto_centavos))}</b></div>` : ""}
+    <div class="grand"><span>${esc(t("cot_total"))}</span><b>${esc(money(tot.total_centavos))}</b></div>
+  </div></div>
+
+  ${cot.notas ? `<div class="notas"><h4>${esc(t("cot_notas"))}</h4><p>${textoAHtml(cot.notas)}</p></div>` : ""}
+
+  ${cfg.terminosHojaAparte ? "" : bloqueTerminos}
+  ${bloqueFirma}
+  ${cfg.nombre ? `<div class="pie">${esc(cfg.nombre)}${cfg.telefono ? " · " + esc(cfg.telefono) : ""}</div>` : ""}
+  ${cfg.terminosHojaAparte ? bloqueTerminos : ""}
+</div>
+</body>
+</html>`;
+
+  const win = window.open("", "_blank");
+  if (!win) { toast(t("pdf_bloqueado"), true); return; }
+  win.document.write(html);
+  win.document.close();
+}
+
+document.getElementById("btnPdfCotizacion").addEventListener("click", () => {
+  /* Se guarda primero: el PDF sale de lo guardado, así lo que se ve impreso es
+     exactamente lo que quedó en la base y no algo a medio escribir. */
+  const cot = guardarCotizacion();
+  if (!cot) return;
+  toast(t("toast_cot_actualizada"));
+  renderFiltrosCotizaciones();
+  renderCotizaciones();
+  abrirPdfCotizacion(cot.id);
+});
+
+/* =========================================================================
    CATÁLOGO · equipos, materiales, servicios y sus proveedores
    -------------------------------------------------------------------------
    Los filtros existen para los reportes: todo lo que acá se pueda filtrar,
@@ -3381,6 +3689,46 @@ document.getElementById("btnGuardarTrabajador").addEventListener("click", () => 
   renderUsuarios();
 });
 
+/* ---------- Configuración de la cotización impresa ---------- */
+const CAMPOS_PDF = {
+  pdf_empresa_nombre: "pdfEmpresaNombre",
+  pdf_empresa_telefono: "pdfEmpresaTelefono",
+  pdf_empresa_email: "pdfEmpresaEmail",
+  pdf_empresa_direccion: "pdfEmpresaDireccion",
+  pdf_empresa_web: "pdfEmpresaWeb",
+  pdf_empresa_licencia: "pdfEmpresaLicencia",
+  pdf_intro: "pdfIntro",
+  pdf_terminos: "pdfTerminos",
+  pdf_firma_texto: "pdfFirmaTexto",
+};
+
+function cargarConfigPdf(){
+  for (const [clave, id] of Object.entries(CAMPOS_PDF)) {
+    document.getElementById(id).value = DB.config.get(clave, "");
+  }
+  document.getElementById("pdfTerminosHojaAparte").checked = DB.config.get("pdf_terminos_hoja_aparte", true) !== false;
+  document.getElementById("pdfFirma").checked = DB.config.get("pdf_firma", true) !== false;
+  document.getElementById("pdfMargen").value = DB.config.get("pdf_margen", 0.6);
+  document.getElementById("pdfLogoTamano").value = DB.config.get("pdf_logo_tamano", 56);
+}
+
+document.getElementById("btnGuardarPdf").addEventListener("click", () => {
+  for (const [clave, id] of Object.entries(CAMPOS_PDF)) {
+    DB.config.set(clave, document.getElementById(id).value.trim());
+  }
+  DB.config.set("pdf_terminos_hoja_aparte", document.getElementById("pdfTerminosHojaAparte").checked);
+  DB.config.set("pdf_firma", document.getElementById("pdfFirma").checked);
+  /* Se acotan a lo que la impresora acepta: un margen de 5 pulgadas dejaría
+     la hoja sin espacio útil y no habría forma de darse cuenta. */
+  const margen = Math.min(2, Math.max(0.25, parseFloat(document.getElementById("pdfMargen").value) || 0.6));
+  const logo = Math.min(140, Math.max(20, parseInt(document.getElementById("pdfLogoTamano").value, 10) || 56));
+  DB.config.set("pdf_margen", margen);
+  DB.config.set("pdf_logo_tamano", logo);
+  document.getElementById("pdfMargen").value = margen;
+  document.getElementById("pdfLogoTamano").value = logo;
+  toast(t("config_guardado"));
+});
+
 document.getElementById("btnGuardarMapsKey").addEventListener("click", () => {
   DB.config.set("maps_api_key", document.getElementById("mapsApiKeyInput").value.trim());
   DB.config.set("worker_url", document.getElementById("workerUrlInput").value.trim());
@@ -3603,6 +3951,7 @@ document.getElementById("respaldoFileInput").addEventListener("change", (e) => {
   window.CFG_LANG = DB.config.get("idioma", "en");
   document.getElementById("mapsApiKeyInput").value = DB.config.get("maps_api_key", "");
   document.getElementById("workerUrlInput").value = DB.config.get("worker_url", "");
+  cargarConfigPdf();
   document.getElementById("logoTamanoSlider").value = DB.config.get("logo_tamano", 30);
 
   aplicarTraducciones();
