@@ -235,9 +235,10 @@ const I18N = {
     pdf_firma_fecha: "Fecha",
     pdf_fecha: "Fecha",
     pdf_para: "Para",
-    pdf_barra_ayuda: "Vista previa — imprimí o guardá como PDF para verlo final",
-    pdf_barra_boton: "Imprimir / Guardar PDF",
-    pdf_bloqueado: "El navegador bloqueó la ventana. Permití las ventanas emergentes de este sitio.",
+    cot_pdf_titulo: "Vista previa",
+    cot_pdf_ayuda: "En el diálogo de impresión elegí \"Guardar como PDF\".",
+    cot_pdf_cerrar: "Cerrar",
+    pdf_barra_boton: "Guardar PDF",
 
     /* --- Cotizaciones --- */
     cot_titulo: "Cotizaciones",
@@ -677,9 +678,10 @@ const I18N = {
     pdf_firma_fecha: "Date",
     pdf_fecha: "Date",
     pdf_para: "For",
-    pdf_barra_ayuda: "Preview — print or save as PDF to see the final version",
-    pdf_barra_boton: "Print / Save PDF",
-    pdf_bloqueado: "The browser blocked the window. Allow pop-ups for this site.",
+    cot_pdf_titulo: "Preview",
+    cot_pdf_ayuda: "In the print dialog, choose \"Save as PDF\".",
+    cot_pdf_cerrar: "Close",
+    pdf_barra_boton: "Save PDF",
 
     /* --- Quotes --- */
     cot_titulo: "Quotes",

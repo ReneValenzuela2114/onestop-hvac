@@ -186,6 +186,11 @@
   .modal-backdrop.open{display:flex}
   .modal{background:var(--panel);border-radius:var(--radius);width:100%;max-width:560px;box-shadow:var(--shadow-lg);animation:pop .18s ease}
   .modal.wide{max-width:640px}
+  /* Visor del PDF: ocupa casi toda la pantalla y lo que se ve es exactamente
+     lo que se imprime, porque es el mismo documento. */
+  .modal.pdf{max-width:920px;height:92vh;display:flex;flex-direction:column}
+  .pdf-visor{flex:1;min-height:0;background:#EDF1F5;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .pdf-visor iframe{width:100%;height:100%;border:0;display:block}
   @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
   /* Sacudida sutil: avisa que hay datos sin guardar al hacer clic afuera */
   @keyframes shakeX{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
@@ -193,7 +198,20 @@
   .modal-head{display:flex;align-items:center;justify-content:space-between;padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--line)}
   .modal-head h3{font-size:16px;color:var(--frio-900)}
   .modal-body{padding:var(--sp-5)}
-  .modal-foot{display:flex;justify-content:flex-end;gap:var(--sp-2);padding:var(--sp-4) var(--sp-5);border-top:1px solid var(--line)}
+  /* align-items:center evita que un texto largo del pie estire los botones a su
+     alto (en teléfono llegaban a 149px). flex-wrap deja que la ayuda baje a su
+     propia línea en vez de aplastarse a 76px de ancho. */
+  .modal-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--sp-2);padding:var(--sp-4) var(--sp-5);border-top:1px solid var(--line)}
+  .modal-foot .hint{flex:1 1 220px;margin:0}
+  /* Si el pie ya tiene una ayuda flexible, ella empuja los botones a la derecha:
+     el spacer sobra y, al envolver, mandaba cada botón a su propia línea. */
+  .modal-foot .hint ~ .spacer{display:none}
+  /* En teléfono la ayuda se lleva su propio renglón y los dos botones comparten
+     el de abajo. Sin esto quedaban uno por línea y el pie se comía 165px. */
+  @media (max-width: 560px){
+    .modal-foot .hint{flex:1 1 100%}
+    .modal-foot .hint ~ .btn{flex:1 1 auto}
+  }
 
   .field{margin-bottom:var(--sp-4)}
   .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:6px}
@@ -896,6 +914,30 @@
   </div>
 </nav>
 
+<!-- ============ Modal: Vista previa del PDF ============
+     Se muestra acá adentro y no en una ventana nueva: los navegadores bloquean
+     las ventanas emergentes —en el teléfono casi siempre— y quedaba la
+     sensación de que el botón no hacía nada. Se imprime desde este mismo
+     documento, así lo que se ve es lo que sale. -->
+<div class="modal-backdrop" id="modalPdf">
+  <div class="modal pdf">
+    <div class="modal-head">
+      <h3 id="modalPdfTitulo" data-i18n="cot_pdf_titulo">Vista previa</h3>
+      <button class="btn icon ghost" data-close-modal="modalPdf"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="pdf-visor"><iframe id="pdfVisor" title="PDF"></iframe></div>
+    <div class="modal-foot">
+      <span class="hint" style="margin:0" data-i18n="cot_pdf_ayuda">En el diálogo de impresión elegí "Guardar como PDF".</span>
+      <div class="spacer"></div>
+      <button class="btn ghost" data-close-modal="modalPdf"><span data-i18n="cot_pdf_cerrar">Cerrar</span></button>
+      <button class="btn primary" id="btnImprimirPdf">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+        <span data-i18n="pdf_barra_boton">Imprimir / Guardar PDF</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ Modal: Cotización ============ -->
 <div class="modal-backdrop" id="modalCotizacion">
   <div class="modal">
@@ -1564,9 +1606,13 @@ function mostrarErrorDatos(err){
   }
 }
 
-/* Envuelve un guardado: si la capa de datos rechaza, avisa y no sigue. */
+/* Envuelve un guardado: si la capa de datos rechaza, avisa y no sigue.
+   Devuelve LO QUE DEVOLVIÓ fn (el registro guardado, por ejemplo), así quien
+   llama puede usarlo. Si fn no devuelve nada, devuelve true = "salió bien".
+   Un null o un false de la capa de datos SÍ pasan como falsos: son un fracaso
+   real (el registro no existe, o ya estaba borrado) y quien llama debe frenar. */
 function conAviso(fn){
-  try { fn(); return true; }
+  try { const r = fn(); return r === undefined ? true : r; }
   catch (err) { mostrarErrorDatos(err); return false; }
 }
 
@@ -3062,7 +3108,10 @@ function abrirPdfCotizacion(cotId){
     @page{ size:Letter; margin:${cfg.margen}in }
     body{background:#fff}
     .bar{display:none}
-    .hoja{width:auto;min-height:auto;margin:0;padding:0;box-shadow:none}
+    /* El zoom que achica la hoja para que entre en la pantalla del teléfono va
+       en el style del elemento. Si no se anula acá, el papel saldría impreso al
+       40% del tamaño. En papel siempre va 1:1. */
+    .hoja{width:auto;min-height:auto;margin:0;padding:0;box-shadow:none;zoom:1 !important}
     /* Nada de esto se puede partir a la mitad entre dos hojas */
     tbody tr,.totwrap,.notas,.firma,.paraquien{break-inside:avoid}
     thead{display:table-header-group}
@@ -3071,11 +3120,6 @@ function abrirPdfCotizacion(cotId){
 </style>
 </head>
 <body>
-<div class="bar">
-  <span>${esc(t("pdf_barra_ayuda"))}</span>
-  <button onclick="window.print()">${esc(t("pdf_barra_boton"))}</button>
-</div>
-
 <div class="hoja">
   <header class="enc">
     <div class="logo">${logo ? `<img src="${esc(logo)}" alt="">` : `<div class="marca">${esc(cfg.nombre || "")}</div>`}</div>
@@ -3136,18 +3180,63 @@ function abrirPdfCotizacion(cotId){
 </body>
 </html>`;
 
-  const win = window.open("", "_blank");
-  if (!win) { toast(t("pdf_bloqueado"), true); return; }
-  win.document.write(html);
-  win.document.close();
+  const visor = document.getElementById("pdfVisor");
+  visor.contentDocument.open();
+  visor.contentDocument.write(html);
+  visor.contentDocument.close();
+  document.getElementById("modalPdfTitulo").textContent =
+    t("cot_pdf_titulo") + " · " + numeroCot(cot);
+  abrirModal("modalPdf");
+  ajustarZoomPdf();   // el modal ya está en pantalla: se puede medir de una
 }
+
+/* La hoja mide 8.5in fijos (≈816px). En el teléfono el visor tiene ~336px, así
+   que la hoja se salía de costado y el precio quedaba fuera de la pantalla.
+   Acá se achica para que entre completa. Se usa `zoom` y no `transform` porque
+   zoom SÍ achica el espacio que ocupa: con transform la hoja se veía chica pero
+   seguía habiendo barra de scroll. Al imprimir no aplica: el CSS de @media print
+   redefine .hoja y el zoom de pantalla no viaja al papel. */
+function ajustarZoomPdf(){
+  const visor = document.getElementById("pdfVisor");
+  const doc = visor && visor.contentDocument;
+  const hoja = doc && doc.querySelector(".hoja");
+  /* Si el visor todavía mide 0 no se puede calcular nada: el modal recién se
+     está abriendo. El observador de abajo vuelve a llamar cuando ya tiene tamaño. */
+  if (!hoja || !visor.clientWidth) return;
+  hoja.style.zoom = "";                       // medir siempre sin escala previa
+  const disponible = visor.clientWidth - 16;  // deja aire a los lados
+  const ancho = hoja.offsetWidth;
+  hoja.style.zoom = ancho > disponible ? (disponible / ancho).toFixed(4) : "";
+}
+
+/* Recalcula cuando el visor cambia de tamaño: al abrirse el modal y al girar el
+   teléfono. Se escuchan las dos señales a propósito. El observador avisa cuando
+   el visor ya tiene tamaño real (el evento `resize` de la ventana dispara antes
+   de que el navegador reacomode), pero si el ancho cambia en varios pasos puede
+   quedarse con una medida intermedia. Recalcular de más no cuesta nada: la
+   función mide desde cero cada vez y llegar dos veces al mismo número es inocuo.
+
+   OJO: acá NO va requestAnimationFrame. En una pestaña oculta el navegador deja
+   de dar cuadros, así que el recálculo no se ejecutaba nunca y la hoja quedaba
+   con el tamaño de antes. El observador ya corre después del reacomodo, que es
+   justo cuando medir es válido. */
+new ResizeObserver(ajustarZoomPdf).observe(document.getElementById("pdfVisor"));
+window.addEventListener("resize", ajustarZoomPdf);
+
+/* Imprime SOLO el documento del visor, no la app que está detrás */
+document.getElementById("btnImprimirPdf").addEventListener("click", () => {
+  const visor = document.getElementById("pdfVisor");
+  visor.contentWindow.focus();
+  visor.contentWindow.print();
+});
 
 document.getElementById("btnPdfCotizacion").addEventListener("click", () => {
   /* Se guarda primero: el PDF sale de lo guardado, así lo que se ve impreso es
-     exactamente lo que quedó en la base y no algo a medio escribir. */
+     exactamente lo que quedó en la base y no algo a medio escribir. Se guarda
+     en silencio: el aviso "cambios guardados" hacía parecer que el botón solo
+     guardaba. La respuesta a este botón es que se abra la vista del PDF. */
   const cot = guardarCotizacion();
   if (!cot) return;
-  toast(t("toast_cot_actualizada"));
   renderFiltrosCotizaciones();
   renderCotizaciones();
   abrirPdfCotizacion(cot.id);

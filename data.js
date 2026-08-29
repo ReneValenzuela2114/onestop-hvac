@@ -27,7 +27,7 @@
    - IDs: crypto.randomUUID(). Fechas de auditoría: epoch ms (Date.now()).
    ========================================================================= */
 
-const ESQUEMA_VERSION = 4;
+const ESQUEMA_VERSION = 5;
 
 const CLAVES = {
   clientes: "os_clientes_v1",
@@ -69,6 +69,13 @@ function _texto(v, porDefecto = "") {
 }
 function _numeroONulo(v) {
   return typeof v === "number" && isFinite(v) ? v : null;
+}
+/* Epoch ms → "YYYY-MM-DD" en la hora LOCAL del dispositivo.
+   Nunca usar toISOString() acá: devuelve la fecha en UTC y de noche adelanta
+   un día, así que una cotización hecha hoy saldría fechada mañana. */
+function _fechaLocalISO(ms) {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 /* =========================================================================
@@ -587,7 +594,8 @@ const Cotizaciones = {
       titulo: _texto(datos.titulo),
       descripcion: _texto(datos.descripcion),
       estado: ESTADOS_COTIZACION.includes(datos.estado) ? datos.estado : "borrador",
-      fecha: datos.fecha || null,
+      /* Sin fecha no hay cotización: si la pantalla no la manda, se pone hoy. */
+      fecha: datos.fecha || _fechaLocalISO(Date.now()),
       valida_hasta: datos.valida_hasta || null,
       impuesto_centesimas: Math.round(Number(datos.impuesto_centesimas) || 0),
       notas: _texto(datos.notas),
@@ -1102,6 +1110,16 @@ function _migrar() {
     if (!Array.isArray(_estado.cotizaciones)) _estado.cotizaciones = [];
     if (!Array.isArray(_estado.cotizacionItems)) _estado.cotizacionItems = [];
     if (_estado.config.contador_cotizaciones === undefined) _estado.config.contador_cotizaciones = 0;
+  }
+
+  /* --- v4 → v5: ninguna cotización puede quedar sin fecha ---
+     Una cotización que se le manda al cliente sin fecha no dice desde cuándo
+     corre la validez. Las que quedaron en null se rellenan con el día en que
+     realmente se crearon, que es el sello de auditoría `creado`. */
+  if (desde < 5) {
+    _estado.cotizaciones.forEach((c) => {
+      if (!c.fecha) c.fecha = _fechaLocalISO(c.creado || Date.now());
+    });
   }
 
   _estado.config.esquema_version = ESQUEMA_VERSION;

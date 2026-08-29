@@ -265,7 +265,7 @@ CREATE TABLE IF NOT EXISTS cotizaciones (
   descripcion TEXT NOT NULL DEFAULT '',
   estado TEXT NOT NULL DEFAULT 'borrador'
     CHECK (estado IN ('borrador','enviada','aprobada','rechazada','vencida')),
-  fecha TEXT,                          -- 'YYYY-MM-DD'
+  fecha TEXT NOT NULL,                 -- 'YYYY-MM-DD' · sin fecha no hay cotización
   valida_hasta TEXT,                   -- 'YYYY-MM-DD'
   impuesto_centesimas INTEGER NOT NULL DEFAULT 0
     CHECK (impuesto_centesimas >= 0 AND impuesto_centesimas <= 10000),
