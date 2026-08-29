@@ -3059,69 +3059,102 @@ function abrirPdfCotizacion(cotId){
      Las barras rellenas de azul oscuro con texto blanco se cambiaron por fondo
      claro con texto azul marino. Además de verse menos pesado, hay una razón
      de fondo: si el navegador imprime con "gráficos de fondo" apagado (que es
-     lo normal por defecto), un relleno oscuro sale blanco y el texto blanco
-     encima desaparece. Con texto oscuro sobre claro, el papel siempre se lee. */
+     lo normal por defecto), un relleno oscuro saldría blanco y el texto blanco
+     encima desaparecería. Por eso los bloques de color llevan más abajo la
+     regla print-color-adjust:exact, que obliga a imprimirlos igual.
+     OJO: nada de acentos graves en estos comentarios. Todo este HTML vive
+     dentro de un texto de JavaScript delimitado por acentos graves, y uno
+     suelto corta la cadena y rompe la app entera. */
   :root{
     --ink:#1B2733; --muted:#64748B; --line:#E2E8F0;
     --marino:#0B2A47;      /* --frio-900 de la app */
     --azul:#1C6DB6;        /* --frio-600 de la app */
+    --azulclaro:#2E8FD9;   /* --frio-500 · el "frío" de la marca */
+    --calor:#E8622C;       /* --calor-500 · el "calor" de la marca */
     --azulsuave:#EFF5FB; --tinte:#F5F8FC; --linea-suave:#DCE7F2;
   }
   *{box-sizing:border-box}
   body{margin:0;background:#EDF1F5;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink)}
-  .bar{position:sticky;top:0;z-index:9;display:flex;align-items:center;justify-content:space-between;gap:12px;
-       background:var(--ink);color:#fff;padding:10px 16px;font-size:13px}
-  .bar button{background:#fff;color:var(--ink);border:none;border-radius:7px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer}
-  .hoja{width:8.5in;min-height:11in;margin:20px auto;background:#fff;padding:0.6in;box-shadow:0 4px 24px rgba(20,32,48,.14)}
-  .enc{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding-bottom:14px;border-bottom:1.5px solid var(--marino)}
+  /* Los bloques de color son parte del diseño, no decoración opcional: esto
+     obliga al navegador a imprimirlos aunque el usuario tenga apagado
+     "gráficos de fondo". Sin esto la barra azul saldría blanca en el papel. */
+  .franja,thead th,tbody tr:nth-child(even),.paraquien,.datosclave,.tot .grand,.notas,.firma{
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  .hoja{width:8.5in;min-height:11in;margin:20px auto;background:#fff;padding:0.6in;box-shadow:0 4px 24px rgba(20,32,48,.14);position:relative;overflow:hidden}
+  /* Membrete: una franja de borde a borde arriba de la hoja. Va del naranja al
+     azul porque la empresa es "Heating and Cooling" — calor y frío. Es la marca
+     en una sola línea, y es lo que hace que la hoja se lea como papel de
+     empresa y no como un texto suelto. */
+  .franja{position:absolute;top:0;left:0;right:0;height:6px;
+          background:linear-gradient(90deg,var(--calor) 0%,var(--calor) 22%,var(--azulclaro) 78%,var(--azulclaro) 100%)}
+  .enc{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding-bottom:13px;border-bottom:1.5px solid var(--marino)}
   .enc .logo img{height:${cfg.logoTamano}px;width:auto;max-width:240px;object-fit:contain}
-  .enc .marca{font-size:19px;font-weight:800;letter-spacing:-.2px}
-  .enc .datos{font-size:11px;color:var(--muted);line-height:1.65;text-align:right}
-  .titulo{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin:18px 0 4px}
-  .titulo h1{margin:0;font-size:22px;letter-spacing:-.3px;color:var(--marino)}
-  .titulo .num{font-size:13px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
-  .meta{display:flex;gap:26px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-bottom:16px}
-  .meta b{color:var(--ink);font-weight:700}
-  /* Borde además del relleno: si la impresora no imprime fondos, el recuadro
-     igual se ve. Vale para todos los bloques con color de esta hoja. */
-  .paraquien{background:var(--azulsuave);border:1px solid var(--linea-suave);border-radius:9px;padding:11px 14px;margin-bottom:14px}
-  .paraquien .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--azul);font-weight:800}
-  .paraquien .n{font-size:15px;font-weight:700;margin-top:2px}
-  .paraquien .d{font-size:11.5px;color:var(--muted);line-height:1.5}
-  .intro{font-size:12px;line-height:1.6;margin:0 0 14px;white-space:pre-line}
+  .enc .marca{font-size:19px;font-weight:800;letter-spacing:-.2px;color:var(--marino)}
+  .enc .datos{font-size:10.5px;color:var(--muted);line-height:1.65;text-align:right}
+  .titulo{display:flex;justify-content:space-between;align-items:center;gap:20px;margin:17px 0 13px}
+  .titulo h1{margin:0;font-size:21px;line-height:1.25;letter-spacing:-.3px;color:var(--marino)}
+  /* El número deja de ser texto gris suelto y pasa a ser una etiqueta */
+  .titulo .num{flex:none;background:var(--marino);color:#fff;border-radius:5px;padding:5px 10px;
+               font-size:11px;font-weight:800;letter-spacing:.6px;white-space:nowrap;
+               -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* Dos tarjetas al mismo alto: a quién va, y los datos que se consultan de un
+     vistazo (fecha y vigencia). Antes la vigencia era una línea gris perdida. */
+  .cabecera{display:flex;gap:12px;align-items:stretch;margin-bottom:14px}
+  .paraquien{flex:1;min-width:0;background:var(--azulsuave);border:1px solid var(--linea-suave);border-radius:9px;padding:11px 14px}
+  .datosclave{flex:0 0 218px;background:var(--tinte);border:1px solid var(--line);border-radius:9px;padding:11px 14px}
+  .k{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--azul);font-weight:800}
+  .paraquien .n{font-size:15px;font-weight:700;margin-top:3px;color:var(--marino)}
+  .paraquien .d{font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px}
+  /* Etiqueta arriba y valor abajo, no en la misma línea: "Válida hasta" con una
+     fecha larga en español no entra a lo ancho y se partía en dos renglones
+     desparejos. Apilado entra siempre, en los dos idiomas. */
+  .datosclave .fila{margin-top:8px}
+  .datosclave .fila span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700}
+  .datosclave .fila b{display:block;font-size:11.5px;color:var(--marino);font-weight:700;margin-top:1px}
+  .intro{font-size:11.5px;line-height:1.6;margin:0 0 13px;white-space:pre-line;color:#3B4757}
   table{width:100%;border-collapse:collapse}
-  thead th{background:var(--tinte);color:var(--marino);font-size:9.5px;font-weight:800;text-transform:uppercase;
-           letter-spacing:.8px;padding:9px 11px;text-align:left;border-bottom:1.5px solid var(--marino)}
-  thead th.c{text-align:center;width:110px}
-  thead th.n{text-align:right;width:105px}
-  tbody td{padding:8px 11px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:top}
+  /* Barra azul marino de borde a borde, como el membrete: es lo que separa una
+     cotización de una lista de precios. */
+  thead th{background:var(--marino);color:#fff;font-size:9px;font-weight:700;text-transform:uppercase;
+           letter-spacing:1px;padding:8px 11px;text-align:left}
+  thead th:first-child{border-radius:6px 0 0 0}
+  thead th:last-child{border-radius:0 6px 0 0}
+  thead th.c{text-align:center;width:104px}
+  thead th.n{text-align:right;width:100px}
+  tbody td{padding:8px 11px;border-bottom:1px solid var(--line);font-size:11.5px;vertical-align:top}
   tbody td.c{text-align:center;color:var(--muted)}
   tbody td.n{text-align:right;font-variant-numeric:tabular-nums}
-  tbody td.b{font-weight:700}
-  tbody td .d{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
-  tbody tr:nth-child(even){background:#F8FAFC}
-  .totwrap{display:flex;justify-content:flex-end;margin-top:14px}
-  .tot{width:58%}
-  .tot .r{display:flex;justify-content:space-between;padding:5px 12px;font-size:12.5px;color:var(--muted)}
-  .tot .r b{color:var(--ink);font-variant-numeric:tabular-nums}
-  .tot .grand{display:flex;justify-content:space-between;align-items:center;background:var(--tinte);color:var(--marino);
-              border-top:2px solid var(--marino);border-radius:0 0 7px 7px;padding:11px 14px;margin-top:6px}
-  .tot .grand span{font-size:11.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
-  .tot .grand b{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
-  .notas{margin-top:16px;border:1px solid var(--linea-suave);border-left:3px solid var(--azul);
+  tbody td.b{font-weight:700;color:var(--marino)}
+  tbody td .d{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+  tbody tr:nth-child(even){background:#F7FAFD}
+  .totwrap{display:flex;justify-content:flex-end;margin-top:13px}
+  .tot{width:54%}
+  .tot .r{display:flex;justify-content:space-between;padding:5px 14px;font-size:11.5px;color:var(--muted)}
+  .tot .r b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+  /* El total es la cifra que el cliente busca: se le da una banda propia, alta y
+     tranquila. Resalta por tamaño y aire, no por peso de color. */
+  .tot .grand{display:flex;justify-content:space-between;align-items:center;background:var(--azulsuave);color:var(--marino);
+              border:1px solid var(--linea-suave);border-top:2.5px solid var(--marino);border-radius:0 0 8px 8px;
+              padding:13px 14px;margin-top:5px}
+  .tot .grand span{font-size:10.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+  .tot .grand b{font-size:21px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .notas{margin-top:15px;border:1px solid var(--linea-suave);border-left:3px solid var(--azulclaro);
          background:var(--azulsuave);border-radius:0 9px 9px 0;padding:10px 14px}
-  .notas h4{margin:0 0 4px;font-size:9.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--azul)}
-  .notas p{margin:0;font-size:11.5px;line-height:1.55}
-  .terminos{margin-top:22px;padding-top:14px;border-top:1px solid var(--line)}
-  .terminos h2{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted)}
-  .terminos .tx{font-size:10.5px;line-height:1.6;color:#3B4757}
-  .firma{margin-top:30px;padding-top:14px;border-top:1px solid var(--line)}
-  .firma .acepta{font-size:11.5px;line-height:1.6;margin:0 0 26px}
-  .firma .lineas{display:flex;gap:36px;align-items:flex-end}
-  .firma .linea{flex:1;border-top:1.5px solid var(--marino);padding-top:6px}
-  .firma .linea.corta{flex:0 0 190px}
-  .firma .linea span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px}
-  .pie{margin-top:26px;text-align:center;font-size:10px;color:var(--muted)}
+  .notas h4{margin:0 0 4px;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--azul);font-weight:800}
+  .notas p{margin:0;font-size:11px;line-height:1.55}
+  .terminos{margin-top:20px;padding-top:13px;border-top:1px solid var(--line)}
+  .terminos h2{margin:0 0 7px;font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--marino);font-weight:800}
+  .terminos .tx{font-size:10px;line-height:1.65;color:#3B4757}
+  /* La aceptación va en su propio recuadro: se ve que hay algo para firmar. */
+  .firma{margin-top:22px;background:var(--tinte);border:1px solid var(--line);border-radius:9px;padding:14px 16px 16px}
+  .firma .acepta{font-size:11px;line-height:1.6;margin:0 0 30px;color:var(--ink)}
+  .firma .lineas{display:flex;gap:34px;align-items:flex-end}
+  .firma .linea{flex:1;min-width:0;border-top:1.5px solid var(--marino);padding-top:6px}
+  .firma .linea.corta{flex:0 0 172px}
+  .firma .linea span{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700}
+  .pie{margin-top:20px;padding-top:11px;border-top:2px solid var(--marino);text-align:center;font-size:9.5px;
+       color:var(--muted);letter-spacing:.3px}
 
   @media print{
     /* El margen de la hoja lo pone la impresora, no el padding del div */
@@ -3133,7 +3166,7 @@ function abrirPdfCotizacion(cotId){
        40% del tamaño. En papel siempre va 1:1. */
     .hoja{width:auto;min-height:auto;margin:0;padding:0;box-shadow:none;zoom:1 !important}
     /* Nada de esto se puede partir a la mitad entre dos hojas */
-    tbody tr,.totwrap,.notas,.firma,.paraquien{break-inside:avoid}
+    tbody tr,.totwrap,.notas,.firma,.paraquien,.cabecera,.titulo{break-inside:avoid}
     thead{display:table-header-group}
     .terminos.hoja-aparte{break-before:page;margin-top:0;padding-top:0;border-top:none}
   }
@@ -3141,6 +3174,7 @@ function abrirPdfCotizacion(cotId){
 </head>
 <body>
 <div class="hoja">
+  <div class="franja"></div>
   <header class="enc">
     <div class="logo">${logo ? `<img src="${esc(logo)}" alt="">` : `<div class="marca">${esc(cfg.nombre || "")}</div>`}</div>
     <div class="datos">
@@ -3157,18 +3191,20 @@ function abrirPdfCotizacion(cotId){
     <h1>${esc(cot.titulo)}</h1>
     <span class="num">${esc(numeroCot(cot))}</span>
   </div>
-  <div class="meta">
-    <span>${esc(t("pdf_fecha"))}: <b>${esc(fechaLarga(cot.fecha))}</b></span>
-    ${cot.valida_hasta ? `<span>${esc(t("cot_valida_hasta"))}: <b>${esc(fechaLarga(cot.valida_hasta))}</b></span>` : ""}
-  </div>
-
-  <div class="paraquien">
-    <div class="k">${esc(t("pdf_para"))}</div>
-    <div class="n">${esc(cli ? cli.nombre : "")}</div>
-    <div class="d">
-      ${cli && cli.empresa ? esc(cli.empresa) + "<br>" : ""}
-      ${cli && cli.direccion ? esc(cli.direccion) + "<br>" : ""}
-      ${cli && cli.telefono ? esc(cli.telefono) : ""}${cli && cli.telefono && cli.email ? " · " : ""}${cli && cli.email ? esc(cli.email) : ""}
+  <div class="cabecera">
+    <div class="paraquien">
+      <div class="k">${esc(t("pdf_para"))}</div>
+      <div class="n">${esc(cli ? cli.nombre : "")}</div>
+      <div class="d">
+        ${cli && cli.empresa ? esc(cli.empresa) + "<br>" : ""}
+        ${cli && cli.direccion ? esc(cli.direccion) + "<br>" : ""}
+        ${cli && cli.telefono ? esc(cli.telefono) : ""}${cli && cli.telefono && cli.email ? " · " : ""}${cli && cli.email ? esc(cli.email) : ""}
+      </div>
+    </div>
+    <div class="datosclave">
+      <div class="k">${esc(t("pdf_datos_clave"))}</div>
+      <div class="fila"><span>${esc(t("pdf_fecha"))}</span><b>${esc(fechaLarga(cot.fecha))}</b></div>
+      ${cot.valida_hasta ? `<div class="fila"><span>${esc(t("cot_valida_hasta"))}</span><b>${esc(fechaLarga(cot.valida_hasta))}</b></div>` : ""}
     </div>
   </div>
 
