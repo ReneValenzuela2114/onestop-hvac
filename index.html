@@ -1179,7 +1179,7 @@
     </div>
     <div class="modal-foot">
       <button class="btn ghost" data-close-modal="modalRenglon"><span data-i18n="form_cancelar">Cancelar</span></button>
-      <button class="btn primary" id="btnGuardarRenglon"><span data-i18n="form_guardar">Guardar</span></button>
+      <button class="btn primary" id="btnGuardarRenglon"><span id="txtGuardarRenglon" data-i18n="form_guardar">Guardar</span></button>
     </div>
   </div>
 </div>
@@ -2971,11 +2971,13 @@ function cerrarMenuProductosCot(){ document.getElementById("cotProductoMenu").st
     const item = e.target.closest(".ac-item[data-id]");
     if (!item) return;
     e.preventDefault();
+    /* No se agrega de una: primero se abre la ventanita para poner cantidad y
+       revisar el precio, y recién al confirmar entra a la lista. Es como lo
+       hace DES, y evita tener que corregir el renglón después de agregarlo. */
     const fila = DB.cotizaciones.filaDesdeCatalogo(item.dataset.id);
-    if (fila) { cotFilas.push(fila); renderFilasCot(); }
     input.value = "";
-    renderMenuProductosCot();
-    input.focus();
+    cerrarMenuProductosCot();
+    if (fila) abrirEditorRenglon(-1, fila);
   });
   input.addEventListener("blur", () => setTimeout(cerrarMenuProductosCot, 250));
 })();
@@ -3046,12 +3048,16 @@ document.getElementById("cotFilas").addEventListener("keydown", (e) => {
 /* ---------- Editor de un renglón ----------
    -1 significa "uno nuevo escrito a mano". */
 let renglonEditandoIdx = null;
+/* La fila de la que se partió. Para una nueva guarda lo que vino del catálogo
+   (catalogo_id, costo) para no perderlo al confirmar. */
+let renglonBase = null;
 
-function abrirEditorRenglon(i){
+function abrirEditorRenglon(i, base = null){
   const nuevo = i === -1;
-  const f = nuevo ? DB.cotizaciones.filaManual() : cotFilas[i];
+  const f = nuevo ? (base || DB.cotizaciones.filaManual()) : cotFilas[i];
   if (!f) return;
   renglonEditandoIdx = i;
+  renglonBase = f;
   const selU = document.getElementById("renglonUnidad");
   selU.innerHTML = DB.unidades.map(x => `<option value="${x}">${esc(t("unidad_" + x))}</option>`).join("");
   document.getElementById("renglonNombre").value = f.nombre || "";
@@ -3061,12 +3067,19 @@ function abrirEditorRenglon(i){
   document.getElementById("renglonPrecio").value = DB.dinero.aTexto(f.precio_centavos);
   document.getElementById("renglonCosto").value = DB.dinero.aTexto(f.costo_centavos);
   document.getElementById("renglonEnPdf").checked = f.en_pdf !== 0;
+  const delCatalogo = nuevo && !!f.catalogo_id;
   document.getElementById("modalRenglonTitulo").textContent =
-    t(nuevo ? "cot_renglon_titulo_nuevo" : "cot_renglon_titulo");
+    t(delCatalogo ? "cot_renglon_titulo_agregar" : nuevo ? "cot_renglon_titulo_nuevo" : "cot_renglon_titulo");
+  /* El botón dice lo que va a pasar: agregar si es nuevo, guardar si se edita. */
+  document.getElementById("txtGuardarRenglon").textContent = t(nuevo ? "cot_renglon_agregar" : "form_guardar");
   document.getElementById("fieldRenglonNombre").classList.remove("error");
   ponerBotonesDePaso(document.getElementById("modalRenglon"));
   refrescarResumenRenglon();
   abrirModal("modalRenglon");
+  /* Lo único que casi siempre hay que cambiar de un producto del catálogo es
+     la cantidad: se abre con ese campo listo para escribir encima. */
+  const foco = delCatalogo ? "renglonCantidad" : "renglonNombre";
+  setTimeout(() => { const el = document.getElementById(foco); el.focus(); el.select?.(); }, 60);
 }
 
 /* Las cuentas del editor pasan por las MISMAS funciones que el resto de la
@@ -3088,6 +3101,10 @@ function refrescarResumenRenglon(){
 
 document.getElementById("btnRenglonManual").addEventListener("click", () => abrirEditorRenglon(-1));
 
+/* Si se cierra sin confirmar, no queda nada a medio armar. */
+document.querySelectorAll('#modalRenglon [data-close-modal]').forEach(b =>
+  b.addEventListener("click", () => { renglonEditandoIdx = null; renglonBase = null; }));
+
 document.getElementById("btnGuardarRenglon").addEventListener("click", () => {
   const nombre = document.getElementById("renglonNombre").value.trim();
   const campo = document.getElementById("fieldRenglonNombre");
@@ -3097,7 +3114,10 @@ document.getElementById("btnGuardarRenglon").addEventListener("click", () => {
   const cant = DB.cantidad.aCentesimas(document.getElementById("renglonCantidad").value);
   if (!DB.cantidad.esValida(cant) || cant <= 0) { toast(t("error_cantidad_invalida"), true); return; }
 
-  const base = renglonEditandoIdx === -1 ? DB.cotizaciones.filaManual() : cotFilas[renglonEditandoIdx];
+  /* Se parte de renglonBase para no perder lo que no se edita acá: sobre todo
+     el catalogo_id, que es lo que despues permite agrupar reportes por
+     producto aunque el nombre o el precio se hayan cambiado a mano. */
+  const base = renglonBase || DB.cotizaciones.filaManual();
   const fila = {
     ...base,
     nombre,
@@ -3108,10 +3128,20 @@ document.getElementById("btnGuardarRenglon").addEventListener("click", () => {
     costo_centavos: DB.dinero.aCentavos(document.getElementById("renglonCosto").value) || 0,
     en_pdf: document.getElementById("renglonEnPdf").checked ? 1 : 0,
   };
-  if (renglonEditandoIdx === -1) cotFilas.push(fila); else cotFilas[renglonEditandoIdx] = fila;
+  const esNuevo = renglonEditandoIdx === -1;
+  if (esNuevo) cotFilas.push(fila); else cotFilas[renglonEditandoIdx] = fila;
   renglonEditandoIdx = null;
+  renglonBase = null;
   cerrarModal("modalRenglon");
   renderFilasCot();
+  if (esNuevo) {
+    /* Deja el buscador listo para el siguiente: cargar una cotización es
+       agregar varios productos seguidos. */
+    const buscador = document.getElementById("cotBuscarProducto");
+    buscador.focus();
+    const ultima = document.querySelector("#cotFilas .cot-fila:last-child");
+    if (ultima) ultima.scrollIntoView({ block: "nearest" });
+  }
 });
 
 /* ---------- Arrastrar para reordenar ----------
