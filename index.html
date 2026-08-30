@@ -872,7 +872,7 @@
               <div class="field"><label data-i18n="config_pdf_margen">Margen (pulgadas)</label>
                 <input type="number" id="pdfMargen" min="0.25" max="2" step="0.05" value="0.6"></div>
               <div class="field"><label data-i18n="config_pdf_logo">Tamaño del logo (px)</label>
-                <input type="number" id="pdfLogoTamano" min="20" max="140" step="2" value="56"></div>
+                <input type="number" id="pdfLogoTamano" min="20" max="140" step="1" value="56"></div>
             </div>
             <button class="btn primary sm" id="btnGuardarPdf"><span data-i18n="config_guardar">Guardar</span></button>
           </div>
@@ -2677,6 +2677,11 @@ function numeroCot(c){ return "COT-" + String(c.numero).padStart(3, "0"); }
    día anterior. Con UTC de punta a punta la fecha nunca se corre. */
 const VALIDEZ_DIAS_POR_DEFECTO = 30;
 
+/* Tasa que trae puesta una cotización nueva. Se puede cambiar en cada una: lo
+   que se guarda es la tasa de ESA cotización, no esta constante. Por eso subir
+   este número mañana no altera ninguna cotización ya hecha. */
+const IMPUESTO_POR_DEFECTO = 10;
+
 function sumarDias(fechaISO, dias){
   const [a, m, d] = String(fechaISO || hoyISO()).split("-").map(Number);
   const t = Date.UTC(a, m - 1, d) + (Number(dias) || 0) * 86400000;
@@ -2875,7 +2880,7 @@ function limpiarFormularioCot(){
   document.getElementById("cotValidezDias").value = VALIDEZ_DIAS_POR_DEFECTO;
   document.getElementById("cotCliente").value = "";
   document.getElementById("cotEstado").value = "borrador";
-  document.getElementById("cotImpuesto").value = "";
+  document.getElementById("cotImpuesto").value = IMPUESTO_POR_DEFECTO;
   document.getElementById("cotBuscarProducto").value = "";
   document.getElementById("cotAuditoria").textContent = "";
   document.getElementById("fieldCotCliente").classList.remove("error");
