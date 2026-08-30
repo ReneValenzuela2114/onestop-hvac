@@ -238,6 +238,24 @@
     font-family:inherit;transition:border-color .15s,box-shadow .15s;
   }
   .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--frio-500);box-shadow:0 0 0 3px rgba(46,143,217,.15);outline:none;background:#fff}
+  /* Campo de número con sus botones − y +. El contorno lo dibuja la caja, no
+     el campo, para que los tres se vean como una sola pieza. */
+  .num-paso{display:flex;align-items:stretch;width:100%;border:1px solid var(--line-campo);
+            border-radius:var(--radius-sm);background:#FBFCFE;overflow:hidden}
+  .num-paso input[type=number]{flex:1;min-width:0;border:none;border-radius:0;background:none;text-align:center;
+                               padding:10px 4px;-moz-appearance:textfield;appearance:textfield}
+  /* Se apagan las flechitas del navegador: las reemplazan estos botones */
+  .num-paso input[type=number]::-webkit-outer-spin-button,
+  .num-paso input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .num-paso input:focus{box-shadow:none}
+  .num-paso:focus-within{border-color:var(--frio-500);box-shadow:0 0 0 3px rgba(46,143,217,.15);background:#fff}
+  .num-paso button{flex:0 0 38px;min-height:38px;border:none;background:var(--line-soft);color:var(--frio-700);
+                   font-size:17px;font-weight:700;line-height:1;cursor:pointer;user-select:none;
+                   display:flex;align-items:center;justify-content:center;transition:background .12s}
+  .num-paso button:hover{background:#DDE6F0}
+  .num-paso button:active{background:#CBD8E6}
+  .num-paso .num-menos{border-right:1px solid var(--line-campo)}
+  .num-paso .num-mas{border-left:1px solid var(--line-campo)}
   .field textarea{resize:vertical;min-height:70px}
   .field.error input,.field.error textarea{border-color:var(--danger);background:var(--danger-soft)}
   .field .error-msg{color:var(--danger);font-size:12px;margin-top:5px;display:none}
@@ -385,6 +403,10 @@
   .cot-validez{display:flex;align-items:center;gap:8px}
   /* min-height para que queden como el resto de los campos de la app (37-39px)
      y se puedan tocar con el dedo; sin esto quedaban en 22px. */
+  /* Con los botones − y + la caja no debe ocupar todo el ancho: al lado va la
+     palabra "días" y quedaba un campo de 258px para escribir dos cifras. */
+  .cot-validez .num-paso{width:auto}
+  .cot-validez .num-paso input{flex:0 0 58px}
   .cot-validez input{width:76px;min-height:38px;text-align:right}
   .cot-validez span{font-size:13px;color:var(--muted)}
   .cot-totales{margin-top:var(--sp-4);padding-top:var(--sp-3);border-top:1px solid var(--line);display:grid;gap:6px;font-size:13px}
@@ -992,7 +1014,7 @@
         <div class="field">
           <label data-i18n="cot_validez">Validez</label>
           <div class="cot-validez">
-            <input type="number" id="cotValidezDias" min="0" max="365" step="1" value="30">
+            <input type="number" id="cotValidezDias" min="0" max="365" step="1" value="30" data-paso1>
             <span data-i18n="cot_validez_dias">días</span>
           </div>
           <p class="hint" id="cotValidezHasta"></p>
@@ -1025,7 +1047,7 @@
         <div class="cot-imp">
           <label>
             <span data-i18n="cot_impuesto">Impuesto</span>
-            <input type="number" id="cotImpuesto" min="0" max="100" step="0.01" placeholder="0">
+            <input type="number" id="cotImpuesto" min="0" max="100" step="0.01" placeholder="0" data-paso1>
             <span>%</span>
           </label>
           <b id="cotImpuestoMonto">$0.00</b>
@@ -1125,11 +1147,11 @@
       <div class="field-row">
         <div class="field">
           <label data-i18n="catalogo_costo">Costo (lo que pagás)</label>
-          <input type="number" id="itemCosto" min="0" step="0.01" placeholder="0.00">
+          <input type="number" id="itemCosto" min="0" step="0.01" placeholder="0.00" data-paso1>
         </div>
         <div class="field">
           <label data-i18n="catalogo_precio">Precio (lo que cobrás)</label>
-          <input type="number" id="itemPrecio" min="0" step="0.01" placeholder="0.00">
+          <input type="number" id="itemPrecio" min="0" step="0.01" placeholder="0.00" data-paso1>
         </div>
       </div>
       <p class="cat-margen" id="itemMargen"></p>
@@ -1452,11 +1474,11 @@
       <div class="field-row">
         <div class="field">
           <label data-i18n="form_precio">Price (charged to client)</label>
-          <input type="number" id="trabajoPrecio" min="0" step="0.01" placeholder="0.00">
+          <input type="number" id="trabajoPrecio" min="0" step="0.01" placeholder="0.00" data-paso1>
         </div>
         <div class="field">
           <label data-i18n="form_costo">Cost (materials & labor)</label>
-          <input type="number" id="trabajoCosto" min="0" step="0.01" placeholder="0.00">
+          <input type="number" id="trabajoCosto" min="0" step="0.01" placeholder="0.00" data-paso1>
         </div>
       </div>
 
@@ -2268,6 +2290,66 @@ let diaSeleccionado = hoyISO();
 let trabajoEditandoId = null;
 let trabajoFormBase = "";
 let trabajoTrabSel = new Set(); // ids de trabajadores asignados en el modal
+
+/* ---------- Botones − y + en los campos de número ----------
+   Suman o restan exactamente 1 de la unidad que la persona ve: un dólar, una
+   unidad, un punto de porcentaje, un día.
+
+   La cuenta se hace en ENTEROS, igual que toda la plata de la app: se pasa a
+   la unidad chica (centavos, centésimas), se suma o resta 1 entero de esa
+   unidad, y recién al escribir en la pantalla se vuelve a decimal. Con
+   decimales sueltos, 2.10 + 1 da 3.0999999999999996.
+
+   Van botones propios y no las flechitas del navegador por dos razones
+   medidas: las flechitas con paso 1 redondean y se comen los centavos ($2.10
+   pasa a $3.00), y en el teléfono directamente no existen. */
+function decimalesDelPaso(input){
+  const s = String(input.getAttribute("step") || "1");
+  const punto = s.indexOf(".");
+  return punto === -1 ? 0 : s.length - punto - 1;
+}
+
+function pasoDeUno(input, direccion){
+  const dec = decimalesDelPaso(input);
+  const escala = Math.pow(10, dec);
+  const aEntero = (v) => Math.round((parseFloat(v) || 0) * escala);
+  let valor = aEntero(input.value) + direccion * escala;   // ±1 unidad, en entero
+  if (input.min !== "") valor = Math.max(valor, aEntero(input.min));
+  if (input.max !== "") valor = Math.min(valor, aEntero(input.max));
+  input.value = (valor / escala).toFixed(dec);             // vuelta a decimal: la frontera
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+/* Envuelve los campos marcados con data-paso1. Se llama al arrancar y después
+   de dibujar los renglones de una cotización, que nacen y mueren solos. */
+function ponerBotonesDePaso(raiz = document){
+  raiz.querySelectorAll("input[type=number][data-paso1]").forEach((input) => {
+    if (input.parentElement && input.parentElement.classList.contains("num-paso")) return;
+    const caja = document.createElement("div");
+    caja.className = "num-paso";
+    input.parentNode.insertBefore(caja, input);
+    const boton = (signo, clase) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = clase;
+      b.tabIndex = -1;                       // se tabula al campo, no a los botones
+      b.setAttribute("aria-hidden", "true"); // el campo ya se maneja con el teclado
+      b.textContent = signo;
+      return b;
+    };
+    caja.appendChild(boton("−", "num-menos"));
+    caja.appendChild(input);
+    caja.appendChild(boton("+", "num-mas"));
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".num-menos, .num-mas");
+  if (!b) return;
+  const input = b.parentElement.querySelector("input[type=number]");
+  if (input) pasoDeUno(input, b.classList.contains("num-mas") ? 1 : -1);
+});
 
 function hoyISO(){
   const d = new Date();
@@ -4129,6 +4211,7 @@ document.getElementById("respaldoFileInput").addEventListener("change", (e) => {
   document.querySelectorAll("#langSwitch button").forEach(b => b.classList.toggle("active", b.dataset.lang === window.CFG_LANG));
   document.getElementById("langBtnLabelDesktop").textContent = window.CFG_LANG === "es" ? "English" : "Español";
   aplicarLogo();
+  ponerBotonesDePaso();
   agregarBotonLimpiar(document.getElementById("buscarCliente"));
   agregarBotonLimpiar(document.getElementById("clienteDireccion"), () => {
     document.getElementById("clienteLat").value = "";
