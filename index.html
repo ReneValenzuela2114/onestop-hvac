@@ -24,6 +24,12 @@
     --calor-500:#E8622C; --calor-600:#D14E1C; --calor-soft:#FCE8DE;
     --frio-500:#2E8FD9; --frio-600:#1C6DB6; --frio-700:#123C66; --frio-900:#0B2A47;
     --ink:#1B2733; --muted:#64748B; --line:#E2E8F0; --line-soft:#EEF2F7;
+    /* Contorno de los campos que se llenan. Es un gris propio y NO --line: esa
+       otra sirve para divisiones de tarjetas y tablas, que tienen que quedar
+       suaves. Un campo, en cambio, tiene que verse dónde empieza y dónde
+       termina. Este tono llega a 3:1 contra el blanco, que es el mínimo que
+       piden las pautas de accesibilidad para el borde de un control. */
+    --line-campo:#8494AA;
     --bg:#F3F6FA; --panel:#FFFFFF;
     --success:#2E9E64; --success-soft:#E4F6EC;
     --danger:#D0422A; --danger-soft:#FBEAE6;
@@ -106,8 +112,8 @@
   .toolbar{display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:center;margin-bottom:var(--sp-4)}
   .search-box{position:relative;flex:1;min-width:220px}
   .search-box svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
-  .search-box input{width:100%;padding:10px 12px 10px 36px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);font-size:13.5px}
-  select.filter{padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);font-size:13.5px;color:var(--ink)}
+  .search-box input{width:100%;padding:10px 12px 10px 36px;border:1px solid var(--line-campo);border-radius:var(--radius-sm);background:var(--panel);font-size:13.5px}
+  select.filter{padding:10px 12px;border:1px solid var(--line-campo);border-radius:var(--radius-sm);background:var(--panel);font-size:13.5px;color:var(--ink)}
 
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
 
@@ -216,9 +222,20 @@
   .field{margin-bottom:var(--sp-4)}
   .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:6px}
   .field .hint{font-size:11.5px;color:var(--muted);margin-top:5px}
-  .field input[type=text],.field input[type=tel],.field input[type=email],.field select,.field textarea{
-    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#FBFCFE;font-size:13.5px;color:var(--ink);
-    transition:border-color .15s,box-shadow .15s;
+  /* Se listaban los tipos a mano (text, tel, email) y por eso los campos de
+     número, fecha y hora se quedaban afuera: salían con el gris del navegador,
+     más gruesos, con otro radio y otro fondo. Ahora se toma cualquier campo de
+     escribir y se excluyen los que tienen forma propia (casillas, archivo,
+     color), que no deben recibir este estilo.
+
+     Las exclusiones van dentro de :where() a propósito: así no suman
+     especificidad y las reglas de ancho de cada campo (por ejemplo la cantidad
+     de un renglón, que mide 66px) le siguen ganando a este width:100%. Sin
+     :where() esta regla se los llevaba puestos y el renglón se desbordaba. */
+  .field input:where(:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=color]):not([type=range])),
+  .field select,.field textarea,.cot-imp input{
+    width:100%;min-height:38px;padding:10px 12px;border:1px solid var(--line-campo);border-radius:var(--radius-sm);background:#FBFCFE;font-size:13.5px;color:var(--ink);
+    font-family:inherit;transition:border-color .15s,box-shadow .15s;
   }
   .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--frio-500);box-shadow:0 0 0 3px rgba(46,143,217,.15);outline:none;background:#fff}
   .field textarea{resize:vertical;min-height:70px}
@@ -245,7 +262,9 @@
   .btn-limpiar{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:20px;height:20px;border:none;border-radius:50%;background:var(--muted);color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;padding:0;opacity:.55;transition:opacity .15s}
   .btn-limpiar:hover{opacity:.85}
 
-  .estado-toggle{display:flex;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;width:fit-content}
+  /* Va con el contorno de campo, no con el de tarjeta: está adentro de un
+     .field, con su etiqueta, y es algo que se toca. */
+  .estado-toggle{display:flex;border:1px solid var(--line-campo);border-radius:var(--radius-sm);overflow:hidden;width:fit-content}
   .estado-toggle button{padding:8px 16px;border:none;background:var(--panel);font-size:13px;font-weight:600;color:var(--muted)}
   .estado-toggle button.active[data-v=activo]{background:var(--success-soft);color:var(--success)}
   .estado-toggle button.active[data-v=inactivo]{background:var(--line-soft);color:var(--ink)}
@@ -356,8 +375,10 @@
   .cot-fila{display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm)}
   .cot-fila .cot-nombre{flex:1 1 auto;min-width:0;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cot-fila .cot-unidad{display:block;font-size:11px;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0}
-  .cot-fila .cot-cant{width:66px;flex-shrink:0;padding:5px 7px;font-size:12.5px;text-align:right}
-  .cot-fila .cot-precio-in{width:78px;flex-shrink:0;padding:5px 7px;font-size:12.5px;text-align:right}
+  /* min-height: son campos que se tocan con el dedo en el teléfono y quedaban
+     en 26px. El mínimo de la app es 38px. */
+  .cot-fila .cot-cant{width:66px;flex-shrink:0;min-height:38px;padding:5px 7px;font-size:12.5px;text-align:right}
+  .cot-fila .cot-precio-in{width:78px;flex-shrink:0;min-height:38px;padding:5px 7px;font-size:12.5px;text-align:right}
   .cot-fila .cot-sub{width:92px;flex-shrink:0;text-align:right;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
   .cot-fila .cot-quitar{flex-shrink:0;border:none;background:none;padding:4px;display:flex;color:var(--muted);cursor:pointer}
   .cot-fila .cot-quitar:hover{color:var(--danger)}
@@ -422,14 +443,14 @@
   .ia-estado{font-size:12.5px;color:var(--muted)}
   .ia-estado.ok{color:var(--success)}
   .add-row{display:flex;gap:8px}
-  .add-row input{flex:1;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px}
+  .add-row input{flex:1;min-height:38px;padding:9px 12px;border:1px solid var(--line-campo);border-radius:var(--radius-sm);font-size:13px}
   .user-row{display:flex;align-items:center;gap:var(--sp-3);padding:11px 0;border-bottom:1px solid var(--line-soft)}
   .user-row:last-child{border-bottom:none}
   .user-avatar{width:36px;height:36px;border-radius:50%;background:var(--frio-100,#DCEAF7);color:var(--frio-700);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
   .user-row .info{flex:1;min-width:0}
   .user-row .info b{display:block;font-size:13.5px}
   .user-row .info span{display:block;font-size:12px;color:var(--muted)}
-  select.rol-select{padding:7px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:12.5px}
+  select.rol-select{padding:7px 10px;border:1px solid var(--line-campo);border-radius:var(--radius-sm);font-size:12.5px}
   .rol-badge{background:var(--line-soft);color:var(--frio-700);flex-shrink:0}
   .user-row{flex-wrap:wrap}
   .user-row.inactivo .user-avatar,.user-row.inactivo .info{opacity:.55}
@@ -716,7 +737,7 @@
             <div class="chip-list" id="categoriasChipList"></div>
             <div class="add-row">
               <input type="text" id="nuevaCategoriaInput" data-i18n-ph="config_categoria_nueva_ph" placeholder="e.g. Commercial">
-              <input type="color" id="nuevaCategoriaColor" value="#2E8FD9" style="width:44px;padding:2px;border:1px solid var(--line);border-radius:var(--radius-sm)">
+              <input type="color" id="nuevaCategoriaColor" value="#2E8FD9" style="width:44px;height:38px;padding:2px;border:1px solid var(--line-campo);border-radius:var(--radius-sm)">
               <button class="btn sm" id="btnAgregarCategoria"><span data-i18n="config_categoria_agregar">Agregar</span></button>
             </div>
           </div>
@@ -1470,7 +1491,7 @@
       </div>
       <div id="mapaConClave" style="display:none">
         <div class="mapa-search">
-          <input type="text" id="mapaAutocompleteInput" data-i18n-ph="mapa_buscar_ph" style="width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13.5px">
+          <input type="text" id="mapaAutocompleteInput" data-i18n-ph="mapa_buscar_ph" style="width:100%;padding:11px 13px;border:1px solid var(--line-campo);border-radius:var(--radius-sm);font-size:13.5px">
         </div>
         <div id="mapaCanvas"></div>
         <div class="mapa-info">
