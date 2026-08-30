@@ -385,20 +385,61 @@
      tiene la fila: sin eso las columnas quedan corridas justo 1px. */
   .cot-cabecera{display:flex;align-items:center;gap:7px;padding:0 10px 6px;margin-top:var(--sp-3);border-bottom:1px solid var(--line)}
   .cot-cabecera span{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .cot-cabecera .cot-col-hueco-izq{width:17px;flex-shrink:0}
   .cot-cabecera .cot-nombre{flex:1 1 auto;min-width:0}
-  .cot-cabecera .cot-col-cant{width:66px;flex-shrink:0;text-align:right}
-  .cot-cabecera .cot-col-precio{width:78px;flex-shrink:0;text-align:right}
   .cot-cabecera .cot-col-total{width:92px;flex-shrink:0;text-align:right}
-  .cot-cabecera .cot-col-hueco{width:22px;flex-shrink:0}
-  .cot-fila{display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm)}
-  .cot-fila .cot-nombre{flex:1 1 auto;min-width:0;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .cot-fila .cot-unidad{display:block;font-size:11px;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0}
+  /* Tapa el ojo y la ✕, que no llevan encabezado */
+  .cot-cabecera .cot-col-hueco{width:56px;flex-shrink:0}
+  /* El renglón es un botón: se toca y se abre su editor. No lleva campos
+     adentro, así entra en una sola línea hasta en el teléfono. */
+  /* Grilla y no flex: en el teléfono el nombre necesita su propia línea y con
+     flex quedaba aplastado a 71px entre los tres botones de 38. */
+  .cot-fila{display:grid;grid-template-columns:38px minmax(0,1fr) auto 38px 38px;
+            grid-template-areas:"mover nombre sub ojo quitar";
+            align-items:center;gap:0 6px;padding:6px 8px;background:var(--panel);border:1px solid var(--line);
+            border-radius:var(--radius-sm);cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s}
+  .cot-mover{grid-area:mover}
+  .cot-fila .cot-nombre{grid-area:nombre}
+  .cot-fila .cot-sub{grid-area:sub}
+  .cot-fila .cot-ojo{grid-area:ojo}
+  .cot-fila .cot-quitar{grid-area:quitar}
+  .cot-fila:hover{border-color:var(--frio-500)}
+  .cot-fila:focus-visible{outline:none;border-color:var(--frio-500);box-shadow:0 0 0 3px rgba(46,143,217,.15)}
+  /* Escondido del PDF: punteado y apagado, para que se vea de un vistazo cuál
+     no le va a salir al cliente. */
+  .cot-fila.oculta{border-style:dashed;background:var(--line-soft)}
+  .cot-fila.oculta .cot-titulo-fila{color:var(--muted);text-decoration:line-through}
+  .cot-fila.arrastrando{opacity:.45}
+  .cot-fila.destino{border-color:var(--frio-500);box-shadow:0 -2px 0 0 var(--frio-500) inset}
+  /* Los tres controles del renglón miden 38px de lado: son lo que se toca con
+     el dedo. El ícono adentro sigue siendo chico; lo que crece es el área que
+     acepta el toque. La fila mide 52px, así que no la estiran. */
+  .cot-mover,.cot-fila .cot-ojo,.cot-fila .cot-quitar{
+    flex:0 0 38px;min-width:38px;min-height:38px;display:flex;align-items:center;justify-content:center}
+  .cot-mover{color:var(--muted);cursor:grab;touch-action:none}
+  .cot-mover:active{cursor:grabbing}
+  .cot-fila .cot-nombre{flex:1 1 auto;min-width:0;display:block}
+  .cot-titulo-fila{display:block;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cot-marca-manual{display:inline-block;margin-left:6px;font-size:9.5px;font-weight:700;text-transform:uppercase;
+                    letter-spacing:.04em;color:var(--frio-600);background:var(--line-soft);border-radius:999px;padding:1px 6px;vertical-align:middle}
+  .cot-fila .cot-unidad{display:block;font-size:11px;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0;
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cot-ojo{border:none;background:none;padding:0;color:var(--frio-600);cursor:pointer;border-radius:6px}
+  .cot-ojo:hover{background:var(--line-soft)}
+  .cot-ojo.off{color:var(--muted)}
+  .cot-agregar{display:flex;gap:8px;align-items:stretch}
+  .cot-agregar .ac-anchor{flex:1 1 auto;min-width:0}
+  .cot-agregar .btn{flex:0 0 auto;min-height:38px;white-space:nowrap}
+  .renglon-resumen{display:grid;gap:6px;background:var(--line-soft);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:var(--sp-4);font-size:13px}
+  .renglon-resumen > div{display:flex;justify-content:space-between;gap:12px;color:var(--muted)}
+  .renglon-resumen b{color:var(--ink);font-weight:700;white-space:nowrap}
+  .renglon-resumen b.en-rojo{color:var(--danger)}
   /* min-height: son campos que se tocan con el dedo en el teléfono y quedaban
      en 26px. El mínimo de la app es 38px. */
   .cot-fila .cot-cant{width:66px;flex-shrink:0;min-height:38px;padding:5px 7px;font-size:12.5px;text-align:right}
   .cot-fila .cot-precio-in{width:78px;flex-shrink:0;min-height:38px;padding:5px 7px;font-size:12.5px;text-align:right}
-  .cot-fila .cot-sub{width:92px;flex-shrink:0;text-align:right;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
-  .cot-fila .cot-quitar{flex-shrink:0;border:none;background:none;padding:4px;display:flex;color:var(--muted);cursor:pointer}
+  .cot-fila .cot-sub{text-align:right;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;padding-left:4px}
+  .cot-fila .cot-quitar{border:none;background:none;padding:0;color:var(--muted);cursor:pointer}
   .cot-fila .cot-quitar:hover{color:var(--danger)}
   .cot-validez{display:flex;align-items:center;gap:8px}
   /* min-height para que queden como el resto de los campos de la app (37-39px)
@@ -435,30 +476,20 @@
      etiquetas de adentro sobran. */
   .cot-etq{display:none}
   @media (max-width: 560px){
-    /* Acá la fila se parte en dos líneas y la cabecera ya no puede quedar
-       encima de sus números: se esconde y cada campo lleva su etiqueta al
-       lado. Una cabecera corrida confunde más que no tenerla. */
+    /* Al no haber campos adentro, el renglón entra en una línea también acá:
+       la manija, el nombre con su "3 Unidad · $115.00" debajo, el total, el
+       ojo y la ✕. Antes hacían falta veinte líneas de CSS para acomodar tres
+       campos que ahora viven en su propia ventana. */
     .cot-cabecera{display:none !important}
-    .cot-etq{display:inline;font-size:11px;color:var(--muted);flex-shrink:0}
-    .cot-fila{flex-wrap:wrap;gap:6px;padding:8px 9px}
-    .cot-fila .cot-nombre{flex:1 0 100%;line-height:1.25}
-    /* Dos líneas parejas, no tres desprolijas: arriba el nombre con la × a su
-       derecha, abajo cantidad, precio y total. Se ordena con `order` porque en
-       el HTML la × va al final; achicando anchos nunca entraba y terminaba
-       cayéndose sola a una tercera línea. */
-    .cot-fila{gap:6px}
-    .cot-fila .cot-nombre{flex:1 1 calc(100% - 132px);order:1}
-    .cot-fila .cot-sub{order:2;width:94px;flex-shrink:0}
-    .cot-fila .cot-quitar{order:3;padding:6px;align-self:flex-start}
-    .cot-fila .cot-etq,
-    .cot-fila .cot-cant,
-    .cot-fila .cot-precio-in{order:4}
-    /* Anchos según lo que se escribe de verdad en cada campo: una cantidad son
-       dos o tres cifras ("25", "12.5"), un precio puede ser "2400.00". Con los
-       dos del mismo ancho, un precio de cuatro cifras empujaba el total a otra
-       línea. */
-    .cot-fila .cot-cant{width:52px;min-height:38px;font-size:13px}
-    .cot-fila .cot-precio-in{width:64px;min-height:38px;font-size:13px}
+    /* Dos líneas: arriba la manija, el nombre y los botones; abajo el total,
+       alineado a la derecha. Así el nombre tiene ~225px en vez de 71. */
+    .cot-fila{grid-template-columns:38px minmax(0,1fr) 38px 38px;
+              grid-template-areas:"mover nombre nombre nombre"
+                                  "mover sub    ojo    quitar"}
+    .cot-fila .cot-sub{padding-left:0}
+    .cot-agregar{flex-wrap:wrap}
+    .cot-agregar .ac-anchor{flex:1 1 100%}
+    .cot-agregar .btn{flex:1 1 auto}
   }
   /* Fila del lector de mensajes, arriba del formulario de cliente */
   .ia-row{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;margin-bottom:var(--sp-4);padding-bottom:var(--sp-4);border-bottom:1px dashed var(--line)}
@@ -1024,16 +1055,23 @@
       <!-- ---- Renglones ---- -->
       <div class="field">
         <label data-i18n="cot_renglones">Productos y servicios</label>
-        <div class="ac-anchor">
-          <input type="text" id="cotBuscarProducto" data-i18n-ph="cot_agregar_ph" placeholder="Search the catalog to add…" autocomplete="off">
-          <div class="ac-menu" id="cotProductoMenu" style="display:none"></div>
+        <div class="cot-agregar">
+          <div class="ac-anchor">
+            <input type="text" id="cotBuscarProducto" data-i18n-ph="cot_agregar_ph" placeholder="Search the catalog to add…" autocomplete="off">
+            <div class="ac-menu" id="cotProductoMenu" style="display:none"></div>
+          </div>
+          <!-- Para cobrar algo que no está en el catálogo: un acarreo, un
+               permiso, un trabajo puntual. Queda sin catalogo_id. -->
+          <button type="button" class="btn" id="btnRenglonManual">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <span data-i18n="cot_manual_agregar">Escribir uno</span>
+          </button>
         </div>
-        <!-- Encabezado de columnas: sin esto los tres números de cada renglón
-             no dicen qué son. Se oculta cuando no hay renglones. -->
+        <!-- Encabezado de columnas: sin esto los números de cada renglón no
+             dicen qué son. Se oculta cuando no hay renglones. -->
         <div class="cot-cabecera" id="cotCabecera" style="display:none">
+          <span class="cot-col-hueco-izq"></span>
           <span class="cot-nombre" data-i18n="cot_col_producto">Producto</span>
-          <span class="cot-col-cant" data-i18n="cot_col_cantidad">Cant.</span>
-          <span class="cot-col-precio" data-i18n="cot_col_precio">Precio unit.</span>
           <span class="cot-col-total" data-i18n="cot_col_total">Total</span>
           <span class="cot-col-hueco"></span>
         </div>
@@ -1073,6 +1111,75 @@
       <button class="btn ghost" data-close-modal="modalCotizacion"><span data-i18n="form_cancelar">Cancelar</span></button>
       <button class="btn" id="btnAprobarCotizacion" style="display:none"><span data-i18n="cot_aprobar">Aprobar y crear trabajo</span></button>
       <button class="btn primary" id="btnGuardarCotizacion"><span data-i18n="form_guardar">Guardar</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Modal: Renglón de una cotización ============
+     Se abre al tocar un renglón. Acá se edita TODO lo de esa línea: el nombre
+     y el precio quedan pegados a la cotización, no al catálogo — cambiarlos
+     acá no toca el producto, y subir el precio del catálogo mañana no cambia
+     esta cotización. -->
+<div class="modal-backdrop" id="modalRenglon">
+  <div class="modal angosto">
+    <div class="modal-head">
+      <h3 id="modalRenglonTitulo" data-i18n="cot_renglon_titulo">Renglón</h3>
+      <button class="btn icon ghost" data-close-modal="modalRenglon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="renglonIdx">
+
+      <div class="field" id="fieldRenglonNombre">
+        <label data-i18n="cot_renglon_nombre">Qué se cobra</label>
+        <input type="text" id="renglonNombre" data-i18n-ph="cot_renglon_nombre_ph" placeholder="e.g. 3-ton heat pump">
+        <p class="error-msg" data-i18n="error_nombre_requerido">El nombre es obligatorio</p>
+      </div>
+
+      <div class="field">
+        <label data-i18n="cot_renglon_desc">Detalle para el cliente (opcional)</label>
+        <textarea id="renglonDescripcion" rows="2" data-i18n-ph="cot_renglon_desc_ph" placeholder="e.g. includes removal of the old unit"></textarea>
+        <p class="hint" data-i18n="cot_renglon_desc_ayuda">Sale abajo del nombre en el PDF.</p>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label data-i18n="cot_col_cantidad">Cantidad</label>
+          <input type="number" id="renglonCantidad" min="0" step="0.01" data-paso1>
+        </div>
+        <div class="field">
+          <label data-i18n="catalogo_unidad">Unidad</label>
+          <select id="renglonUnidad"></select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label data-i18n="cot_renglon_precio">Precio por unidad</label>
+          <input type="number" id="renglonPrecio" min="0" step="0.01" placeholder="0.00" data-paso1>
+        </div>
+        <div class="field">
+          <label data-i18n="cot_renglon_costo">Costo por unidad</label>
+          <input type="number" id="renglonCosto" min="0" step="0.01" placeholder="0.00" data-paso1>
+          <p class="hint" data-i18n="cot_renglon_costo_ayuda">Interno: el cliente no lo ve.</p>
+        </div>
+      </div>
+
+      <div class="renglon-resumen">
+        <div><span data-i18n="cot_renglon_subtotal">Este renglón</span><b id="renglonSubtotal">$0.00</b></div>
+        <div><span data-i18n="cot_ganancia">Ganancia estimada</span><b id="renglonGanancia">$0.00</b></div>
+      </div>
+
+      <div class="field">
+        <label class="check-row">
+          <input type="checkbox" id="renglonEnPdf" checked>
+          <span data-i18n="cot_renglon_en_pdf">Mostrarlo en el PDF del cliente</span>
+        </label>
+        <p class="hint" data-i18n="cot_renglon_en_pdf_ayuda">Si lo desmarcás, no aparece en la lista del PDF pero se sigue cobrando: el total no baja.</p>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" data-close-modal="modalRenglon"><span data-i18n="form_cancelar">Cancelar</span></button>
+      <button class="btn primary" id="btnGuardarRenglon"><span data-i18n="form_guardar">Guardar</span></button>
     </div>
   </div>
 </div>
@@ -2880,17 +2987,24 @@ function renderFilasCot(){
   document.getElementById("cotCabecera").style.display = cotFilas.length ? "" : "none";
   cont.innerHTML = cotFilas.map((f, i) => {
     const sub = DB.cantidad.porPrecio(f.cantidad_centesimas, f.precio_centavos);
-    /* Debajo del nombre va la unidad: "por pie" o "por hora" explica de qué
-       son la cantidad y el precio de esa fila, que cambia según el producto. */
-    return `<div class="cot-fila" data-i="${i}">
-      <span class="cot-nombre" title="${esc(f.nombre)}">${esc(f.nombre)}
-        <span class="cot-unidad">${esc(t("catalogo_por_unidad").replace("{u}", t("unidad_" + f.unidad)))}</span>
+    const oculto = f.en_pdf === 0;
+    const manual = !f.catalogo_id;
+    /* El renglón es de solo lectura: todo se edita tocándolo, en su ventana.
+       Así entra en una línea hasta en el teléfono, y hay lugar para cosas que
+       antes no cabían (descripción, unidad, costo). */
+    return `<div class="cot-fila${oculto ? " oculta" : ""}" data-i="${i}" role="button" tabindex="0"
+                 aria-label="${esc(f.nombre || t("cot_renglon_sin_nombre"))}">
+      <span class="cot-mover" aria-hidden="true" title="${esc(t("cot_mover_ayuda"))}">
+        <svg width="13" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="9" cy="19" r="2"/><circle cx="15" cy="19" r="2"/></svg>
       </span>
-      <span class="cot-etq">${esc(t("cot_col_cantidad"))}</span>
-      <input type="number" class="cot-cant" min="0" step="0.01" value="${DB.cantidad.aTexto(f.cantidad_centesimas)}" aria-label="${esc(t("cot_col_cantidad"))}">
-      <span class="cot-etq">${esc(t("cot_precio_corto"))}</span>
-      <input type="number" class="cot-precio-in" min="0" step="0.01" value="${DB.dinero.aTexto(f.precio_centavos)}" aria-label="${esc(t("cot_col_precio"))}">
+      <span class="cot-nombre">
+        <span class="cot-titulo-fila">${esc(f.nombre || t("cot_renglon_sin_nombre"))}${manual ? `<span class="cot-marca-manual">${esc(t("cot_manual_marca"))}</span>` : ""}</span>
+        <span class="cot-unidad">${esc(DB.cantidad.aTexto(f.cantidad_centesimas))} ${esc(t("unidad_" + f.unidad))} · ${esc(DB.dinero.formato(f.precio_centavos, CFG_LANG))}</span>
+      </span>
       <span class="cot-sub">${esc(DB.dinero.formato(sub, CFG_LANG))}</span>
+      <button type="button" class="cot-ojo${oculto ? " off" : ""}" aria-pressed="${oculto ? "true" : "false"}"
+              title="${esc(t(oculto ? "cot_ojo_mostrar" : "cot_ojo_ocultar"))}"
+              aria-label="${esc(t(oculto ? "cot_ojo_mostrar" : "cot_ojo_ocultar"))}">${ICONO_OJO(oculto)}</button>
       <button type="button" class="cot-quitar" aria-label="${esc(t("eliminar"))}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
@@ -2899,25 +3013,155 @@ function renderFilasCot(){
   refrescarTotalesCot();
 }
 
-document.getElementById("cotFilas").addEventListener("input", (e) => {
-  const fila = e.target.closest(".cot-fila");
-  if (!fila) return;
-  const f = cotFilas[parseInt(fila.dataset.i, 10)];
-  if (!f) return;
-  if (e.target.classList.contains("cot-cant")) f.cantidad_centesimas = DB.cantidad.aCentesimas(e.target.value);
-  if (e.target.classList.contains("cot-precio-in")) f.precio_centavos = DB.dinero.aCentavos(e.target.value);
-  // Solo se repinta el subtotal de esa fila: repintar todo movería el cursor
-  const sub = DB.cantidad.porPrecio(f.cantidad_centesimas || 0, f.precio_centavos || 0);
-  fila.querySelector(".cot-sub").textContent = DB.dinero.formato(sub, CFG_LANG);
-  refrescarTotalesCot();
-});
+/* Ojo abierto = sale en el PDF. Ojo tachado = no sale (pero se sigue cobrando). */
+function ICONO_OJO(oculto){
+  return oculto
+    ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M6.61 6.61A18.15 18.15 0 0 0 2 12s3 8 10 8a9.7 9.7 0 0 0 5.39-1.61"/><path d="m2 2 20 20"/></svg>`
+    : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-8 10-8 10 8 10 8-3 8-10 8-10-8-10-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+}
 
 document.getElementById("cotFilas").addEventListener("click", (e) => {
-  const btn = e.target.closest(".cot-quitar");
-  if (!btn) return;
-  cotFilas.splice(parseInt(btn.closest(".cot-fila").dataset.i, 10), 1);
+  const fila = e.target.closest(".cot-fila");
+  if (!fila) return;
+  const i = parseInt(fila.dataset.i, 10);
+  if (e.target.closest(".cot-quitar")) { cotFilas.splice(i, 1); renderFilasCot(); return; }
+  if (e.target.closest(".cot-ojo")) {
+    cotFilas[i].en_pdf = cotFilas[i].en_pdf === 0 ? 1 : 0;
+    renderFilasCot();          // el total NO cambia: escondido se sigue cobrando
+    return;
+  }
+  if (e.target.closest(".cot-mover")) return;   // eso es para arrastrar
+  abrirEditorRenglon(i);
+});
+
+/* Con el teclado, Enter o Espacio sobre el renglón abre el editor. */
+document.getElementById("cotFilas").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const fila = e.target.closest(".cot-fila");
+  if (!fila || e.target !== fila) return;
+  e.preventDefault();
+  abrirEditorRenglon(parseInt(fila.dataset.i, 10));
+});
+
+/* ---------- Editor de un renglón ----------
+   -1 significa "uno nuevo escrito a mano". */
+let renglonEditandoIdx = null;
+
+function abrirEditorRenglon(i){
+  const nuevo = i === -1;
+  const f = nuevo ? DB.cotizaciones.filaManual() : cotFilas[i];
+  if (!f) return;
+  renglonEditandoIdx = i;
+  const selU = document.getElementById("renglonUnidad");
+  selU.innerHTML = DB.unidades.map(x => `<option value="${x}">${esc(t("unidad_" + x))}</option>`).join("");
+  document.getElementById("renglonNombre").value = f.nombre || "";
+  document.getElementById("renglonDescripcion").value = f.descripcion || "";
+  document.getElementById("renglonCantidad").value = DB.cantidad.aTexto(f.cantidad_centesimas);
+  document.getElementById("renglonUnidad").value = f.unidad || "unidad";
+  document.getElementById("renglonPrecio").value = DB.dinero.aTexto(f.precio_centavos);
+  document.getElementById("renglonCosto").value = DB.dinero.aTexto(f.costo_centavos);
+  document.getElementById("renglonEnPdf").checked = f.en_pdf !== 0;
+  document.getElementById("modalRenglonTitulo").textContent =
+    t(nuevo ? "cot_renglon_titulo_nuevo" : "cot_renglon_titulo");
+  document.getElementById("fieldRenglonNombre").classList.remove("error");
+  ponerBotonesDePaso(document.getElementById("modalRenglon"));
+  refrescarResumenRenglon();
+  abrirModal("modalRenglon");
+}
+
+/* Las cuentas del editor pasan por las MISMAS funciones que el resto de la
+   app: cantidad × precio con DB.cantidad.porPrecio, nunca a mano. */
+function refrescarResumenRenglon(){
+  const cant = DB.cantidad.aCentesimas(document.getElementById("renglonCantidad").value) || 0;
+  const precio = DB.dinero.aCentavos(document.getElementById("renglonPrecio").value) || 0;
+  const costo = DB.dinero.aCentavos(document.getElementById("renglonCosto").value) || 0;
+  const sub = DB.cantidad.porPrecio(cant, precio);
+  const gan = sub - DB.cantidad.porPrecio(cant, costo);
+  document.getElementById("renglonSubtotal").textContent = DB.dinero.formato(sub, CFG_LANG);
+  const elGan = document.getElementById("renglonGanancia");
+  elGan.textContent = DB.dinero.formato(gan, CFG_LANG);
+  elGan.classList.toggle("en-rojo", gan < 0);
+}
+
+["renglonCantidad", "renglonPrecio", "renglonCosto"].forEach(id =>
+  document.getElementById(id).addEventListener("input", refrescarResumenRenglon));
+
+document.getElementById("btnRenglonManual").addEventListener("click", () => abrirEditorRenglon(-1));
+
+document.getElementById("btnGuardarRenglon").addEventListener("click", () => {
+  const nombre = document.getElementById("renglonNombre").value.trim();
+  const campo = document.getElementById("fieldRenglonNombre");
+  if (!nombre) { campo.classList.add("error"); document.getElementById("renglonNombre").focus(); return; }
+  campo.classList.remove("error");
+
+  const cant = DB.cantidad.aCentesimas(document.getElementById("renglonCantidad").value);
+  if (!DB.cantidad.esValida(cant) || cant <= 0) { toast(t("error_cantidad_invalida"), true); return; }
+
+  const base = renglonEditandoIdx === -1 ? DB.cotizaciones.filaManual() : cotFilas[renglonEditandoIdx];
+  const fila = {
+    ...base,
+    nombre,
+    descripcion: document.getElementById("renglonDescripcion").value.trim(),
+    unidad: document.getElementById("renglonUnidad").value,
+    cantidad_centesimas: cant,
+    precio_centavos: DB.dinero.aCentavos(document.getElementById("renglonPrecio").value) || 0,
+    costo_centavos: DB.dinero.aCentavos(document.getElementById("renglonCosto").value) || 0,
+    en_pdf: document.getElementById("renglonEnPdf").checked ? 1 : 0,
+  };
+  if (renglonEditandoIdx === -1) cotFilas.push(fila); else cotFilas[renglonEditandoIdx] = fila;
+  renglonEditandoIdx = null;
+  cerrarModal("modalRenglon");
   renderFilasCot();
 });
+
+/* ---------- Arrastrar para reordenar ----------
+   Con eventos de puntero y no con el arrastre HTML de siempre: ese NO existe
+   al tocar con el dedo, así que en el teléfono no se podría reordenar nada.
+   Con pointer* funciona igual con dedo y con mouse. */
+(function arrastreDeRenglones(){
+  const cont = document.getElementById("cotFilas");
+  let origen = null, filaEl = null;
+
+  cont.addEventListener("pointerdown", (e) => {
+    const manija = e.target.closest(".cot-mover");
+    if (!manija) return;
+    filaEl = manija.closest(".cot-fila");
+    origen = parseInt(filaEl.dataset.i, 10);
+    filaEl.classList.add("arrastrando");
+    /* Capturar el puntero es lo que hace que el dedo siga mandando aunque se
+       salga del renglón. Si el navegador no lo permite, el arrastre igual
+       funciona: no vale la pena romper todo por esto. */
+    try { manija.setPointerCapture(e.pointerId); } catch { /* sin captura */ }
+    e.preventDefault();                       // que no arranque a hacer scroll
+  });
+
+  cont.addEventListener("pointermove", (e) => {
+    if (origen === null) return;
+    e.preventDefault();
+    /* Con el puntero capturado, e.target sigue siendo la manija: hay que
+       preguntar qué elemento está DEBAJO del dedo. */
+    const debajo = document.elementFromPoint(e.clientX, e.clientY);
+    const sobre = debajo && debajo.closest(".cot-fila");
+    cont.querySelectorAll(".cot-fila").forEach(x => x.classList.remove("destino"));
+    if (sobre && sobre !== filaEl) sobre.classList.add("destino");
+  });
+
+  const soltar = (e) => {
+    if (origen === null) return;
+    const debajo = document.elementFromPoint(e.clientX, e.clientY);
+    const sobre = debajo && debajo.closest(".cot-fila");
+    cont.querySelectorAll(".cot-fila").forEach(x => x.classList.remove("destino", "arrastrando"));
+    if (sobre && sobre !== filaEl) {
+      const destino = parseInt(sobre.dataset.i, 10);
+      const movida = cotFilas.splice(origen, 1)[0];
+      cotFilas.splice(destino, 0, movida);
+      renderFilasCot();          // el orden que quede acá es el orden del PDF
+    }
+    origen = null; filaEl = null;
+  };
+  cont.addEventListener("pointerup", soltar);
+  cont.addEventListener("pointercancel", soltar);
+})();
 
 document.getElementById("cotImpuesto").addEventListener("input", refrescarTotalesCot);
 
@@ -3000,6 +3244,7 @@ function abrirEdicionCotizacion(id){
   cotFilas = DB.cotizaciones.items(id).map(i => ({
     catalogo_id: i.catalogo_id, nombre: i.nombre, descripcion: i.descripcion, unidad: i.unidad,
     cantidad_centesimas: i.cantidad_centesimas, precio_centavos: i.precio_centavos, costo_centavos: i.costo_centavos,
+    en_pdf: i.en_pdf === 0 ? 0 : 1,
   }));
   renderFilasCot();
   /* Después de fijar los días: si no, el texto de abajo sigue mostrando la
@@ -3133,7 +3378,12 @@ function abrirPdfCotizacion(cotId){
   const logo = DB.archivos.url(DB.archivos.logoEmpresa());
   const money = (c) => DB.dinero.formato(c, CFG_LANG);
 
-  const filas = items.map(i => `<tr>
+  /* Solo se LISTAN los renglones marcados para el PDF. Los escondidos siguen
+     contando en el total: `tot` sale de DB.cotizaciones.totales(), que suma
+     todos. Es a propósito — sirve para no mostrarle al cliente el desglose
+     interno sin dejar de cobrarlo. Consecuencia a tener presente: si el
+     cliente suma los renglones que ve, le va a dar menos que el total. */
+  const filas = items.filter(i => i.en_pdf !== 0).map(i => `<tr>
       <td>${esc(i.nombre)}${i.descripcion ? `<span class="d">${esc(i.descripcion)}</span>` : ""}</td>
       <td class="c">${esc(DB.cantidad.aTexto(i.cantidad_centesimas))} ${esc(t("unidad_" + i.unidad))}</td>
       <td class="n">${esc(money(i.precio_centavos))}</td>

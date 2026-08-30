@@ -73,6 +73,18 @@ un bundler salvo que el proyecto lo pida de verdad.
    (`impuesto_centesimas`, 7.25% = `725`). Si viviera en configuración,
    cambiar la tasa mañana alteraría el total de una cotización ya firmada.
 
+   3g. **El ojo del PDF esconde el renglón, NO le quita la plata al total.**
+   `en_pdf = 0` saca el renglón de la lista impresa, pero
+   `DB.cotizaciones.totales()` sigue sumando TODOS los renglones. Es a
+   propósito y es como lo hace DES: sirve para no mostrarle al cliente el
+   desglose interno (permisos, acarreo) sin dejar de cobrarlo. **Consecuencia
+   que hay que tener presente: si el cliente suma los renglones que ve, le va
+   a dar menos que el total.**
+
+   3h. **El orden de los renglones lo manda la persona, no el código.** `orden`
+   se guarda con la posición en que quedaron después de arrastrar, y es el
+   orden en que salen en el PDF. Nunca reordenar por nombre ni por precio.
+
    3f. **El impuesto NO es ganancia.** Al aprobar una cotización, al trabajo va
    el **subtotal sin impuesto**: el impuesto se cobra y se entrega, no es plata
    de la empresa. Si fuera al precio del trabajo, `DB.trabajos.ganancia()` lo
@@ -93,7 +105,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v34**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v35**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
@@ -122,13 +134,13 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Clientes** (alta/edición/borrado, categorías, filtros, búsqueda, Google Maps + autocompletado) | ✅ terminado |
 | **Trabajos** (calendario mensual, "por agendar", modal completo, precio/costo, asignar trabajadores) | ✅ terminado |
 | **Equipo** (alta de trabajadores, roles, usuario del dispositivo) | ✅ terminado, sin login real |
-| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v5) |
+| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v6) |
 | **Lector de mensajes** (captura/PDF → campos del cliente, con Claude) | ✅ programado; falta desplegar el Worker |
 | **Catálogo** (equipos/materiales/servicios, proveedores, filtros para reportes) | ✅ terminado (esquema v3) |
-| **Cotizaciones** (renglones del catálogo, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v5) |
+| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v6) |
 | **Cotización impresa / PDF** (datos de empresa, presentación, términos, firma) | ✅ terminado · igual que DES: HTML + impresión del navegador |
 | **Worker en Cloudflare** | ✅ desplegado en la cuenta de Rene · hoy sirve el lector de mensajes |
-| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v5), pero todavía sin desplegar |
+| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v6), pero todavía sin desplegar |
 | **R2** | ⛔ la tabla `archivos` y `DB.archivos` ya existen; falta el bucket. Hoy solo lo usa el logo |
 | **Login / permisos reales** | ⛔ hoy los roles son solo etiquetas de interfaz |
 | **Reportes** (cuánto se ganó por cliente / por mes) | ⛔ los datos ya están, falta la pantalla |

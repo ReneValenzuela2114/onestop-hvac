@@ -304,6 +304,11 @@ CREATE TABLE IF NOT EXISTS cotizacion_items (
   cantidad_centesimas INTEGER NOT NULL CHECK (cantidad_centesimas > 0),
   precio_centavos INTEGER NOT NULL DEFAULT 0 CHECK (precio_centavos >= 0),
   costo_centavos INTEGER NOT NULL DEFAULT 0 CHECK (costo_centavos >= 0),
+  /* 1 = el renglon sale listado en el PDF del cliente, 0 = no sale.
+     Esconderlo NO le quita la plata al total: se sigue cobrando, solo deja de
+     mostrarse el desglose. El total lo calcula DB.cotizaciones.totales() con
+     TODOS los renglones. */
+  en_pdf INTEGER NOT NULL DEFAULT 1 CHECK (en_pdf IN (0,1)),
   creado INTEGER NOT NULL,
   creado_por TEXT REFERENCES usuarios(id),
   actualizado INTEGER NOT NULL,

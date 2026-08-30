@@ -27,7 +27,7 @@
    - IDs: crypto.randomUUID(). Fechas de auditoría: epoch ms (Date.now()).
    ========================================================================= */
 
-const ESQUEMA_VERSION = 5;
+const ESQUEMA_VERSION = 6;
 
 const CLAVES = {
   clientes: "os_clientes_v1",
@@ -524,6 +524,12 @@ const Cotizaciones = {
         precio_centavos: Math.round(Number(f.precio_centavos) || 0),
         costo_centavos: Math.round(Number(f.costo_centavos) || 0),
         catalogo_id: f.catalogo_id || null,
+        /* 1 = sale listado en el PDF, 0 = no. Esconderlo NO le quita la plata
+           al total: el renglón se sigue cobrando, solo deja de mostrarse el
+           desglose. Por eso `totales()` sigue sumando todos los renglones. */
+        en_pdf: f.en_pdf === 0 || f.en_pdf === false ? 0 : 1,
+        /* El orden lo manda la posición en el arreglo, que es la que la
+           persona armó arrastrando. No se recalcula por nombre ni por precio. */
         orden: i,
       };
       _exigir(Validar.cotizacionItem(item));
@@ -585,6 +591,23 @@ const Cotizaciones = {
       cantidad_centesimas: Math.round(Number(cantidadCentesimas) || 100),
       precio_centavos: p.precio_centavos || 0,
       costo_centavos: p.costo_centavos || 0,
+      en_pdf: 1,
+    };
+  },
+
+  /* Renglón escrito a mano, sin producto del catálogo. `catalogo_id` queda en
+     null, que es lo que la tabla ya permitía: sirve para reportes saber que
+     esto no salió del catálogo. */
+  filaManual() {
+    return {
+      catalogo_id: null,
+      nombre: "",
+      descripcion: "",
+      unidad: "unidad",
+      cantidad_centesimas: 100,
+      precio_centavos: 0,
+      costo_centavos: 0,
+      en_pdf: 1,
     };
   },
 
@@ -1119,6 +1142,16 @@ function _migrar() {
   if (desde < 5) {
     _estado.cotizaciones.forEach((c) => {
       if (!c.fecha) c.fecha = _fechaLocalISO(c.creado || Date.now());
+    });
+  }
+
+  /* --- v5 → v6: el ojo del PDF en cada renglón de cotización ---
+     Los renglones que ya existían se muestran todos, que es como venían
+     comportándose. `en_pdf` en 0 esconde el renglón del papel del cliente,
+     pero su plata sigue contando en el total. */
+  if (desde < 6) {
+    _estado.cotizacionItems.forEach((i) => {
+      if (i.en_pdf === undefined || i.en_pdf === null) i.en_pdf = 1;
     });
   }
 
