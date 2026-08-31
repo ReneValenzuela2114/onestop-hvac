@@ -3499,8 +3499,8 @@ function abrirPdfCotizacion(cotId){
      total sigue saliendo de DB.cotizaciones.totales(). */
   const conPrecios = cot.mostrar_precios === 1;
   const filas = items.filter(i => i.en_pdf !== 0).map(i => `<tr>
-      <td>${esc(i.nombre)}${i.descripcion ? `<span class="d">${esc(i.descripcion)}</span>` : ""}</td>
       <td class="c">${esc(DB.cantidad.aTexto(i.cantidad_centesimas))} ${esc(t("unidad_" + i.unidad))}</td>
+      <td>${esc(i.nombre)}${i.descripcion ? `<span class="d">${esc(i.descripcion)}</span>` : ""}</td>
       ${conPrecios ? `<td class="n">${esc(money(i.precio_centavos))}</td>
       <td class="n b">${esc(money(DB.cantidad.porPrecio(i.cantidad_centesimas, i.precio_centavos)))}</td>` : ""}
     </tr>`).join("");
@@ -3601,12 +3601,20 @@ function abrirPdfCotizacion(cotId){
            letter-spacing:1px;padding:8px 11px;text-align:left}
   thead th:first-child{border-radius:6px 0 0 0}
   thead th:last-child{border-radius:0 6px 0 0}
-  thead th.c{text-align:center;width:${conPrecios ? "104px" : "150px"}}
+  /* La cantidad va primero: es lo que se lee al recorrer la lista de arriba
+     abajo ("3 unidades de esto, 2 horas de aquello"). Ancho fijo para que
+     todas las cantidades queden alineadas entre sí. */
+  thead th.c{text-align:left;width:92px}
   thead th.n{text-align:right;width:100px}
   tbody td{padding:8px 11px;border-bottom:1px solid var(--line);font-size:11.5px;vertical-align:top}
-  tbody td.c{text-align:center;color:var(--muted)}
-  tbody td.n{text-align:right;font-variant-numeric:tabular-nums}
-  tbody td.b{font-weight:700;color:var(--marino)}
+  /* Los tres números de una fila -cantidad, precio y total- van del MISMO
+     color y del mismo tamaño. Antes eran tres: la cantidad gris, el precio
+     negro y el total azul marino, y en una lista larga eso se lee como si
+     fueran cosas distintas. El total se distingue por el grosor, no por el
+     color. */
+  tbody td.c{text-align:left;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+  tbody td.n{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+  tbody td.b{font-weight:700;color:var(--ink)}
   tbody td .d{display:block;font-size:10px;color:var(--muted);margin-top:2px}
   tbody tr:nth-child(even){background:#F7FAFD}
   .totwrap{display:flex;justify-content:flex-end;margin-top:13px}
@@ -3699,8 +3707,8 @@ function abrirPdfCotizacion(cotId){
 
   <table>
     <thead><tr>
-      <th>${esc(t("cot_col_producto"))}</th>
       <th class="c">${esc(t("cot_col_cantidad"))}</th>
+      <th>${esc(t("cot_col_producto"))}</th>
       ${conPrecios ? `<th class="n">${esc(t("cot_col_precio"))}</th>
       <th class="n">${esc(t("cot_col_total"))}</th>` : ""}
     </tr></thead>
