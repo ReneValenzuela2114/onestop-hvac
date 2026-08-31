@@ -270,6 +270,12 @@ CREATE TABLE IF NOT EXISTS cotizaciones (
   impuesto_centesimas INTEGER NOT NULL DEFAULT 0
     CHECK (impuesto_centesimas >= 0 AND impuesto_centesimas <= 10000),
   notas TEXT NOT NULL DEFAULT '',
+  /* 1 = el PDF lista el precio unitario y el total de cada producto.
+     0 = solo salen los nombres, y la plata aparece una sola vez abajo
+     (subtotal, impuesto y total). Se guarda por cotizacion, no en
+     configuracion: cambiar la preferencia manana no puede cambiar como se
+     imprime una cotizacion que el cliente ya recibio. */
+  mostrar_precios INTEGER NOT NULL DEFAULT 0 CHECK (mostrar_precios IN (0,1)),
   trabajo_id TEXT REFERENCES trabajos(id),
   creado INTEGER NOT NULL,
   creado_por TEXT REFERENCES usuarios(id),

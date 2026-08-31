@@ -27,7 +27,7 @@
    - IDs: crypto.randomUUID(). Fechas de auditoría: epoch ms (Date.now()).
    ========================================================================= */
 
-const ESQUEMA_VERSION = 6;
+const ESQUEMA_VERSION = 7;
 
 const CLAVES = {
   clientes: "os_clientes_v1",
@@ -481,7 +481,7 @@ const CategoriasClientes = {
    apuntara al catálogo, subir un precio hoy cambiaría el total de una
    cotización que el cliente ya firmó. Las fotos del pasado no se recalculan. */
 const CAMPOS_COTIZACION = ["cliente_id", "titulo", "descripcion", "estado", "fecha",
-  "valida_hasta", "impuesto_centesimas", "notas", "trabajo_id"];
+  "valida_hasta", "impuesto_centesimas", "notas", "trabajo_id", "mostrar_precios"];
 
 const Cotizaciones = {
   getAll() {
@@ -622,6 +622,10 @@ const Cotizaciones = {
       valida_hasta: datos.valida_hasta || null,
       impuesto_centesimas: Math.round(Number(datos.impuesto_centesimas) || 0),
       notas: _texto(datos.notas),
+      /* 0 = el PDF no muestra el precio ni el total de cada producto, solo el
+         subtotal, el impuesto y el total. Arranca en 0 porque es como Rene
+         manda las cotizaciones; se prende por cotización cuando hace falta. */
+      mostrar_precios: datos.mostrar_precios === 1 || datos.mostrar_precios === true ? 1 : 0,
       trabajo_id: null,
     };
     _exigir(Validar.cotizacion(limpio));
@@ -640,6 +644,9 @@ const Cotizaciones = {
     }
     if (cambios.impuesto_centesimas !== undefined) {
       cambios.impuesto_centesimas = Math.round(Number(cambios.impuesto_centesimas) || 0);
+    }
+    if (cambios.mostrar_precios !== undefined) {
+      cambios.mostrar_precios = cambios.mostrar_precios === 1 || cambios.mostrar_precios === true ? 1 : 0;
     }
     _exigir(Validar.cotizacion({ ...item, ...cambios }));
     Object.assign(item, cambios, _sellosEdicion());
@@ -1152,6 +1159,17 @@ function _migrar() {
   if (desde < 6) {
     _estado.cotizacionItems.forEach((i) => {
       if (i.en_pdf === undefined || i.en_pdf === null) i.en_pdf = 1;
+    });
+  }
+
+  /* --- v6 → v7: mostrar u ocultar los precios por producto en el PDF ---
+     Las cotizaciones que YA existen quedan en 1, mostrando los precios: es
+     como se vieron el día que se hicieron y como las recibió el cliente. Una
+     cotización ya enviada no puede cambiar de forma sola. Las nuevas nacen en
+     0, que es lo que Rene pidió por defecto. */
+  if (desde < 7) {
+    _estado.cotizaciones.forEach((c) => {
+      if (c.mostrar_precios === undefined || c.mostrar_precios === null) c.mostrar_precios = 1;
     });
   }
 
