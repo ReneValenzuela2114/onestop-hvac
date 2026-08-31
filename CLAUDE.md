@@ -87,6 +87,13 @@ un bundler salvo que el proyecto lo pida de verdad.
    un naranja *parecidos pero distintos*, y esa casi-coincidencia es lo que se
    veía mal. Si el logo cambia, se vuelven a medir.
 
+   3k. **La hoja se ordena con líneas finas, no con recuadros rellenos.**
+   Medido contra la cotización de DES: ahí no hay ni un bloque relleno fuera
+   de la banda del total. Los dos recuadros que tenía el encabezado pesaban
+   más que todo el resto junto. Dos proporciones que se copiaron y hay que
+   respetar: una fila de la tabla ocupa **3.4% del ancho de la hoja** y la
+   banda del total mide **el doble de una fila**.
+
    3j. **`mostrar_precios` vive en la cotización, no en configuración.** En 0
    el PDF lista solo qué se hace y la plata sale una vez abajo. Las
    cotizaciones nuevas nacen en 0; las que ya existían quedaron en 1, porque
@@ -116,7 +123,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v38**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v39**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`

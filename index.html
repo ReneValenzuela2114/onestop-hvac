@@ -3572,33 +3572,36 @@ function abrirPdfCotizacion(cotId){
        padding-top:10px;padding-bottom:20px;border-bottom:1.5px solid var(--marino)}
   .enc .logo img{display:block;height:${cfg.logoTamano}px;width:auto;max-width:250px;object-fit:contain}
   .enc .marca{font-size:19px;font-weight:800;letter-spacing:-.2px;color:var(--marino)}
-  .enc .datos{font-size:10.5px;color:var(--muted);line-height:1.65;text-align:right}
-  .titulo{display:flex;justify-content:space-between;align-items:center;gap:20px;margin:17px 0 13px}
-  .titulo h1{margin:0;font-size:21px;line-height:1.25;letter-spacing:-.3px;color:var(--marino)}
+  .enc .datos{font-size:9.5px;color:var(--muted);line-height:1.7;text-align:right}
+  .titulo{display:flex;justify-content:space-between;align-items:center;gap:20px;margin:18px 0 0}
+  .titulo h1{margin:0;font-size:20px;line-height:1.25;letter-spacing:-.3px;color:var(--marino)}
   /* El número deja de ser texto gris suelto y pasa a ser una etiqueta */
   .titulo .num{flex:none;background:var(--marino);color:#fff;border-radius:5px;padding:5px 10px;
                font-size:11px;font-weight:800;letter-spacing:.6px;white-space:nowrap;
                -webkit-print-color-adjust:exact;print-color-adjust:exact}
-  /* Dos tarjetas al mismo alto: a quién va, y los datos que se consultan de un
-     vistazo (fecha y vigencia). Antes la vigencia era una línea gris perdida. */
-  .cabecera{display:flex;gap:12px;align-items:stretch;margin-bottom:14px}
-  .paraquien{flex:1;min-width:0;background:var(--azulsuave);border:1px solid var(--linea-suave);border-radius:9px;padding:11px 14px}
-  .datosclave{flex:0 0 218px;background:var(--tinte);border:1px solid var(--line);border-radius:9px;padding:11px 14px}
-  .k{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--marino);font-weight:800}
-  .paraquien .n{font-size:15px;font-weight:700;margin-top:3px;color:var(--marino)}
-  .paraquien .d{font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px}
-  /* Etiqueta arriba y valor abajo, no en la misma línea: "Válida hasta" con una
-     fecha larga en español no entra a lo ancho y se partía en dos renglones
-     desparejos. Apilado entra siempre, en los dos idiomas. */
-  .datosclave .fila{margin-top:8px}
-  .datosclave .fila span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700}
-  .datosclave .fila b{display:block;font-size:11.5px;color:var(--marino);font-weight:700;margin-top:1px}
-  .intro{font-size:11.5px;line-height:1.6;margin:0 0 13px;white-space:pre-line;color:#3B4757}
+  /* Sin recuadros rellenos. La hoja se ordena con líneas finas y espacio, que
+     es lo que hace que se vea limpia: dos bloques de color en el encabezado
+     pesaban más que todo el resto junto y se robaban la atención del título.
+     El bloque queda entre dos hairlines, que es el patrón del resto de la hoja. */
+  .cabecera{display:flex;gap:28px;align-items:flex-start;
+            padding:13px 0 15px;border-bottom:1px solid var(--linea-suave)}
+  .paraquien{flex:1 1 auto;min-width:0}
+  .datosclave{flex:0 0 186px;text-align:right}
+  .k{font-size:8px;text-transform:uppercase;letter-spacing:1.1px;color:var(--muted);font-weight:700}
+  .paraquien .n{font-size:14px;font-weight:700;margin-top:4px;color:var(--marino);line-height:1.25}
+  .paraquien .d{font-size:10.5px;color:var(--muted);line-height:1.55;margin-top:3px}
+  /* Etiqueta arriba y valor abajo: "Válida hasta" con una fecha larga en
+     español no entra a lo ancho y se partía en dos renglones desparejos. */
+  .datosclave .fila{margin-top:9px}
+  .datosclave .fila:first-of-type{margin-top:4px}
+  .datosclave .fila span{display:block;font-size:8px;text-transform:uppercase;letter-spacing:1.1px;color:var(--muted);font-weight:700}
+  .datosclave .fila b{display:block;font-size:10.5px;color:var(--ink);font-weight:700;margin-top:2px}
+  .intro{font-size:10.5px;line-height:1.6;margin:15px 0 11px;white-space:pre-line;color:var(--ink)}
   table{width:100%;border-collapse:collapse}
   /* Barra azul marino de borde a borde, como el membrete: es lo que separa una
      cotización de una lista de precios. */
-  thead th{background:var(--marino);color:#fff;font-size:9px;font-weight:700;text-transform:uppercase;
-           letter-spacing:1px;padding:8px 11px;text-align:left}
+  thead th{background:var(--marino);color:#fff;font-size:8px;font-weight:700;text-transform:uppercase;
+           letter-spacing:1.1px;padding:7px 10px;text-align:left}
   thead th:first-child{border-radius:6px 0 0 0}
   thead th:last-child{border-radius:0 6px 0 0}
   /* La cantidad va primero: es lo que se lee al recorrer la lista de arriba
@@ -3606,7 +3609,10 @@ function abrirPdfCotizacion(cotId){
      todas las cantidades queden alineadas entre sí. */
   thead th.c{text-align:left;width:92px}
   thead th.n{text-align:right;width:100px}
-  tbody td{padding:8px 11px;border-bottom:1px solid var(--line);font-size:11.5px;vertical-align:top}
+  /* Padding y cuerpo medidos contra DES: sus filas ocupan 3.4% del ancho de la
+     hoja y las nuestras ocupaban 4.85%, casi un 43% más sueltas. Eso es lo que
+     se veía "menos ordenado": el ojo no encuentra el renglón siguiente. */
+  tbody td{padding:6px 10px;border-bottom:1px solid var(--linea-suave);font-size:10.5px;vertical-align:top;line-height:1.45}
   /* Los tres números de una fila -cantidad, precio y total- van del MISMO
      color y del mismo tamaño. Antes eran tres: la cantidad gris, el precio
      negro y el total azul marino, y en una lista larga eso se lee como si
@@ -3615,33 +3621,35 @@ function abrirPdfCotizacion(cotId){
   tbody td.c{text-align:left;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
   tbody td.n{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
   tbody td.b{font-weight:700;color:var(--ink)}
-  tbody td .d{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+  tbody td .d{display:block;font-size:9px;color:var(--muted);margin-top:1px;line-height:1.4}
   tbody tr:nth-child(even){background:#F7FAFD}
-  .totwrap{display:flex;justify-content:flex-end;margin-top:13px}
-  .tot{width:54%}
-  .tot .r{display:flex;justify-content:space-between;padding:5px 14px;font-size:11.5px;color:var(--muted)}
+  .totwrap{display:flex;justify-content:flex-end;margin-top:11px}
+  .tot{width:52%}
+  .tot .r{display:flex;justify-content:space-between;padding:5px 12px;font-size:10.5px;color:var(--muted)}
+  .tot .r + .r{border-top:1px solid var(--linea-suave)}
   .tot .r b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
   /* El total es la cifra que el cliente busca: se le da una banda propia, alta y
      tranquila. Resalta por tamaño y aire, no por peso de color. */
   .tot .grand{display:flex;justify-content:space-between;align-items:center;background:var(--azulsuave);color:var(--marino);
-              border:1px solid var(--linea-suave);border-top:2.5px solid var(--marino);border-radius:0 0 8px 8px;
-              padding:13px 14px;margin-top:5px}
-  .tot .grand span{font-size:10.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
-  .tot .grand b{font-size:21px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
-  .notas{margin-top:15px;border:1px solid var(--linea-suave);border-left:3px solid var(--rojo);
-         background:var(--azulsuave);border-radius:0 9px 9px 0;padding:10px 14px}
-  .notas h4{margin:0 0 4px;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--marino);font-weight:800}
-  .notas p{margin:0;font-size:11px;line-height:1.55}
+              border-top:2px solid var(--marino);padding:18px 12px;margin-top:0}
+  /* La banda del total mide el doble que una fila de la tabla, como en DES:
+     así el ojo la encuentra sola sin que haga falta gritarla con color. */
+  .tot .grand span{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
+  .tot .grand b{font-size:18px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  /* Sin relleno: una barra roja fina al costado alcanza para marcarlo. */
+  .notas{margin-top:16px;border-left:2px solid var(--rojo);padding:1px 0 1px 11px}
+  .notas h4{margin:0 0 3px;font-size:8px;text-transform:uppercase;letter-spacing:1.1px;color:var(--muted);font-weight:700}
+  .notas p{margin:0;font-size:10.5px;line-height:1.55}
   .terminos{margin-top:20px;padding-top:13px;border-top:1px solid var(--line)}
-  .terminos h2{margin:0 0 7px;font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--marino);font-weight:800}
-  .terminos .tx{font-size:10px;line-height:1.65;color:#3B4757}
+  .terminos h2{margin:0 0 7px;font-size:8px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:700}
+  .terminos .tx{font-size:9.5px;line-height:1.7;color:var(--ink)}
   /* La aceptación va en su propio recuadro: se ve que hay algo para firmar. */
-  .firma{margin-top:22px;background:var(--tinte);border:1px solid var(--line);border-radius:9px;padding:14px 16px 16px}
-  .firma .acepta{font-size:11px;line-height:1.6;margin:0 0 30px;color:var(--ink)}
+  .firma{margin-top:24px;padding-top:14px;border-top:1px solid var(--linea-suave)}
+  .firma .acepta{font-size:10.5px;line-height:1.6;margin:0 0 32px;color:var(--ink)}
   .firma .lineas{display:flex;gap:34px;align-items:flex-end}
   .firma .linea{flex:1;min-width:0;border-top:1.5px solid var(--marino);padding-top:6px}
   .firma .linea.corta{flex:0 0 172px}
-  .firma .linea span{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700}
+  .firma .linea span{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1.1px;font-weight:700}
   .pie{margin-top:20px;padding-top:11px;border-top:2px solid var(--marino);text-align:center;font-size:9.5px;
        color:var(--muted);letter-spacing:.3px}
   /* El link se ve como link, no como texto suelto: si no, nadie lo toca. */
