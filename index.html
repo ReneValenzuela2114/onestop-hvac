@@ -487,6 +487,10 @@
      etiquetas de adentro sobran. */
   .cot-etq{display:none}
   @media (max-width: 560px){
+    /* Los botones chicos quedan en 31px, y en el teléfono todo lo que se toca
+       tiene que llegar a 38. En la computadora se dejan compactos: ahí se
+       apunta con el mouse y no hace falta. */
+    .btn.sm{min-height:38px}
     /* Al no haber campos adentro, el renglón entra en una línea también acá:
        la manija, el nombre con su "3 Unidad · $115.00" debajo, el total, el
        ojo y la ✕. Antes hacían falta veinte líneas de CSS para acomodar tres
@@ -782,6 +786,24 @@
                 </div>
               </div>
             </div>
+
+            <!-- Texto del membrete: va AL LADO DEL LOGO en la cotización
+                 impresa. Es aparte del nombre de la sección PDF porque
+                 cumplen funciones distintas: acá va corto y para que se lea
+                 de lejos; allá va el nombre completo de la empresa, el que
+                 aparece al pie con la dirección y la licencia. -->
+            <div class="field-row" style="margin-top:var(--sp-5)">
+              <div class="field">
+                <label data-i18n="config_membrete_nombre">Nombre en el membrete</label>
+                <input type="text" id="membreteNombre" data-i18n-ph="config_membrete_nombre_ph" placeholder="e.g. One Stop">
+              </div>
+              <div class="field">
+                <label data-i18n="config_membrete_linea2">Segunda línea</label>
+                <input type="text" id="membreteLinea2" data-i18n-ph="config_membrete_linea2_ph" placeholder="e.g. Heating and Cooling">
+              </div>
+            </div>
+            <p class="hint" data-i18n="config_membrete_ayuda">Sale al lado del logo, arriba de la cotización. Si lo dejás vacío se usa el nombre de la empresa de la sección PDF.</p>
+            <button class="btn sm" id="btnGuardarMembrete" style="margin-top:var(--sp-3)"><span data-i18n="config_guardar">Guardar</span></button>
           </div>
 
             </div></div>
@@ -3426,6 +3448,11 @@ function cfgPdf(){
     firmaTexto: DB.config.get("pdf_firma_texto", "") || t("pdf_firma_defecto"),
     margen: parseFloat(DB.config.get("pdf_margen", 0.6)) || 0.6,
     logoTamano: parseInt(DB.config.get("pdf_logo_tamano", 56), 10) || 56,
+    /* Texto del membrete, al lado del logo. Si está vacío cae al nombre de la
+       empresa: así una instalación que ya venía funcionando no se queda con
+       el encabezado en blanco. */
+    membreteNombre: DB.config.get("membrete_nombre", "") || DB.config.get("pdf_empresa_nombre", ""),
+    membreteLinea2: DB.config.get("membrete_linea2", ""),
     redes: REDES_PDF
       .filter(r => DB.config.get("pdf_red_" + r + "_on", false) === true)
       .map(r => ({ red: r, valor: String(DB.config.get("pdf_red_" + r, "") || "").trim() }))
@@ -3576,7 +3603,12 @@ function abrirPdfCotizacion(cotId){
      lado del logo y puede crecer sin apretar nada: es lo que hace que el
      membrete de DES se vea más presente. Antes competía con tres renglones de
      letra chica pegados abajo. */
-  .enc .marca{font-size:17px;font-weight:800;letter-spacing:-.2px;color:var(--marino);line-height:1.25;min-width:0}
+  .marca-texto{min-width:0}
+  .enc .marca{font-size:17px;font-weight:800;letter-spacing:-.2px;color:var(--marino);line-height:1.2}
+  /* La segunda línea es el rubro, no un subtítulo largo: va chica y espaciada,
+     como está en el propio logo debajo de "ONE STOP". */
+  .enc .marca-2{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:2px;
+                color:var(--muted);margin-top:3px}
   /* Los datos de la cotización pasan al encabezado, a la derecha. */
   .enc .datosclave{flex:0 0 auto;text-align:right;margin-top:2px}
   .enc .datosclave .num{display:inline-block;background:var(--marino);color:#fff;border-radius:4px;
@@ -3697,7 +3729,10 @@ function abrirPdfCotizacion(cotId){
   <header class="enc">
     <div class="marca-bloque">
       ${logo ? `<img class="logo-img" src="${esc(logo)}" alt="">` : ""}
-      ${cfg.nombre ? `<div class="marca">${esc(cfg.nombre)}</div>` : ""}
+      ${cfg.membreteNombre || cfg.membreteLinea2 ? `<div class="marca-texto">
+        ${cfg.membreteNombre ? `<div class="marca">${esc(cfg.membreteNombre)}</div>` : ""}
+        ${cfg.membreteLinea2 ? `<div class="marca-2">${esc(cfg.membreteLinea2)}</div>` : ""}
+      </div>` : ""}
     </div>
     <div class="datosclave">
       <div class="num">${esc(numeroCot(cot))}</div>
@@ -4396,6 +4431,8 @@ function cargarConfigPdf(){
   document.getElementById("pdfFirma").checked = DB.config.get("pdf_firma", true) !== false;
   document.getElementById("pdfMargen").value = DB.config.get("pdf_margen", 0.6);
   document.getElementById("pdfLogoTamano").value = DB.config.get("pdf_logo_tamano", 56);
+  document.getElementById("membreteNombre").value = DB.config.get("membrete_nombre", "");
+  document.getElementById("membreteLinea2").value = DB.config.get("membrete_linea2", "");
   for (const r of REDES_PDF) {
     document.getElementById("pdfRed" + r[0].toUpperCase() + r.slice(1) + "On").checked =
       DB.config.get("pdf_red_" + r + "_on", false) === true;
@@ -4420,6 +4457,12 @@ document.getElementById("btnGuardarPdf").addEventListener("click", () => {
     DB.config.set("pdf_red_" + r + "_on",
       document.getElementById("pdfRed" + r[0].toUpperCase() + r.slice(1) + "On").checked);
   }
+  toast(t("config_guardado"));
+});
+
+document.getElementById("btnGuardarMembrete").addEventListener("click", () => {
+  DB.config.set("membrete_nombre", document.getElementById("membreteNombre").value.trim());
+  DB.config.set("membrete_linea2", document.getElementById("membreteLinea2").value.trim());
   toast(t("config_guardado"));
 });
 
