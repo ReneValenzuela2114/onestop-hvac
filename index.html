@@ -3570,16 +3570,13 @@ function abrirPdfCotizacion(cotId){
      padding-bottom: y pegado a la línea de abajo. Respira de los dos lados. */
   .enc{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;
        padding-top:12px;padding-bottom:18px;border-bottom:1.5px solid var(--marino)}
-  .marca-bloque{display:flex;align-items:center;gap:14px;min-width:0}
+  .marca-bloque{display:flex;align-items:center;gap:15px;min-width:0}
   .logo-img{display:block;flex:none;height:${cfg.logoTamano}px;width:auto;max-width:150px;object-fit:contain}
-  .marca-texto{min-width:0}
-  /* El nombre de la empresa mide 1.2 veces el texto del cuerpo (13 contra
-     10.5), que es la proporción que usa DES: 13 contra 11. Estaba en 19, casi
-     el doble del cuerpo, y por eso desentonaba con el resto de la hoja. El
-     logo ya pone la presencia; el nombre solo lo acompaña. */
-  .enc .marca{font-size:13px;font-weight:800;letter-spacing:-.1px;color:var(--marino);line-height:1.3}
-  .enc .datos{font-size:9.5px;color:var(--muted);line-height:1.65;text-align:left;margin-top:3px}
-  .enc .datos div:empty{display:none}
+  /* Con la dirección y el teléfono mudados al pie, el nombre queda solo al
+     lado del logo y puede crecer sin apretar nada: es lo que hace que el
+     membrete de DES se vea más presente. Antes competía con tres renglones de
+     letra chica pegados abajo. */
+  .enc .marca{font-size:17px;font-weight:800;letter-spacing:-.2px;color:var(--marino);line-height:1.25;min-width:0}
   /* Los datos de la cotización pasan al encabezado, a la derecha. */
   .enc .datosclave{flex:0 0 auto;text-align:right;margin-top:2px}
   .enc .datosclave .num{display:inline-block;background:var(--marino);color:#fff;border-radius:4px;
@@ -3661,11 +3658,17 @@ function abrirPdfCotizacion(cotId){
   .firma .linea{flex:1;min-width:0;border-top:1.5px solid var(--marino);padding-top:6px}
   .firma .linea.corta{flex:0 0 172px}
   .firma .linea span{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1.1px;font-weight:700}
-  .pie{margin-top:20px;padding-top:11px;border-top:2px solid var(--marino);text-align:center;font-size:9.5px;
-       color:var(--muted);letter-spacing:.3px}
+  /* Pie como el de DES: los datos de la empresa a la izquierda y las redes a
+     la derecha, separados del cuerpo por una regla gruesa. */
+  .pie{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;
+       margin-top:22px;padding-top:11px;border-top:2px solid var(--marino);
+       font-size:9.5px;color:var(--muted);line-height:1.65}
+  .pie-datos{min-width:0}
+  .pie-datos b{color:var(--marino);font-weight:800;font-size:10px}
+  .pie .redes{margin-top:0;flex:none}
   /* El link se ve como link, no como texto suelto: si no, nadie lo toca. */
   .enlace{color:var(--marino);text-decoration:underline;text-underline-offset:2px}
-  .redes{display:flex;gap:11px;justify-content:center;align-items:center;margin-top:8px}
+  .redes{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:8px}
   .redes a{display:inline-flex;text-decoration:none;
            -webkit-print-color-adjust:exact;print-color-adjust:exact}
 
@@ -3694,19 +3697,7 @@ function abrirPdfCotizacion(cotId){
   <header class="enc">
     <div class="marca-bloque">
       ${logo ? `<img class="logo-img" src="${esc(logo)}" alt="">` : ""}
-      <div class="marca-texto">
-        ${cfg.nombre ? `<div class="marca">${esc(cfg.nombre)}</div>` : ""}
-        <div class="datos">
-          ${cfg.direccion ? `<div>${esc(cfg.direccion)}</div>` : ""}
-          <div>
-            ${cfg.telefono ? esc(cfg.telefono) : ""}${cfg.telefono && cfg.email ? " · " : ""}${cfg.email ? esc(cfg.email) : ""}
-          </div>
-          <div>
-            ${(() => { const u = urlSegura(cfg.web);
-                return cfg.web ? (u ? `<a class="enlace" href="${esc(u)}" target="_blank" rel="noopener">${esc(cfg.web)}</a>` : esc(cfg.web)) : ""; })()}${cfg.web && cfg.licencia ? " · " : ""}${cfg.licencia ? esc(cfg.licencia) : ""}
-          </div>
-        </div>
-      </div>
+      ${cfg.nombre ? `<div class="marca">${esc(cfg.nombre)}</div>` : ""}
     </div>
     <div class="datosclave">
       <div class="num">${esc(numeroCot(cot))}</div>
@@ -3757,11 +3748,21 @@ function abrirPdfCotizacion(cotId){
         const url = r.red === "whatsapp" ? urlWhatsapp(r.valor) : urlSegura(r.valor);
         const ico = ICONOS_REDES[r.red];
         if (!url || !ico) return "";
-        return `<a href="${esc(url)}" target="_blank" rel="noopener" aria-label="${esc(r.red)}"><svg viewBox="0 0 24 24" width="17" height="17"><path fill="${ico.color}" d="${ico.d}"/></svg></a>`;
+        return `<a href="${esc(url)}" target="_blank" rel="noopener" aria-label="${esc(r.red)}"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="${ico.color}" d="${ico.d}"/></svg></a>`;
       }).join("");
-      const linea = cfg.nombre ? esc(cfg.nombre) + (cfg.telefono ? " · " + esc(cfg.telefono) : "") : "";
-      if (!linea && !iconos) return "";
-      return `<div class="pie">${linea}${iconos ? `<div class="redes">${iconos}</div>` : ""}</div>`;
+      const web = urlSegura(cfg.web);
+      const lineas = [
+        cfg.nombre ? `<b>${esc(cfg.nombre)}</b>` : "",
+        esc(cfg.direccion || ""),
+        [cfg.telefono ? esc(cfg.telefono) : "", cfg.email ? esc(cfg.email) : ""].filter(Boolean).join(" · "),
+        [cfg.web ? (web ? `<a class="enlace" href="${esc(web)}" target="_blank" rel="noopener">${esc(cfg.web)}</a>` : esc(cfg.web)) : "",
+         cfg.licencia ? esc(cfg.licencia) : ""].filter(Boolean).join(" · "),
+      ].filter(Boolean);
+      if (!lineas.length && !iconos) return "";
+      return `<div class="pie">
+        <div class="pie-datos">${lineas.map(l => `<div>${l}</div>`).join("")}</div>
+        ${iconos ? `<div class="redes">${iconos}</div>` : ""}
+      </div>`;
     })()}
   ${cfg.terminosHojaAparte ? bloqueTerminos : ""}
 </div>
