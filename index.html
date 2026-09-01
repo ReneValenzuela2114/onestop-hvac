@@ -3648,7 +3648,10 @@ function abrirPdfCotizacion(cotId){
             padding:12px 0 14px;border-bottom:1px solid var(--linea-suave)}
   .paraquien{flex:1 1 auto;min-width:0}
   .k{font-size:8px;text-transform:uppercase;letter-spacing:1.1px;color:var(--muted);font-weight:700}
-  .paraquien .n{font-size:14px;font-weight:700;margin-top:4px;color:var(--marino);line-height:1.25}
+  /* Sin la etiqueta "Para" arriba: el nombre va debajo del título de la
+     cotización y se entiende solo de quién es. La etiqueta solo agregaba un
+     renglón de letra chica antes de lo importante. */
+  .paraquien .n{font-size:14px;font-weight:700;margin-top:0;color:var(--marino);line-height:1.25}
   .paraquien .d{font-size:10.5px;color:var(--muted);line-height:1.55;margin-top:3px}
   /* Etiqueta arriba y valor abajo: "Válida hasta" con una fecha larga en
      español no entra a lo ancho y se partía en dos renglones desparejos. */
@@ -3771,7 +3774,6 @@ function abrirPdfCotizacion(cotId){
   </div>
   <div class="cabecera">
     <div class="paraquien">
-      <div class="k">${esc(t("pdf_para"))}</div>
       <div class="n">${esc(cli ? cli.nombre : "")}</div>
       <div class="d">
         ${cli && cli.empresa ? esc(cli.empresa) + "<br>" : ""}
