@@ -3591,8 +3591,12 @@ function abrirPdfCotizacion(cotId){
      los dos del logo: un tramo corto de rojo y el resto marino. Sin degradado
      — un degradado entre el rojo y el azul del logo pasa por colores que el
      logo no tiene, y ahí es donde se ensuciaba. */
-  .franja{position:absolute;top:0;left:0;right:0;height:5px;
-          background:linear-gradient(90deg,var(--rojo) 0 18%,var(--marino) 18% 100%)}
+  /* Va en el flujo normal, NO posicionada al borde de la hoja. Antes estaba
+     con position:absolute pegada al canto: en la vista previa quedaba sin
+     margen arriba mientras el resto de la hoja sí lo tenía, y en el papel se
+     veía bien de casualidad, porque ahí el margen lo pone la impresora y no
+     el padding. Así la vista previa y el papel muestran lo mismo. */
+  .franja{height:5px;background:linear-gradient(90deg,var(--rojo) 0 18%,var(--marino) 18% 100%)}
   /* padding-top: el logo quedaba pegado a la franja de arriba.
      padding-bottom: y pegado a la línea de abajo. Respira de los dos lados. */
   .enc{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;
