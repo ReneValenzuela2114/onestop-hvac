@@ -313,8 +313,24 @@
   /* Acordeón de configuración: grupos desplegables */
   .config-group{border-bottom:1px solid var(--line)}
   .config-group:last-child{border-bottom:none}
-  .config-group-head{display:flex;align-items:center;gap:var(--sp-3);width:100%;padding:var(--sp-4) var(--sp-5);background:none;border:none;text-align:left;cursor:pointer;transition:background .15s}
+  .config-group-head{display:flex;align-items:center;gap:var(--sp-3);width:100%;padding:var(--sp-4) var(--sp-5);background:var(--panel);border:none;text-align:left;cursor:pointer;transition:background .15s}
   .config-group-head:hover{background:#FAFBFD}
+  /* ---- Grupo abierto ----
+     Cerrado y abierto se veían IGUAL: la cabecera quedaba como un renglón más
+     de la lista y el contenido empezaba al mismo nivel, así que no se veía
+     dónde empezaba ni dónde terminaba lo abierto. Y al bajar por una sección
+     larga la cabecera se iba de la pantalla: no quedaba dónde tocar para
+     cerrarla.
+     Dos cosas lo resuelven: la cabecera se tiñe y se queda pegada abajo de la
+     barra de arriba mientras se recorre el contenido, y el contenido lleva una
+     línea al costado que dice hasta dónde llega el grupo. */
+  .config-group.open .config-group-head{
+    position:sticky;top:var(--topbar-h);z-index:5;
+    background:var(--line-soft);border-bottom:1px solid var(--line);
+  }
+  .config-group.open .config-group-head:hover{background:#E4EBF3}
+  .config-group.open .cfg-ico{background:var(--panel)}
+  .config-group.open .config-group-inner{border-left:3px solid var(--frio-500);background:#FCFDFE}
   .cfg-ico{width:38px;height:38px;border-radius:10px;background:var(--line-soft);color:var(--frio-600);display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .cfg-txt{flex:1;min-width:0}
   .cfg-txt b{display:block;font-size:14px;font-family:var(--font-head);color:var(--ink)}

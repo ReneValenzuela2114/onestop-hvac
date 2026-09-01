@@ -15,7 +15,7 @@
  *
  * Al publicar: subir CACHE de vNN a vNN+1.
  */
-const CACHE = 'onestop-shell-v43';
+const CACHE = 'onestop-shell-v44';
 const API_PREFIX = '/api';
 
 /* Los tres archivos que forman la app y tienen que coincidir entre sí */
