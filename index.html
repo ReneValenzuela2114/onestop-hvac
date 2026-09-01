@@ -308,6 +308,10 @@
     .red-fila .check-row{flex:1 1 100%}
     .red-fila input[type=text],.red-fila input[type=tel]{flex:1 1 100%}
   }
+  .firma-preview-row{display:flex;align-items:center;gap:var(--sp-4);margin-top:var(--sp-3);flex-wrap:wrap}
+  .firma-preview-box{flex:0 0 150px;height:64px;border:1px dashed var(--line-campo);border-radius:var(--radius-sm);
+                     background:#FBFCFE;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .firma-preview-box img{max-width:100%;max-height:100%;object-fit:contain}
   .config-section{padding:var(--sp-5);border-bottom:1px solid var(--line)}
   .config-section:last-child{border-bottom:none}
   /* Acordeón de configuración: grupos desplegables */
@@ -982,13 +986,50 @@
           </div>
 
           <div class="config-section">
-            <h3 data-i18n="config_pdf_firma">Firma del cliente</h3>
-            <p class="desc" data-i18n="config_pdf_firma_texto">Espacio al final para que el cliente firme la aceptación. Queda como respaldo.</p>
+            <h3 data-i18n="config_pdf_firmas">Firmas</h3>
+            <p class="desc" data-i18n="config_pdf_firmas_texto">Cada una se prende o se apaga por separado.</p>
+
+            <!-- ---- La tuya: como la de DES, con la imagen de la firma ---- -->
             <label class="check-row">
-              <input type="checkbox" id="pdfFirma" checked>
-              <span data-i18n="config_pdf_firma_incluir">Incluir espacio de firma</span>
+              <input type="checkbox" id="pdfFirmaEmpresa" checked>
+              <span data-i18n="config_pdf_firma_empresa">Mi firma</span>
             </label>
-            <div class="field" style="margin-top:var(--sp-3)">
+            <div id="bloqueFirmaEmpresa">
+              <div class="field-row" style="margin-top:var(--sp-3)">
+                <div class="field">
+                  <label data-i18n="config_pdf_firma_nombre">Nombre que firma</label>
+                  <input type="text" id="pdfFirmaNombre" data-i18n-ph="config_pdf_firma_nombre_ph" placeholder="e.g. Rene Valenzuela">
+                </div>
+                <div class="field">
+                  <label data-i18n="config_pdf_firma_cargo">Cargo</label>
+                  <input type="text" id="pdfFirmaCargo" data-i18n-ph="config_pdf_firma_cargo_ph" placeholder="e.g. Owner">
+                </div>
+              </div>
+              <div class="firma-preview-row">
+                <div class="firma-preview-box" id="firmaPreviewBox">
+                  <span class="hint" data-i18n="config_pdf_firma_sin_imagen">Sin imagen</span>
+                </div>
+                <div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button class="btn sm" id="btnSubirFirma">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+                      <span data-i18n="config_pdf_firma_subir">Subir firma</span>
+                    </button>
+                    <button class="btn sm ghost" id="btnQuitarFirma"><span data-i18n="config_logo_quitar">Quitar</span></button>
+                    <input type="file" id="firmaFileInput" accept="image/png,image/jpeg,image/webp" hidden>
+                  </div>
+                  <p class="hint" data-i18n="config_pdf_firma_imagen_ayuda">Una foto de tu firma, mejor sobre papel blanco. Sale arriba de la línea.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ---- La del cliente: apagada por defecto ---- -->
+            <label class="check-row" style="margin-top:var(--sp-5)">
+              <input type="checkbox" id="pdfFirma">
+              <span data-i18n="config_pdf_firma_cliente">Firma del cliente</span>
+            </label>
+            <p class="hint" data-i18n="config_pdf_firma_texto">Espacio al final para que el cliente firme la aceptación. Queda como respaldo.</p>
+            <div class="field" id="bloqueFirmaCliente" style="margin-top:var(--sp-3)">
               <label data-i18n="config_pdf_firma_texto_campo">Texto de aceptación</label>
               <textarea id="pdfFirmaTexto" rows="2" data-i18n-ph="config_pdf_firma_ph" placeholder="e.g. I accept this quote and authorize the work described."></textarea>
             </div>
@@ -3482,7 +3523,10 @@ function cfgPdf(){
     intro: DB.config.get("pdf_intro", ""),
     terminos: DB.config.get("pdf_terminos", ""),
     terminosHojaAparte: DB.config.get("pdf_terminos_hoja_aparte", true) !== false,
-    firma: DB.config.get("pdf_firma", true) !== false,
+    firma: DB.config.get("pdf_firma", false) === true,
+    firmaEmpresa: DB.config.get("pdf_firma_empresa", true) !== false,
+    firmaNombre: DB.config.get("pdf_firma_nombre", ""),
+    firmaCargo: DB.config.get("pdf_firma_cargo", ""),
     /* Si está vacío se usa una frase por defecto: una línea de firma sin decir
        qué se acepta no sirve de respaldo. Rene puede escribir la suya encima. */
     firmaTexto: DB.config.get("pdf_firma_texto", "") || t("pdf_firma_defecto"),
@@ -3578,13 +3622,31 @@ function abrirPdfCotizacion(cotId){
       <div class="tx">${textoAHtml(cfg.terminos)}</div>
     </section>` : "";
 
-  const bloqueFirma = cfg.firma ? `
-    <section class="firma">
-      ${cfg.firmaTexto ? `<p class="acepta">${textoAHtml(cfg.firmaTexto)}</p>` : ""}
-      <div class="lineas">
-        <div class="linea"><span>${esc(t("pdf_firma_cliente"))}</span></div>
-        <div class="linea corta"><span>${esc(t("pdf_firma_fecha"))}</span></div>
+  /* Dos firmas independientes, cada una con su interruptor:
+       · la de la empresa dice QUIÉN emite el presupuesto (como en DES: la
+         imagen de la firma arriba de la línea, con nombre y cargo debajo);
+       · la del cliente es su ACEPTACIÓN, y deja constancia.
+     Si las dos están prendidas van lado a lado. Si va una sola, ocupa su lugar
+     sin dejar un hueco raro al costado. */
+  const firmaImg = DB.archivos.url(DB.archivos.firmaEmpresa());
+  const columnaEmpresa = cfg.firmaEmpresa ? `
+    <div class="col-firma">
+      ${firmaImg ? `<img class="firma-img" src="${esc(firmaImg)}" alt="">` : ""}
+      <div class="linea">
+        ${cfg.firmaNombre ? `<div class="n">${esc(cfg.firmaNombre)}</div>` : ""}
+        ${cfg.firmaCargo ? `<div class="r">${esc(cfg.firmaCargo)}</div>` : ""}
+        ${!cfg.firmaNombre && !cfg.firmaCargo ? `<span>${esc(t("pdf_firma_empresa"))}</span>` : ""}
       </div>
+    </div>` : "";
+  const columnaCliente = cfg.firma ? `
+    <div class="col-firma">
+      <div class="linea"><span>${esc(t("pdf_firma_cliente"))}</span></div>
+      <div class="linea fecha"><span>${esc(t("pdf_firma_fecha"))}</span></div>
+    </div>` : "";
+  const bloqueFirma = (cfg.firmaEmpresa || cfg.firma) ? `
+    <section class="firma">
+      ${cfg.firma && cfg.firmaTexto ? `<p class="acepta">${textoAHtml(cfg.firmaTexto)}</p>` : ""}
+      <div class="firmas">${columnaEmpresa}${columnaCliente}</div>
     </section>` : "";
 
   const html = `<!doctype html>
@@ -3736,11 +3798,22 @@ function abrirPdfCotizacion(cotId){
   .terminos h2{margin:0 0 7px;font-size:8px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:700}
   .terminos .tx{font-size:9.5px;line-height:1.7;color:var(--ink)}
   /* La aceptación va en su propio recuadro: se ve que hay algo para firmar. */
+  /* Medidas tomadas de DES: la línea mide 235px, el nombre 13 y el cargo 10.5.
+     Las columnas se reparten el ancho; si va una sola firma, ocupa su lugar sin
+     dejar un hueco al costado. */
   .firma{margin-top:24px;padding-top:14px;border-top:1px solid var(--linea-suave)}
-  .firma .acepta{font-size:10.5px;line-height:1.6;margin:0 0 32px;color:var(--ink)}
-  .firma .lineas{display:flex;gap:34px;align-items:flex-end}
-  .firma .linea{flex:1;min-width:0;border-top:1.5px solid var(--marino);padding-top:6px}
-  .firma .linea.corta{flex:0 0 172px}
+  .firma .acepta{font-size:10.5px;line-height:1.6;margin:0 0 30px;color:var(--ink)}
+  .firmas{display:flex;gap:34px;align-items:flex-end;justify-content:space-between}
+  .col-firma{flex:1 1 0;min-width:0;max-width:250px;text-align:center;display:flex;flex-direction:column;align-items:center}
+  .col-firma + .col-firma{align-items:center}
+  /* La imagen se apoya sobre la línea, sin fondo blanco encima: multiply deja
+     pasar el papel si la foto de la firma trae el suyo. */
+  .firma-img{max-height:46px;max-width:190px;width:auto;object-fit:contain;
+             display:block;margin:0 auto 5px;mix-blend-mode:multiply}
+  .firma .linea{width:100%;border-top:1.5px solid var(--marino);padding-top:6px}
+  .firma .linea + .linea{margin-top:26px}
+  .firma .linea .n{font-size:13px;font-weight:800;color:var(--marino);line-height:1.3}
+  .firma .linea .r{font-size:10.5px;color:var(--muted);margin-top:1px}
   .firma .linea span{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1.1px;font-weight:700}
   /* Pie como el de DES: los datos de la empresa a la izquierda y las redes a
      la derecha, separados del cuerpo por una regla gruesa. */
@@ -4454,6 +4527,8 @@ const CAMPOS_PDF = {
   pdf_intro: "pdfIntro",
   pdf_terminos: "pdfTerminos",
   pdf_firma_texto: "pdfFirmaTexto",
+  pdf_firma_nombre: "pdfFirmaNombre",
+  pdf_firma_cargo: "pdfFirmaCargo",
   pdf_red_facebook: "pdfRedFacebook",
   pdf_red_instagram: "pdfRedInstagram",
   pdf_red_tiktok: "pdfRedTiktok",
@@ -4469,7 +4544,12 @@ function cargarConfigPdf(){
     document.getElementById(id).value = DB.config.get(clave, "");
   }
   document.getElementById("pdfTerminosHojaAparte").checked = DB.config.get("pdf_terminos_hoja_aparte", true) !== false;
-  document.getElementById("pdfFirma").checked = DB.config.get("pdf_firma", true) !== false;
+  /* La mía viene prendida y la del cliente apagada, que es como Rene manda las
+     cotizaciones. Son dos interruptores separados a propósito: una cosa es
+     decir quién emite el presupuesto y otra pedirle al cliente que firme. */
+  document.getElementById("pdfFirmaEmpresa").checked = DB.config.get("pdf_firma_empresa", true) !== false;
+  document.getElementById("pdfFirma").checked = DB.config.get("pdf_firma", false) === true;
+  aplicarFirmaEmpresa();
   document.getElementById("pdfMargen").value = DB.config.get("pdf_margen", 0.6);
   document.getElementById("pdfLogoTamano").value = DB.config.get("pdf_logo_tamano", 56);
   document.getElementById("membreteNombre").value = DB.config.get("membrete_nombre", "");
@@ -4486,6 +4566,7 @@ document.getElementById("btnGuardarPdf").addEventListener("click", () => {
   }
   DB.config.set("pdf_terminos_hoja_aparte", document.getElementById("pdfTerminosHojaAparte").checked);
   DB.config.set("pdf_firma", document.getElementById("pdfFirma").checked);
+  DB.config.set("pdf_firma_empresa", document.getElementById("pdfFirmaEmpresa").checked);
   /* Se acotan a lo que la impresora acepta: un margen de 5 pulgadas dejaría
      la hoja sin espacio útil y no habría forma de darse cuenta. */
   const margen = Math.min(2, Math.max(0.25, parseFloat(document.getElementById("pdfMargen").value) || 0.6));
@@ -4602,6 +4683,55 @@ document.getElementById("logoFileInput").addEventListener("change", (e) => {
   };
   lector.readAsDataURL(file);
 });
+/* ---------- Imagen de la firma de la empresa ----------
+   Mismo camino que el logo: es un archivo de DB.archivos, no un texto suelto
+   en configuración. Así el día que exista R2 los dos se mudan juntos. */
+function aplicarFirmaEmpresa(){
+  const caja = document.getElementById("firmaPreviewBox");
+  if (!caja) return;
+  const url = DB.archivos.url(DB.archivos.firmaEmpresa());
+  caja.innerHTML = url
+    ? `<img src="${esc(url)}" alt="">`
+    : `<span class="hint">${esc(t("config_pdf_firma_sin_imagen"))}</span>`;
+}
+
+document.getElementById("btnSubirFirma").addEventListener("click", () => document.getElementById("firmaFileInput").click());
+document.getElementById("firmaFileInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  const lector = new FileReader();
+  lector.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      const MAX = 600;   // la firma se imprime chica: no hace falta más
+      const escala = Math.min(1, MAX / Math.max(im.width, im.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(im.width * escala);
+      canvas.height = Math.round(im.height * escala);
+      canvas.getContext("2d").drawImage(im, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/png");
+      conAviso(() => {
+        const anterior = DB.archivos.firmaEmpresa();
+        if (anterior) DB.archivos.remove(anterior.id);
+        DB.archivos.crear({
+          entidad: "empresa", entidad_id: null, tipo: "firma",
+          nombre_original: file.name, mime: "image/png", bytes: dataUrl.length, dataUrl,
+        });
+        aplicarFirmaEmpresa();
+        toast(t("config_guardado"));
+      });
+    };
+    im.src = lector.result;
+  };
+  lector.readAsDataURL(file);
+});
+document.getElementById("btnQuitarFirma").addEventListener("click", () => {
+  const actual = DB.archivos.firmaEmpresa();
+  if (actual) conAviso(() => DB.archivos.remove(actual.id));
+  aplicarFirmaEmpresa();
+});
+
 document.getElementById("btnQuitarLogo").addEventListener("click", () => {
   const actual = DB.archivos.logoEmpresa();
   if (actual) conAviso(() => DB.archivos.remove(actual.id));

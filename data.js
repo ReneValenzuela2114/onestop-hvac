@@ -1012,6 +1012,12 @@ const Archivos = {
   logoEmpresa() {
     return _vivos("archivos").find((a) => a.entidad === "empresa" && a.tipo === "logo") || null;
   },
+  /* La imagen de la firma de la empresa, para la cotización impresa. Vive como
+     un archivo más, igual que el logo: el día que exista R2 los dos se mudan
+     juntos sin tocar las pantallas. */
+  firmaEmpresa() {
+    return _vivos("archivos").find((a) => a.entidad === "empresa" && a.tipo === "firma") || null;
+  },
 
   /* dataUrl: el contenido leído con FileReader. Devuelve la ficha creada. */
   crear({ entidad, entidad_id, tipo, nombre_original, mime, bytes, dataUrl }) {
