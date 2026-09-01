@@ -3656,7 +3656,12 @@ function abrirPdfCotizacion(cotId){
   .datosclave .fila:first-of-type{margin-top:4px}
   .datosclave .fila span{display:block;font-size:8px;text-transform:uppercase;letter-spacing:1.1px;color:var(--muted);font-weight:700}
   .datosclave .fila b{display:block;font-size:10.5px;color:var(--ink);font-weight:700;margin-top:2px}
-  .intro{font-size:10.5px;line-height:1.6;margin:15px 0 11px;white-space:pre-line;color:var(--ink)}
+  /* El saludo estaba en 10.5, el MISMO tamaño que el cuerpo de la tabla, así
+     que se leía como un renglón más. DES lo pone en 12 sobre un cuerpo de 11
+     (1.09 veces); acá va 11.5 sobre 10.5, la misma relación.
+     En azul marino y no en un azul claro: un #2AA8E1 sobre blanco da 2.5 de
+     contraste y no llega al mínimo de 4.5 que se pide para leer un texto. */
+  .intro{font-size:11.5px;line-height:1.6;margin:15px 0 12px;white-space:pre-line;color:var(--marino)}
   table{width:100%;border-collapse:collapse}
   /* Barra azul marino de borde a borde, como el membrete: es lo que separa una
      cotización de una lista de precios. */
