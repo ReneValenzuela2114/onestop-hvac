@@ -308,6 +308,14 @@
     .red-fila .check-row{flex:1 1 100%}
     .red-fila input[type=text],.red-fila input[type=tel]{flex:1 1 100%}
   }
+  .firma-o{margin:var(--sp-4) 0 var(--sp-2);text-transform:uppercase;letter-spacing:.06em;font-size:11px}
+  .firma-pad-caja{position:relative;border:1px solid var(--line-campo);border-radius:var(--radius-sm);background:#FBFCFE;overflow:hidden}
+  /* touch-action:none es lo que evita que al firmar con el dedo se mueva la
+     pantalla en vez de dibujar. */
+  .firma-pad{display:block;width:100%;height:170px;touch-action:none;cursor:crosshair}
+  .firma-pad-linea{position:absolute;left:16px;right:16px;bottom:38px;border-top:1px dashed var(--line-campo);pointer-events:none}
+  .firma-pad-pista{position:absolute;left:0;right:0;bottom:14px;text-align:center;pointer-events:none;transition:opacity .15s}
+  .firma-pad-caja.con-trazo .firma-pad-pista{opacity:0}
   .firma-preview-row{display:flex;align-items:center;gap:var(--sp-4);margin-top:var(--sp-3);flex-wrap:wrap}
   .firma-preview-box{flex:0 0 150px;height:64px;border:1px dashed var(--line-campo);border-radius:var(--radius-sm);
                      background:#FBFCFE;display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -1020,6 +1028,20 @@
                   </div>
                   <p class="hint" data-i18n="config_pdf_firma_imagen_ayuda">Una foto de tu firma, mejor sobre papel blanco. Sale arriba de la línea.</p>
                 </div>
+              </div>
+
+              <!-- Firmar a mano: con el dedo o con el lápiz del teléfono.
+                   Se dibuja con eventos de puntero, que andan con lápiz, dedo
+                   y mouse por igual. -->
+              <p class="hint firma-o" data-i18n="config_pdf_firma_o">o firmala acá</p>
+              <div class="firma-pad-caja">
+                <canvas id="firmaPad" class="firma-pad"></canvas>
+                <span class="firma-pad-linea" aria-hidden="true"></span>
+                <span class="firma-pad-pista hint" id="firmaPadPista" data-i18n="config_pdf_firma_dibuja">Firmá con el dedo o el lápiz</span>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--sp-2)">
+                <button class="btn sm ghost" id="btnBorrarFirmaPad"><span data-i18n="config_pdf_firma_borrar">Borrar</span></button>
+                <button class="btn sm primary" id="btnUsarFirmaPad"><span data-i18n="config_pdf_firma_usar">Usar esta firma</span></button>
               </div>
             </div>
 
@@ -4726,6 +4748,145 @@ document.getElementById("firmaFileInput").addEventListener("change", (e) => {
   };
   lector.readAsDataURL(file);
 });
+/* ---------- Firmar a mano en la pantalla ----------
+   Con eventos de puntero: el mismo código sirve para el lápiz del teléfono,
+   el dedo y el mouse. El lienzo se dibuja al doble (o triple) de resolución
+   según la pantalla, si no la firma sale pixelada en el PDF. */
+const firmaPad = (() => {
+  const lienzo = document.getElementById("firmaPad");
+  if (!lienzo) return null;
+  const caja = lienzo.parentElement;
+  const ctx = lienzo.getContext("2d");
+  let dibujando = false, hayTrazo = false, ultimo = null, medioPrevio = null;
+
+  function ajustar(){
+    const r = lienzo.getBoundingClientRect();
+    if (!r.width) return;                       // todavía escondido
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const previo = hayTrazo ? lienzo.toDataURL() : null;
+    lienzo.width = Math.round(r.width * dpr);
+    lienzo.height = Math.round(r.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#16202B";
+    ctx.lineWidth = 2.2;
+    if (previo) {                                // no se pierde lo firmado
+      const im = new Image();
+      im.onload = () => ctx.drawImage(im, 0, 0, r.width, r.height);
+      im.src = previo;
+    }
+  }
+
+  const punto = (e) => {
+    const r = lienzo.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+
+  /* ¿El lienzo tiene la resolución que le corresponde a su tamaño en pantalla?
+     Si se midió mientras la sección estaba cerrada quedó en el tamaño por
+     defecto del navegador, y la firma saldría pixelada y desplazada. */
+  function desajustado(){
+    const r = lienzo.getBoundingClientRect();
+    if (!r.width) return false;
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    return Math.abs(lienzo.width - Math.round(r.width * dpr)) > 1;
+  }
+
+  lienzo.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    /* Se comprueba justo antes de firmar y no solo al abrir: es el único
+       momento en que con seguridad el lienzo está a la vista. */
+    if (desajustado()) ajustar();
+    dibujando = true;
+    ultimo = medioPrevio = punto(e);
+    /* Un toque sin arrastrar tiene que dejar marca: si no, un punto o una tilde
+       corta de la firma no se dibujan. */
+    ctx.beginPath();
+    ctx.arc(ultimo.x, ultimo.y, ctx.lineWidth / 2, 0, Math.PI * 2);
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.fill();
+    if (!hayTrazo) { hayTrazo = true; caja.classList.add("con-trazo"); }
+    lienzo.setPointerCapture?.(e.pointerId);
+  });
+  lienzo.addEventListener("pointermove", (e) => {
+    if (!dibujando) return;
+    e.preventDefault();
+    const p = punto(e);
+    /* Curva de un punto medio al siguiente, usando el punto real como control.
+       Así el trazo sale continuo y suave. Ojo: dibujar del punto anterior al
+       medio deja la mitad de cada tramo sin pintar y la firma sale
+       entrecortada — se ve con el lápiz cuando uno firma rápido. */
+    const medio = { x: (ultimo.x + p.x) / 2, y: (ultimo.y + p.y) / 2 };
+    ctx.beginPath();
+    ctx.moveTo(medioPrevio.x, medioPrevio.y);
+    ctx.quadraticCurveTo(ultimo.x, ultimo.y, medio.x, medio.y);
+    ctx.stroke();
+    medioPrevio = medio;
+    ultimo = p;
+    if (!hayTrazo) { hayTrazo = true; caja.classList.add("con-trazo"); }
+  });
+  const soltar = () => { dibujando = false; ultimo = medioPrevio = null; };
+  lienzo.addEventListener("pointerup", soltar);
+  lienzo.addEventListener("pointercancel", soltar);
+  lienzo.addEventListener("pointerleave", soltar);
+
+  function borrar(){
+    ctx.clearRect(0, 0, lienzo.width, lienzo.height);
+    hayTrazo = false;
+    caja.classList.remove("con-trazo");
+  }
+
+  /* Recorta el lienzo a lo dibujado: si no, la firma sale chiquita y perdida
+     en medio de un rectángulo transparente enorme. */
+  function recortada(){
+    const d = ctx.getImageData(0, 0, lienzo.width, lienzo.height).data;
+    let x0 = lienzo.width, y0 = lienzo.height, x1 = -1, y1 = -1;
+    for (let y = 0; y < lienzo.height; y++) {
+      for (let x = 0; x < lienzo.width; x++) {
+        if (d[(y * lienzo.width + x) * 4 + 3] > 8) {
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          if (y > y1) y1 = y;
+        }
+      }
+    }
+    if (x1 < 0) return null;                     // no se dibujó nada
+    const m = 8;                                 // un respiro alrededor
+    x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m);
+    x1 = Math.min(lienzo.width - 1, x1 + m); y1 = Math.min(lienzo.height - 1, y1 + m);
+    const corte = document.createElement("canvas");
+    corte.width = x1 - x0 + 1;
+    corte.height = y1 - y0 + 1;
+    corte.getContext("2d").drawImage(lienzo, x0, y0, corte.width, corte.height, 0, 0, corte.width, corte.height);
+    return corte.toDataURL("image/png");
+  }
+
+  new ResizeObserver(ajustar).observe(lienzo);
+  ajustar();
+  return { borrar, recortada, get hayTrazo(){ return hayTrazo; } };
+})();
+
+document.getElementById("btnBorrarFirmaPad")?.addEventListener("click", () => firmaPad?.borrar());
+
+document.getElementById("btnUsarFirmaPad")?.addEventListener("click", () => {
+  if (!firmaPad || !firmaPad.hayTrazo) { toast(t("config_pdf_firma_vacia"), true); return; }
+  const dataUrl = firmaPad.recortada();
+  if (!dataUrl) { toast(t("config_pdf_firma_vacia"), true); return; }
+  conAviso(() => {
+    const anterior = DB.archivos.firmaEmpresa();
+    if (anterior) DB.archivos.remove(anterior.id);
+    DB.archivos.crear({
+      entidad: "empresa", entidad_id: null, tipo: "firma",
+      nombre_original: "firma-dibujada.png", mime: "image/png", bytes: dataUrl.length, dataUrl,
+    });
+    aplicarFirmaEmpresa();
+    firmaPad.borrar();
+    toast(t("config_guardado"));
+  });
+});
+
 document.getElementById("btnQuitarFirma").addEventListener("click", () => {
   const actual = DB.archivos.firmaEmpresa();
   if (actual) conAviso(() => DB.archivos.remove(actual.id));
