@@ -503,10 +503,12 @@
      etiquetas de adentro sobran. */
   .cot-etq{display:none}
   @media (max-width: 560px){
-    /* Los botones chicos quedan en 31px, y en el teléfono todo lo que se toca
-       tiene que llegar a 38. En la computadora se dejan compactos: ahí se
-       apunta con el mouse y no hace falta. */
+    /* Todo lo que se toca con el dedo llega a 38px. En la computadora se dejan
+       compactos: ahí se apunta con el mouse y no hace falta.
+       Los botones chicos estaban en 31, los interruptores Activo/Inactivo en
+       32 y los de Equipo/Material/Servicio en 34. */
     .btn.sm{min-height:38px}
+    .estado-toggle button,.segmented button{min-height:38px}
     /* Al no haber campos adentro, el renglón entra en una línea también acá:
        la manija, el nombre con su "3 Unidad · $115.00" debajo, el total, el
        ojo y la ✕. Antes hacían falta veinte líneas de CSS para acomodar tres
@@ -1859,7 +1861,15 @@ function toast(msg, isError=false){
    medias, el clic afuera no cierra (sacude la tarjeta como aviso) y la X o
    Cancelar preguntan antes de descartar. Sin cambios, cierra normal. */
 let modalZ = 100; // los modales se apilan: el último abierto queda arriba
-function abrirModal(id){ const el = document.getElementById(id); el.style.zIndex = ++modalZ; el.classList.add("open"); }
+function abrirModal(id){
+  const el = document.getElementById(id);
+  el.style.zIndex = ++modalZ;
+  el.classList.add("open");
+  /* La foto se toma sola al abrir, para no depender de que cada pantalla se
+     acuerde de pedirla. Las que llenan campos DESPUÉS de abrir la vuelven a
+     pedir con marcarBaseModal(). */
+  if (typeof marcarBaseModal === "function") marcarBaseModal(id);
+}
 function cerrarModal(id){ document.getElementById(id).classList.remove("open"); }
 
 function sacudirModal(backdrop){
@@ -1869,12 +1879,51 @@ function sacudirModal(backdrop){
   m.classList.add("shake");
 }
 
-/* Cada modal con formulario registra aquí su detector de cambios sin guardar */
-const guardasModal = {
-  modalCliente: () => clienteFormSucio(),
-  modalTrabajador: () => trabajadorFormSucio(),
-  modalTrabajo: () => trabajoFormSucio(),
+/* ---------- Cambios sin guardar: un solo mecanismo para todos ----------
+   Antes cada modal listaba SUS campos a mano en su propia función. Por eso
+   cuatro modales con formulario se habían quedado sin protección —cotización,
+   producto, proveedor y renglón—: había que acordarse de escribir la función
+   entera. Y quien agregara un campo nuevo tenía que acordarse de sumarlo a esa
+   lista, o la protección dejaba de verlo sin que nadie se enterara.
+
+   Ahora la huella sale de TODOS los campos del modal, solos. Agregar un campo
+   no requiere tocar nada, y sumar un modal es una línea. */
+function huellaModal(id){
+  const el = document.getElementById(id);
+  if (!el) return "";
+  const campos = [...el.querySelectorAll("input, select, textarea")]
+    .filter(e => e.type !== "file")
+    .map(e => (e.type === "checkbox" || e.type === "radio") ? (e.checked ? "1" : "0") : e.value)
+    .join("");
+  return campos + "" + (EXTRAS_MODAL[id] ? EXTRAS_MODAL[id]() : "");
+}
+
+/* Lo que NO vive en un campo: interruptores hechos con botones, y listas que
+   viven en memoria. */
+const EXTRAS_MODAL = {
+  modalCliente: () => document.getElementById("clienteEstadoToggle").dataset.value || "activo",
+  modalTrabajador: () => document.getElementById("trabEstadoToggle").dataset.value || "activo",
+  modalTrabajo: () => [...trabajoTrabSel].sort().join(","),
+  modalCotizacion: () => JSON.stringify(cotFilas),
+  modalItemCatalogo: () => document.querySelector("#itemTipo .sel")?.dataset.tipo || "",
 };
+
+const basesModal = {};
+function marcarBaseModal(id){ basesModal[id] = huellaModal(id); }
+function modalSucio(id){
+  const el = document.getElementById(id);
+  return !!el && el.classList.contains("open")
+    && basesModal[id] !== undefined && huellaModal(id) !== basesModal[id];
+}
+
+/* Todo modal que sea un formulario va acá. Uno nuevo se protege agregando su
+   id a esta lista. */
+const MODALES_CON_FORMULARIO = [
+  "modalCliente", "modalTrabajador", "modalTrabajo",
+  "modalCotizacion", "modalItemCatalogo", "modalProveedor", "modalRenglon",
+];
+const guardasModal = Object.fromEntries(
+  MODALES_CON_FORMULARIO.map(id => [id, () => modalSucio(id)]));
 let modalADescartar = null;
 
 document.querySelectorAll("[data-close-modal]").forEach(b => b.addEventListener("click", () => {
@@ -1915,21 +1964,7 @@ document.getElementById("btnConfirmarEliminar").addEventListener("click", () => 
    ========================================================================= */
 let clienteEditandoId = null;
 let mapaLatLngTemp = null; // {lat,lng,direccion}
-let clienteFormBase = ""; // "foto" del formulario al abrirlo, para detectar cambios sin guardar
 
-function serializarFormularioCliente(){
-  return [
-    "clienteNombre","clienteEmpresa","clienteTelefono","clienteEmail",
-    "clienteDireccion","clienteDireccion2","clienteDireccionFact","clienteDireccionFact2",
-    "clienteCategoria","clienteNotas",
-  ].map(id => document.getElementById(id).value).join("")
-    + "" + document.getElementById("clienteFactIgual").checked
-    + "" + (document.getElementById("clienteEstadoToggle").dataset.value || "activo");
-}
-function clienteFormSucio(){
-  return document.getElementById("modalCliente").classList.contains("open")
-    && serializarFormularioCliente() !== clienteFormBase;
-}
 
 function renderFiltros(){
   const cats = DB.categoriasClientes.getAll();
@@ -2081,7 +2116,7 @@ function abrirNuevoCliente(){
   document.getElementById("btnCotizarCliente").style.display = "none";
   abrirModal("modalCliente");
   activarAutocompletadoDireccion();
-  clienteFormBase = serializarFormularioCliente();
+  marcarBaseModal("modalCliente");
   refrescarBotonesLimpiar();
 }
 
@@ -2111,7 +2146,7 @@ function abrirEdicionCliente(id){
   document.getElementById("btnCotizarCliente").style.display = "";
   abrirModal("modalCliente");
   activarAutocompletadoDireccion();
-  clienteFormBase = serializarFormularioCliente();
+  marcarBaseModal("modalCliente");
   refrescarBotonesLimpiar();
 }
 
@@ -2474,7 +2509,6 @@ function estadoInfo(id){ return ESTADOS_TRABAJO.find(e => e.id === id) || ESTADO
 let calFecha = new Date();
 let diaSeleccionado = hoyISO();
 let trabajoEditandoId = null;
-let trabajoFormBase = "";
 let trabajoTrabSel = new Set(); // ids de trabajadores asignados en el modal
 
 /* ---------- Botones − y + en los campos de número ----------
@@ -2633,16 +2667,6 @@ document.getElementById("btnPorAgendar").addEventListener("click", () => {
 function renderTrabajos(){ renderCalendario(); renderListaDia(); renderPorAgendar(); }
 
 /* ---------- Modal de trabajo ---------- */
-function serializarFormularioTrabajo(){
-  return ["trabajoCliente", "trabajoTitulo", "trabajoEstado", "trabajoFecha", "trabajoHoraInicio",
-    "trabajoHoraFin", "trabajoDireccion", "trabajoDireccion2", "trabajoPrecio", "trabajoCosto", "trabajoDescripcion"]
-    .map(id => document.getElementById(id).value).join("")
-    + "" + [...trabajoTrabSel].sort().join(",");
-}
-function trabajoFormSucio(){
-  return document.getElementById("modalTrabajo").classList.contains("open")
-    && serializarFormularioTrabajo() !== trabajoFormBase;
-}
 
 function poblarSelectClientes(seleccionado){
   const sel = document.getElementById("trabajoCliente");
@@ -2770,7 +2794,7 @@ document.getElementById("btnNuevoTrabajo").addEventListener("click", () => {
   }
   abrirModal("modalTrabajo");
   activarAutocompletadoDireccion();
-  trabajoFormBase = serializarFormularioTrabajo();
+  marcarBaseModal("modalTrabajo");
   refrescarBotonesLimpiar();
 });
 
@@ -2805,7 +2829,7 @@ function abrirEdicionTrabajo(id){
   infoCreado.style.display = "block";
   abrirModal("modalTrabajo");
   activarAutocompletadoDireccion();
-  trabajoFormBase = serializarFormularioTrabajo();
+  marcarBaseModal("modalTrabajo");
   refrescarBotonesLimpiar();
 }
 
@@ -4307,17 +4331,7 @@ document.getElementById("btnAgregarCategoria").addEventListener("click", () => {
 
 /* ---------- Equipo: registro de trabajadores ---------- */
 let trabajadorEditandoId = null;
-let trabajadorFormBase = "";
 
-function serializarFormularioTrabajador(){
-  return ["trabNombre", "trabTelefono", "trabEmail", "trabRol"]
-    .map(id => document.getElementById(id).value).join("")
-    + "" + (document.getElementById("trabEstadoToggle").dataset.value || "activo");
-}
-function trabajadorFormSucio(){
-  return document.getElementById("modalTrabajador").classList.contains("open")
-    && serializarFormularioTrabajador() !== trabajadorFormBase;
-}
 function setTrabEstadoToggle(v){
   document.querySelectorAll("#trabEstadoToggle button").forEach(b => b.classList.toggle("active", b.dataset.v === v));
   document.getElementById("trabEstadoToggle").dataset.value = v;
@@ -4374,7 +4388,7 @@ document.getElementById("btnNuevoTrabajador").addEventListener("click", () => {
   limpiarFormularioTrabajador();
   document.getElementById("modalTrabajadorTitulo").textContent = t("form_trabajador_nuevo");
   abrirModal("modalTrabajador");
-  trabajadorFormBase = serializarFormularioTrabajador();
+  marcarBaseModal("modalTrabajador");
 });
 
 function abrirEdicionTrabajador(id){
@@ -4388,7 +4402,7 @@ function abrirEdicionTrabajador(id){
   document.getElementById("fieldTrabNombre").classList.remove("error");
   document.getElementById("modalTrabajadorTitulo").textContent = t("form_trabajador_editar");
   abrirModal("modalTrabajador");
-  trabajadorFormBase = serializarFormularioTrabajador();
+  marcarBaseModal("modalTrabajador");
 }
 
 function pedirEliminarTrabajador(id){
