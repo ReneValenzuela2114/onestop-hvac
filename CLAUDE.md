@@ -227,6 +227,11 @@ serio hasta que exista D1.**
   ⚠️ El archivo se pide con `?v=` + la hora: el service worker responde desde
   SU caché y se saltea el `cache: "no-cache"`, así que sin eso el botón sigue
   trayendo la lista vieja cada vez que se agregan ejemplos nuevos.
+- **Los botones del pie de los modales miden 37px, no 38.** Está un pixel por
+  debajo del mínimo táctil que pide la guía general, y **Rene lo revisó y
+  decidió dejarlo así** (8 sep 2026). No "arreglarlo" de oficio: si una
+  medición lo vuelve a marcar, es una excepción aceptada, no un defecto.
+
 - **Naming inconsistente**: la pestaña se llama `proyectos` en el HTML pero el módulo,
   la tabla y los textos son "trabajos"/"jobs". Unificar a `trabajos` cuando se toque.
 - **El Worker queda con una dirección pública hasta que exista el login.** Se filtra
