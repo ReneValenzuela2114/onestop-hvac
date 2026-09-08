@@ -327,6 +327,33 @@
   .firma-preview-box{flex:1 1 190px;min-width:0;height:72px;display:flex;align-items:flex-end;
                      justify-content:center;padding-bottom:8px;border-bottom:1.5px solid #104070}
   .firma-preview-box img{max-width:100%;height:52px;object-fit:contain;margin-bottom:-8px}
+  /* Resumen de arriba del historial: cuántas y cuánto, de un vistazo. */
+  .hist-resumen{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-2);margin-bottom:var(--sp-5)}
+  .hist-resumen > div{background:var(--line-soft);border-radius:var(--radius-sm);padding:10px 12px;min-width:0}
+  .hist-resumen span{display:block;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+  .hist-resumen b{display:block;font-size:15px;color:var(--ink);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hist-bloque + .hist-bloque{margin-top:var(--sp-5)}
+  /* En el titulo va el nombre del cliente y puede ser largo: sin este respiro
+     la ultima palabra queda pegada al boton de cerrar. */
+  #modalHistorial .modal-head h3{padding-right:8px}
+  /* La fila del historial lleva el titulo del trabajo, que es largo. La tarjeta
+     normal lo recorta ("Reemplazo de sistema..." quedaba en "Reem..."), asi que
+     aca se arma con rejilla y en telefono el titulo baja a su propia linea. */
+  .hist-bloque .cat-card{display:grid;grid-template-columns:auto 1fr auto auto;
+    grid-template-areas:"num titulo estado precio";column-gap:10px;align-items:center}
+  .hist-bloque .cat-card .cot-num{grid-area:num}
+  .hist-bloque .cat-card > b{grid-area:titulo}
+  .hist-bloque .cat-card .cot-estado{grid-area:estado}
+  .hist-bloque .cat-card .cat-precio{grid-area:precio;margin-left:0}
+  .hist-bloque h4{margin:0 0 var(--sp-3);font-size:12.5px;font-weight:700;color:var(--ink)}
+  @media (max-width: 560px){
+    /* Cuatro columnas en 375px dejan los montos ilegibles: pasan a dos. */
+    .hist-resumen{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .hist-bloque .cat-card{grid-template-columns:auto auto 1fr;
+      grid-template-areas:"num estado precio" "titulo titulo titulo";row-gap:6px}
+    .hist-bloque .cat-card > b{white-space:normal;overflow:visible;text-overflow:clip}
+    .hist-bloque .cat-card .cat-precio{justify-self:end}
+  }
   .config-section{padding:var(--sp-5);border-bottom:1px solid var(--line)}
   .config-section:last-child{border-bottom:none}
   /* Acordeón de configuración: grupos desplegables */
@@ -1243,6 +1270,35 @@
   </div>
 </div>
 
+<!-- ============ Modal: Historial de un cliente ============
+     Antes esto vivía dentro del formulario de edición del cliente, mezclado con
+     sus datos. Son dos cosas distintas: una es corregir un teléfono y otra es
+     mirar qué le vendiste. Separado se lee mejor y el formulario queda corto. -->
+<div class="modal-backdrop" id="modalHistorial">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalHistorialTitulo" data-i18n="cliente_historial">Cotizaciones y trabajos</h3>
+      <button class="btn icon ghost" data-close-modal="modalHistorial"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="hist-resumen" id="histResumen"></div>
+      <div class="hist-bloque">
+        <h4 data-i18n="nav_cotizaciones">Cotizaciones</h4>
+        <div class="cat-lista" id="histCotizaciones"></div>
+      </div>
+      <div class="hist-bloque">
+        <h4 data-i18n="nav_proyectos">Trabajos</h4>
+        <div class="cat-lista" id="histTrabajos"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="btnHistCotizar"><span data-i18n="cliente_nueva_cot">Nueva cotización</span></button>
+      <div class="spacer"></div>
+      <button class="btn primary" data-close-modal="modalHistorial"><span data-i18n="cot_pdf_cerrar">Cerrar</span></button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ Modal: Renglón de una cotización ============
      Se abre al tocar un renglón. Acá se edita TODO lo de esa línea: el nombre
      y el precio quedan pegados a la cotización, no al catálogo — cambiarlos
@@ -1561,17 +1617,8 @@
         <textarea id="clienteNotas" data-i18n-ph="form_notas_ph"></textarea>
       </div>
 
-      <!-- Historial del cliente: sus cotizaciones y trabajos, sin salir de acá.
-           Solo al editar uno existente; en uno nuevo todavía no hay nada. -->
-      <div id="clienteHistorial" style="display:none">
-        <div class="field">
-          <label data-i18n="cliente_historial">Cotizaciones y trabajos</label>
-          <div class="cat-lista" id="clienteHistorialLista"></div>
-        </div>
-      </div>
     </div>
     <div class="modal-foot">
-      <button class="btn ghost" id="btnCotizarCliente" style="display:none"><span data-i18n="cliente_nueva_cot">Nueva cotización</span></button>
       <div class="spacer"></div>
       <button class="btn ghost" data-close-modal="modalCliente"><span data-i18n="form_cancelar">Cancelar</span></button>
       <button class="btn primary" id="btnGuardarCliente"><span data-i18n="form_guardar">Guardar cliente</span></button>
@@ -2078,6 +2125,7 @@ function renderClientes(){
       <td>${cat ? `<span class="badge" style="background:${cat.color}22;color:${cat.color}"><span class="dot" style="background:${cat.color}"></span>${esc(cat.nombre)}</span>` : `<span class="cell-muted">${t("clientes_sin_categoria")}</span>`}</td>
       <td><span class="badge estado-${c.estado}"><span class="dot" style="background:currentColor"></span>${t(c.estado === "activo" ? "clientes_activo" : "clientes_inactivo")}</span></td>
       <td><div class="row-actions">
+        <button class="btn icon ghost sm" title="${esc(t("cliente_ver_historial"))}" aria-label="${esc(t("cliente_ver_historial"))}" onclick="abrirHistorialCliente('${c.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h4"/></svg></button>
         <button class="btn icon ghost sm" onclick="abrirEdicionCliente('${c.id}')">${iconEdit()}</button>
         <button class="btn icon ghost sm" onclick="pedirEliminarCliente('${c.id}')">${iconTrash()}</button>
       </div></td>
@@ -2096,6 +2144,7 @@ function renderClientes(){
       <div class="client-card-foot">
         ${cat ? `<span class="badge" style="background:${cat.color}22;color:${cat.color}"><span class="dot" style="background:${cat.color}"></span>${esc(cat.nombre)}</span>` : "<span></span>"}
         <div class="row-actions">
+          <button class="btn icon ghost sm" title="${esc(t("cliente_ver_historial"))}" aria-label="${esc(t("cliente_ver_historial"))}" onclick="abrirHistorialCliente('${c.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h4"/></svg></button>
           <button class="btn icon ghost sm" onclick="abrirEdicionCliente('${c.id}')">${iconEdit()}</button>
           <button class="btn icon ghost sm" onclick="pedirEliminarCliente('${c.id}')">${iconTrash()}</button>
         </div>
@@ -2159,8 +2208,6 @@ function abrirNuevoCliente(){
   limpiarFormularioCliente();
   document.getElementById("modalClienteTitulo").textContent = t("form_nuevo_titulo");
   document.getElementById("btnGuardarCliente").querySelector("span").textContent = t("form_guardar");
-  renderHistorialCliente(null);
-  document.getElementById("btnCotizarCliente").style.display = "none";
   abrirModal("modalCliente");
   activarAutocompletadoDireccion();
   marcarBaseModal("modalCliente");
@@ -2189,8 +2236,6 @@ function abrirEdicionCliente(id){
   document.getElementById("fieldNombre").classList.remove("error");
   document.getElementById("modalClienteTitulo").textContent = t("form_editar_titulo");
   document.getElementById("btnGuardarCliente").querySelector("span").textContent = t("form_guardar_cambios");
-  renderHistorialCliente(id);
-  document.getElementById("btnCotizarCliente").style.display = "";
   abrirModal("modalCliente");
   activarAutocompletadoDireccion();
   marcarBaseModal("modalCliente");
@@ -3075,43 +3120,59 @@ document.getElementById("cotValidezDias").addEventListener("input", refrescarVal
 /* ---------- Historial del cliente: sus cotizaciones y sus trabajos ----------
    Todo cuelga de cliente_id, así que se responde "¿qué tiene este cliente?"
    sin salir de su ficha. */
-function renderHistorialCliente(clienteId){
-  const caja = document.getElementById("clienteHistorial");
-  const cont = document.getElementById("clienteHistorialLista");
-  if (!clienteId) { caja.style.display = "none"; return; }
-  caja.style.display = "";
+/* ---------- Historial de un cliente, en su propia ventana ----------
+   Se abre desde el botón que está al lado de Editar en la lista. */
+let historialClienteId = null;
+
+function abrirHistorialCliente(clienteId){
+  const cli = DB.clientes.get(clienteId);
+  if (!cli) return;
+  historialClienteId = clienteId;
 
   const cots = DB.cotizaciones.deCliente(clienteId);
   const trabajos = DB.trabajos.deCliente(clienteId).slice().sort((a, b) => b.numero - a.numero);
 
-  if (!cots.length && !trabajos.length) {
-    cont.innerHTML = `<p class="hint" style="margin:0">${esc(t("cliente_historial_vacio"))}</p>`;
-    return;
-  }
+  /* Lo que Rene quiere saber de un vistazo: cuánto le cotizó y cuánto le
+     vendió. Se cuenta solo lo aprobado, no los borradores: un presupuesto que
+     el cliente no aceptó no es plata. */
+  const cotizado = cots.reduce((s, c) => s + DB.cotizaciones.totales(c).total_centavos, 0);
+  const vendido = trabajos.filter(tj => tj.estado !== "cancelado")
+    .reduce((s, tj) => s + (tj.precio_centavos || 0), 0);
 
-  const filaCot = (c) => {
+  document.getElementById("modalHistorialTitulo").textContent = cli.nombre;
+  document.getElementById("histResumen").innerHTML = `
+    <div><span>${esc(t("hist_cotizaciones"))}</span><b>${cots.length}</b></div>
+    <div><span>${esc(t("hist_cotizado"))}</span><b>${esc(DB.dinero.formato(cotizado, CFG_LANG))}</b></div>
+    <div><span>${esc(t("hist_trabajos"))}</span><b>${trabajos.length}</b></div>
+    <div><span>${esc(t("hist_vendido"))}</span><b>${esc(DB.dinero.formato(vendido, CFG_LANG))}</b></div>`;
+
+  const vacio = (clave) => `<p class="hint" style="margin:0">${esc(t(clave))}</p>`;
+
+  document.getElementById("histCotizaciones").innerHTML = cots.length ? cots.map(c => {
     const tot = DB.cotizaciones.totales(c);
-    return `<button type="button" class="cat-card" onclick="cerrarModal('modalCliente');abrirEdicionCotizacion('${c.id}')">
+    return `<button type="button" class="cat-card" onclick="cerrarModal('modalHistorial');abrirEdicionCotizacion('${c.id}')">
       <span class="cot-num">${esc(numeroCot(c))}</span>
       <b>${esc(c.titulo)}</b>
       <span class="cot-estado ${c.estado}">${esc(t("cot_estado_" + c.estado))}</span>
       <span class="cat-precio"><b>${esc(DB.dinero.formato(tot.total_centavos, CFG_LANG))}</b></span>
     </button>`;
-  };
-  const filaTrabajo = (tj) => `<button type="button" class="cat-card" onclick="cerrarModal('modalCliente');abrirEdicionTrabajo('${tj.id}')">
+  }).join("") : vacio("hist_sin_cotizaciones");
+
+  document.getElementById("histTrabajos").innerHTML = trabajos.length ? trabajos.map(tj =>
+    `<button type="button" class="cat-card" onclick="cerrarModal('modalHistorial');abrirEdicionTrabajo('${tj.id}')">
       <span class="cot-num">#${tj.numero}</span>
       <b>${esc(tj.titulo)}</b>
       <span class="cot-estado ${tj.estado === "terminado" ? "aprobada" : tj.estado === "cancelado" ? "rechazada" : "enviada"}">${esc(t("estado_" + tj.estado))}</span>
       <span class="cat-precio"><b>${esc(DB.dinero.formato(tj.precio_centavos, CFG_LANG))}</b></span>
-    </button>`;
+    </button>`).join("") : vacio("hist_sin_trabajos");
 
-  cont.innerHTML = cots.map(filaCot).join("") + trabajos.map(filaTrabajo).join("");
+  abrirModal("modalHistorial");
 }
 
-document.getElementById("btnCotizarCliente").addEventListener("click", () => {
-  const id = document.getElementById("clienteId").value;
-  if (!id) return;
-  cerrarModal("modalCliente");
+document.getElementById("btnHistCotizar").addEventListener("click", () => {
+  if (!historialClienteId) return;
+  const id = historialClienteId;
+  cerrarModal("modalHistorial");
   abrirNuevaCotizacion(id);
 });
 

@@ -208,8 +208,14 @@ const I18N = {
     config_demo_ya_estan: "Los datos de ejemplo ya están cargados",
 
     cliente_historial: "Cotizaciones y trabajos",
-    cliente_historial_vacio: "Todavía no tiene cotizaciones ni trabajos.",
     cliente_nueva_cot: "Nueva cotización",
+    cliente_ver_historial: "Ver cotizaciones y trabajos",
+    hist_cotizaciones: "Cotizaciones",
+    hist_cotizado: "Cotizado",
+    hist_trabajos: "Trabajos",
+    hist_vendido: "Vendido",
+    hist_sin_cotizaciones: "Todavía no tiene cotizaciones.",
+    hist_sin_trabajos: "Todavía no tiene trabajos.",
 
     /* --- Cotización impresa (PDF) --- */
     cot_pdf: "Ver PDF",
@@ -680,8 +686,14 @@ const I18N = {
     config_demo_ya_estan: "Sample data is already loaded",
 
     cliente_historial: "Quotes and jobs",
-    cliente_historial_vacio: "No quotes or jobs yet.",
     cliente_nueva_cot: "New quote",
+    cliente_ver_historial: "View quotes and jobs",
+    hist_cotizaciones: "Quotes",
+    hist_cotizado: "Quoted",
+    hist_trabajos: "Jobs",
+    hist_vendido: "Sold",
+    hist_sin_cotizaciones: "No quotes yet.",
+    hist_sin_trabajos: "No jobs yet.",
 
     /* --- Printed quote (PDF) --- */
     cot_pdf: "View PDF",
