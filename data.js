@@ -27,7 +27,7 @@
    - IDs: crypto.randomUUID(). Fechas de auditoría: epoch ms (Date.now()).
    ========================================================================= */
 
-const ESQUEMA_VERSION = 10;
+const ESQUEMA_VERSION = 11;
 
 const CLAVES = {
   clientes: "os_clientes_v1",
@@ -39,10 +39,13 @@ const CLAVES = {
   catalogo: "os_catalogo_v1",
   cotizaciones: "os_cotizaciones_v1",
   cotizacionItems: "os_cotizacion_items_v1",
+  conversiones: "os_conversiones_v1",
+  combos: "os_combos_v1",
+  comboItems: "os_combo_items_v1",
   config: "os_config_v1",
 };
 
-const COLECCIONES = ["clientes", "categoriasClientes", "usuarios", "trabajos", "archivos", "proveedores", "catalogo", "cotizaciones", "cotizacionItems", "conversiones"];
+const COLECCIONES = ["clientes", "categoriasClientes", "usuarios", "trabajos", "archivos", "proveedores", "catalogo", "cotizaciones", "cotizacionItems", "conversiones", "combos", "comboItems"];
 
 /* Los bytes de los archivos (logo, y en el futuro fotos) no viven con los
    demás datos: van aparte, igual que van a vivir aparte en R2. */
@@ -144,6 +147,15 @@ const Cantidad = {
    instantáneo: así el día que adentro haya un fetch() al Worker, la forma
    de la capa no cambia y no hay que tocar nada más.
    ========================================================================= */
+/* Una colección sin su clave escribiría en `localStorage["undefined"]`, la
+   MISMA para todas las que falten: se pisan entre sí y los datos salen
+   mezclados. Pasó de verdad al agregar combos —conversiones venía sin clave
+   desde antes y no se notó porque era la única—. Falla acá, ruidoso y al
+   arrancar, en vez de aparecer como un dato raro tres pantallas después. */
+for (const col of COLECCIONES) {
+  if (!CLAVES[col]) throw new Error("Falta CLAVES." + col + " en data.js");
+}
+
 const AlmacenLocal = {
   cargarTodo() {
     const datos = { config: {} };
@@ -306,6 +318,18 @@ const Validar = {
     }
     return e;
   },
+  combo(d) {
+    const e = [];
+    if (!_texto(d.nombre)) e.push("error_nombre_requerido");
+    return e;
+  },
+  comboItem(d) {
+    const e = [];
+    if (!d.catalogo_id) e.push("error_producto_requerido");
+    else if (!Catalogo.get(d.catalogo_id)) e.push("error_producto_inexistente");
+    if (!Cantidad.esValida(d.cantidad_centesimas) || d.cantidad_centesimas <= 0) e.push("error_cantidad_invalida");
+    return e;
+  },
   proveedor(d) {
     const e = [];
     if (!_texto(d.nombre)) e.push("error_nombre_requerido");
@@ -446,6 +470,133 @@ const Clientes = {
   remove(id) {
     if (Trabajos.deCliente(id).length) throw new ErrorDatos("error_cliente_con_trabajos");
     return _borradoSuave("clientes", id);
+  },
+};
+
+/* ---------------- Combos ----------------
+   Un combo es una RECETA, no un documento: "Sistema completo 3 toneladas" =
+   condensadora + evaporadora + línea + mano de obra. Sirve para no cargar los
+   mismos ocho renglones a mano cada vez.
+
+   Por eso —y acá está la diferencia con la regla 3b— el combo apunta al
+   catálogo y NO copia el precio. Una cotización firmada tiene que quedar
+   congelada; una receta tiene que valer lo que valen sus ingredientes hoy. Si
+   el combo copiara precios, subir el costo de un equipo dejaría todos los
+   combos mintiendo hasta que alguien se acordara de tocarlos uno por uno.
+
+   La copia sí ocurre, pero después: al llevar el combo a una cotización se
+   copian los precios de ese día en cada renglón, y ahí sí quedan congelados. */
+const CAMPOS_COMBO = ["nombre", "descripcion", "notas", "activo"];
+
+const Combos = {
+  getAll() {
+    return _vivos("combos").slice().sort((a, b) => a.nombre.localeCompare(b.nombre));
+  },
+  activos() {
+    return this.getAll().filter((c) => c.activo !== false);
+  },
+  get(id) {
+    return _vivos("combos").find((c) => c.id === id) || null;
+  },
+  create(datos = {}) {
+    _exigir(Validar.combo(datos));
+    const item = {
+      id: _uuid(),
+      nombre: _texto(datos.nombre),
+      descripcion: _texto(datos.descripcion),
+      notas: _texto(datos.notas),
+      activo: datos.activo !== false,
+      ..._sellosNuevo(),
+    };
+    _estado.combos.push(item);
+    _persistir(Almacen.crear("combos", item));
+    return item;
+  },
+  update(id, datos) {
+    const item = this.get(id);
+    if (!item) return null;
+    const cambios = _tomar(datos, CAMPOS_COMBO);
+    _exigir(Validar.combo({ ...item, ...cambios }));
+    for (const c of ["nombre", "descripcion", "notas"]) {
+      if (cambios[c] !== undefined) cambios[c] = _texto(cambios[c]);
+    }
+    Object.assign(item, cambios, _sellosEdicion());
+    _persistir(Almacen.actualizar("combos", item));
+    return item;
+  },
+  remove(id) {
+    /* Los renglones se van con él. No es historial de plata: es una receta que
+       ya no se usa, y dejarlos sueltos solo ensucia la base. */
+    _vivos("comboItems").filter((i) => i.combo_id === id)
+      .forEach((i) => _borradoSuave("comboItems", i.id));
+    return _borradoSuave("combos", id);
+  },
+
+  /* ---- Los productos que lleva ---- */
+  items(comboId) {
+    return _vivos("comboItems").filter((i) => i.combo_id === comboId)
+      .slice().sort((a, b) => a.orden - b.orden);
+  },
+  guardarItems(comboId, filas) {
+    if (!this.get(comboId)) return null;
+    const limpias = (filas || []).map((f, i) => {
+      const item = {
+        id: _uuid(),
+        combo_id: comboId,
+        catalogo_id: f.catalogo_id || null,
+        cantidad_centesimas: Math.round(Number(f.cantidad_centesimas) || 0),
+        orden: i,
+        ..._sellosNuevo(),
+      };
+      _exigir(Validar.comboItem(item));
+      return item;
+    });
+    /* Se valida TODO antes de escribir: si el renglón 5 está mal, no puede
+       quedar el combo con los primeros cuatro y sin el resto. */
+    _vivos("comboItems").filter((i) => i.combo_id === comboId)
+      .forEach((i) => _borradoSuave("comboItems", i.id));
+    limpias.forEach((i) => {
+      _estado.comboItems.push(i);
+      _persistir(Almacen.crear("comboItems", i));
+    });
+    return limpias;
+  },
+
+  /* Lo que vale hoy: la suma de sus productos a precio de catálogo actual.
+     No se guarda en ningún lado, por lo mismo que los totales de la
+     cotización (regla 3d): dos verdades terminan sin coincidir. */
+  totales(comboId) {
+    let precio = 0, costo = 0, faltantes = 0;
+    for (const i of this.items(comboId)) {
+      const p = Catalogo.get(i.catalogo_id);
+      if (!p) { faltantes++; continue; }
+      precio += Cantidad.porPrecio(i.cantidad_centesimas, p.precio_centavos || 0);
+      costo += Cantidad.porPrecio(i.cantidad_centesimas, p.costo_centavos || 0);
+    }
+    /* `faltantes` son productos que se borraron del catálogo después de armar
+       el combo. La pantalla lo avisa en vez de mostrar un precio incompleto
+       como si fuera correcto. */
+    return { precio_centavos: precio, costo_centavos: costo, faltantes };
+  },
+
+  /* Los renglones listos para meter en una cotización, con el precio del
+     catálogo YA COPIADO: de acá en adelante rige la regla 3b y la cotización
+     queda congelada aunque mañana cambie el catálogo. */
+  filasParaCotizacion(comboId) {
+    return this.items(comboId).map((i) => {
+      const p = Catalogo.get(i.catalogo_id);
+      if (!p) return null;
+      return {
+        catalogo_id: p.id,
+        nombre: p.nombre,
+        descripcion: "",
+        unidad: p.unidad,
+        cantidad_centesimas: i.cantidad_centesimas,
+        precio_centavos: p.precio_centavos || 0,
+        costo_centavos: p.costo_centavos || 0,
+        en_pdf: 1,
+      };
+    }).filter(Boolean);
   },
 };
 
@@ -1324,6 +1475,13 @@ function _migrar() {
     });
   }
 
+  /* --- v10 → v11: aparecen los combos ---
+     Nacen vacíos, no hay datos viejos que convertir. */
+  if (desde < 11) {
+    if (!Array.isArray(_estado.combos)) _estado.combos = [];
+    if (!Array.isArray(_estado.comboItems)) _estado.comboItems = [];
+  }
+
   _estado.config.esquema_version = ESQUEMA_VERSION;
   return true;
 }
@@ -1420,6 +1578,7 @@ const DB = {
   catalogo: Catalogo,
   cotizaciones: Cotizaciones,
   conversiones: Conversiones,
+  combos: Combos,
   config: Config,
   respaldo: Respaldo,
   dinero: Dinero,

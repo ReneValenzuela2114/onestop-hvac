@@ -368,6 +368,23 @@
   .hist-resumen b{display:block;font-size:15px;color:var(--ink);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .aviso-ojo{margin:0 0 var(--sp-4);padding:10px 12px;border-radius:var(--radius-sm);
     background:var(--calor-soft);color:var(--calor-600);font-size:12px;line-height:1.45}
+  /* La fila del combo reusa .cot-fila y le mete un campo de cantidad donde la
+     cotizacion tiene el ojo. Ancho fijo para que todas las filas queden
+     alineadas por mas que el numero tenga una o cuatro cifras. */
+  /* En telefono la tarjeta esconde el subtitulo por espacio, y en un producto
+     no se pierde nada. En un combo si: "3 productos" es justo lo que lo
+     distingue de otro combo. Aca la tarjeta pasa a dos lineas. */
+  @media (max-width: 900px){
+    #combosLista .cat-card{flex-wrap:wrap}
+    #combosLista .cat-card > b{flex:1 1 auto;min-width:0}
+    #combosLista .cat-card .cat-sub{display:block;flex:1 1 100%;order:3}
+  }
+  /* Marquita para distinguir un combo de un producto en el mismo menu. */
+  .ac-tag{margin-left:6px;padding:1px 6px;border-radius:999px;font-size:9.5px;
+    font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    background:var(--calor-soft);color:var(--calor-600);vertical-align:middle}
+  .combo-cant{width:62px;flex-shrink:0;text-align:center;padding:6px 4px;min-height:38px;
+    border:1px solid var(--line-campo);border-radius:8px;font-size:13px;background:var(--panel)}
   .hist-relacion{margin:0 0 var(--sp-3);font-size:12px}
   .hist-bloque + .hist-bloque{margin-top:var(--sp-5)}
   /* En el titulo va el nombre del cliente y puede ser largo: sin este respiro
@@ -765,6 +782,7 @@
         <div class="segmented" id="catalogoVistas">
           <button type="button" class="sel" data-vista="productos" data-i18n="catalogo_vista_productos">Productos</button>
           <button type="button" data-vista="proveedores" data-i18n="catalogo_vista_proveedores">Proveedores</button>
+          <button type="button" data-vista="combos" data-i18n="catalogo_vista_combos">Combos</button>
         </div>
 
         <div id="catVistaProductos">
@@ -790,6 +808,17 @@
             </div>
           </div>
           <div class="cat-lista" id="proveedoresLista"></div>
+        </div>
+
+        <div id="catVistaCombos" style="display:none">
+          <div class="toolbar">
+            <div class="search-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" id="buscarCombo" data-i18n-ph="combos_buscar" placeholder="Search combo…">
+            </div>
+          </div>
+          <p class="cat-resumen" id="combosResumen"></p>
+          <div class="cat-lista" id="combosLista"></div>
         </div>
       </section>
       <section id="tab-cotizaciones" class="tabpanel" style="display:none">
@@ -1304,6 +1333,64 @@
       <button class="btn ghost" data-close-modal="modalCotizacion"><span data-i18n="form_cancelar">Cancelar</span></button>
       <button class="btn" id="btnAprobarCotizacion" style="display:none"><span data-i18n="cot_aprobar">Aprobar y crear trabajo</span></button>
       <button class="btn primary" id="btnGuardarCotizacion"><span data-i18n="form_guardar">Guardar</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Modal: Combo ============
+     Un combo es una receta: qué productos van juntos y en qué cantidad. No
+     lleva precio propio —vale la suma de sus productos a precio de hoy—, así
+     que acá no hay ningún campo de dinero que se pueda desincronizar. -->
+<div class="modal-backdrop" id="modalCombo">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalComboTitulo" data-i18n="combos_form_nuevo">Nuevo combo</h3>
+      <button class="btn icon ghost" data-close-modal="modalCombo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="comboId">
+      <div class="field" id="fieldComboNombre">
+        <label data-i18n="combos_nombre">Nombre</label>
+        <input type="text" id="comboNombre" data-i18n-ph="combos_nombre_ph" placeholder="e.g. Complete 3-ton system">
+      </div>
+      <div class="field">
+        <label data-i18n="combos_descripcion">Descripción</label>
+        <input type="text" id="comboDescripcion" data-i18n-ph="combos_descripcion_ph" placeholder="e.g. Replacement with new ducting">
+      </div>
+
+      <div class="field">
+        <label data-i18n="combos_productos">Productos del combo</label>
+        <div class="cot-agregar">
+          <div class="ac-anchor">
+            <input type="text" id="comboBuscarProducto" data-i18n-ph="cot_agregar_ph" placeholder="Search the catalog to add…" autocomplete="off">
+            <div class="ac-menu" id="comboProductoMenu" style="display:none"></div>
+          </div>
+        </div>
+        <div class="cot-filas" id="comboFilas"></div>
+        <p class="hint" id="comboSinFilas" data-i18n="cot_sin_renglones">Buscá un producto del catálogo para agregarlo.</p>
+      </div>
+
+      <div class="cot-totales">
+        <div><span data-i18n="combos_precio">Precio del combo</span><b id="comboPrecio">$0.00</b></div>
+        <div class="cot-ganancia"><span data-i18n="cot_ganancia">Ganancia estimada</span><b id="comboGanancia">$0.00</b></div>
+      </div>
+      <p class="hint" data-i18n="combos_precio_ayuda">El combo no tiene precio propio: vale lo que valen sus productos hoy. Si mañana subís el precio de un equipo, el combo sube solo.</p>
+
+      <label class="check-row">
+        <input type="checkbox" id="comboActivo" checked>
+        <span data-i18n="catalogo_activo">Activo</span>
+      </label>
+
+      <div class="field" style="margin-bottom:0">
+        <label data-i18n="form_notas">Notas internas</label>
+        <textarea id="comboNotas" data-i18n-ph="form_notas_ph"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger ghost" id="btnEliminarCombo" style="display:none"><span data-i18n="eliminar">Eliminar</span></button>
+      <div class="spacer"></div>
+      <button class="btn ghost" data-close-modal="modalCombo"><span data-i18n="cancelar">Cancelar</span></button>
+      <button class="btn primary" id="btnGuardarCombo"><span data-i18n="guardar">Guardar</span></button>
     </div>
   </div>
 </div>
@@ -1911,10 +1998,10 @@ function setLang(lang){
   // trabajo, lista de equipo). Si falta alguno, queda en el idioma anterior
   // hasta cambiar de pestaña.
   renderFiltros(); renderClientes(); renderCategoriasChips(); renderUsuarios(); renderTrabajos();
-  renderFiltrosCatalogo(); renderCatalogo(); renderProveedores();
+  renderFiltrosCatalogo(); renderCatalogo(); renderProveedores(); renderCombos();
   renderFiltrosCotizaciones(); renderCotizaciones();
   document.getElementById("btnNuevoItemCatalogoLabel").textContent =
-    t(catalogoVista === "productos" ? "catalogo_nuevo" : "proveedores_nuevo");
+    t((VISTAS_CATALOGO[catalogoVista] || VISTAS_CATALOGO.productos).boton);
 }
 document.querySelectorAll("#langSwitch button[data-lang]").forEach(b=>{
   b.addEventListener("click", ()=> setLang(b.dataset.lang));
@@ -2048,6 +2135,10 @@ const EXTRAS_MODAL = {
   modalTrabajo: () => [...trabajoTrabSel].sort().join(","),
   modalCotizacion: () => JSON.stringify(cotFilas),
   modalItemCatalogo: () => document.querySelector("#itemTipo .sel")?.dataset.tipo || "",
+  /* Los renglones del combo viven en memoria, no en campos del formulario:
+     sin esto, cambiar una cantidad o sacar un producto y cerrar la ventana
+     no avisaba nada y el trabajo se perdía. */
+  modalCombo: () => JSON.stringify(comboFilas),
 };
 
 const basesModal = {};
@@ -2063,6 +2154,7 @@ function modalSucio(id){
 const MODALES_CON_FORMULARIO = [
   "modalCliente", "modalTrabajador", "modalTrabajo",
   "modalCotizacion", "modalItemCatalogo", "modalProveedor", "modalRenglon",
+  "modalCombo",
 ];
 const guardasModal = Object.fromEntries(
   MODALES_CON_FORMULARIO.map(id => [id, () => modalSucio(id)]));
@@ -3326,17 +3418,266 @@ document.getElementById("btnHistCotizar").addEventListener("click", () => {
   abrirNuevaCotizacion(id);
 });
 
+/* =====================================================================
+   COMBOS · recetas de productos que se cotizan juntos
+   ===================================================================== */
+let comboEditandoId = null;
+let comboFilas = [];   // {catalogo_id, cantidad_centesimas}
+
+/* "1 productos" quedaba mal escrito. Una sola función para que la lista y el
+   buscador de la cotización digan lo mismo. */
+function textoNproductos(n){
+  return n === 1 ? t("combos_1_producto") : t("combos_n_productos").replace("{n}", n);
+}
+
+function renderCombos(){
+  const q = document.getElementById("buscarCombo").value.trim().toLowerCase();
+  const todos = DB.combos.getAll();
+  const lista = q ? todos.filter(c => `${c.nombre} ${c.descripcion}`.toLowerCase().includes(q)) : todos;
+
+  document.getElementById("combosResumen").textContent =
+    todos.length ? t("catalogo_resumen").replace("{n}", lista.length).replace("{total}", todos.length) : "";
+
+  const cont = document.getElementById("combosLista");
+  if (!lista.length) {
+    cont.innerHTML = `<div class="placeholder-tab"><h3>${esc(t(todos.length ? "catalogo_sin_resultados" : "combos_vacio_titulo"))}</h3>
+      <p>${esc(t(todos.length ? "catalogo_sin_resultados_texto" : "combos_vacio_texto"))}</p></div>`;
+    return;
+  }
+
+  cont.innerHTML = lista.map(c => {
+    const tot = DB.combos.totales(c.id);
+    const n = DB.combos.items(c.id).length;
+    const extras = [textoNproductos(n)];
+    if (c.activo === false) extras.push(t("catalogo_filtro_inactivos"));
+    if (tot.faltantes) extras.push(t("combos_faltantes").replace("{n}", tot.faltantes));
+    return `<button type="button" class="cat-card" onclick="abrirEdicionCombo('${c.id}')">
+      <b>${esc(c.nombre)}</b>
+      <span class="cat-sub">${esc(extras.join(" · "))}</span>
+      <span class="cat-precio"><b>${esc(DB.dinero.formato(tot.precio_centavos, CFG_LANG))}</b></span>
+    </button>`;
+  }).join("");
+}
+document.getElementById("buscarCombo").addEventListener("input", renderCombos);
+
+function abrirNuevoCombo(){
+  comboEditandoId = null;
+  comboFilas = [];
+  document.getElementById("comboId").value = "";
+  document.getElementById("comboNombre").value = "";
+  document.getElementById("comboDescripcion").value = "";
+  document.getElementById("comboNotas").value = "";
+  document.getElementById("comboActivo").checked = true;
+  document.getElementById("fieldComboNombre").classList.remove("error");
+  document.getElementById("modalComboTitulo").textContent = t("combos_form_nuevo");
+  document.getElementById("btnEliminarCombo").style.display = "none";
+  renderFilasCombo();
+  abrirModal("modalCombo");
+}
+
+function abrirEdicionCombo(id){
+  const c = DB.combos.get(id);
+  if (!c) return;
+  comboEditandoId = id;
+  comboFilas = DB.combos.items(id).map(i => ({
+    catalogo_id: i.catalogo_id, cantidad_centesimas: i.cantidad_centesimas,
+  }));
+  document.getElementById("comboId").value = id;
+  document.getElementById("comboNombre").value = c.nombre;
+  document.getElementById("comboDescripcion").value = c.descripcion || "";
+  document.getElementById("comboNotas").value = c.notas || "";
+  document.getElementById("comboActivo").checked = c.activo !== false;
+  document.getElementById("fieldComboNombre").classList.remove("error");
+  document.getElementById("modalComboTitulo").textContent = t("combos_form_editar");
+  document.getElementById("btnEliminarCombo").style.display = "";
+  renderFilasCombo();
+  abrirModal("modalCombo");
+}
+
+function renderFilasCombo(){
+  const cont = document.getElementById("comboFilas");
+  document.getElementById("comboSinFilas").hidden = comboFilas.length > 0;
+
+  /* Misma fila que en la cotización, para que se vea y se toque igual. Lo
+     único distinto es que acá se edita la cantidad ahí mismo: es lo único
+     que un combo guarda de cada producto —el precio sale del catálogo—, así
+     que abrir una ventana para un solo número sería de más. */
+  cont.innerHTML = comboFilas.map((f, i) => {
+    const p = DB.catalogo.get(f.catalogo_id);
+    /* Un producto borrado del catálogo después de armar el combo: se avisa en
+       vez de mostrar el renglón en blanco como si estuviera bien. */
+    if (!p) {
+      return `<div class="cot-fila oculta" data-i="${i}">
+        <span class="cot-nombre">
+          <span class="cot-titulo-fila">${esc(t("combos_producto_borrado"))}</span>
+        </span>
+        <button type="button" class="cot-quitar" data-quitar="${i}" aria-label="${esc(t("eliminar"))}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>`;
+    }
+    const sub = DB.cantidad.porPrecio(f.cantidad_centesimas, p.precio_centavos || 0);
+    return `<div class="cot-fila" data-i="${i}">
+      <span class="cot-nombre">
+        <span class="cot-titulo-fila">${esc(p.nombre)}</span>
+        <span class="cot-unidad">${esc(t("unidad_" + p.unidad))} · ${esc(DB.dinero.formato(p.precio_centavos, CFG_LANG))}</span>
+      </span>
+      <input type="text" inputmode="decimal" class="combo-cant" data-i="${i}"
+             value="${esc(DB.cantidad.aTexto(f.cantidad_centesimas))}"
+             aria-label="${esc(t("cot_col_cantidad"))}">
+      <span class="cot-sub">${esc(DB.dinero.formato(sub, CFG_LANG))}</span>
+      <button type="button" class="cot-quitar" data-quitar="${i}" aria-label="${esc(t("eliminar"))}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>`;
+  }).join("");
+
+  cont.querySelectorAll(".combo-cant").forEach(inp => {
+    inp.addEventListener("change", () => {
+      const i = Number(inp.dataset.i);
+      const c = DB.cantidad.aCentesimas(inp.value);
+      /* Cantidad inválida o cero: se deja la que estaba. Un renglón en 0 no
+         significa nada en una receta y la validación lo rechazaría al guardar. */
+      if (!isFinite(c) || c <= 0) { renderFilasCombo(); return; }
+      comboFilas[i].cantidad_centesimas = c;
+      renderFilasCombo();
+    });
+  });
+  cont.querySelectorAll("[data-quitar]").forEach(b => {
+    b.addEventListener("click", () => quitarFilaCombo(Number(b.dataset.quitar)));
+  });
+
+  refrescarTotalesCombo();
+}
+
+function quitarFilaCombo(i){ comboFilas.splice(i, 1); renderFilasCombo(); }
+
+function refrescarTotalesCombo(){
+  let precio = 0, costo = 0;
+  for (const f of comboFilas) {
+    const p = DB.catalogo.get(f.catalogo_id);
+    if (!p) continue;
+    precio += DB.cantidad.porPrecio(f.cantidad_centesimas, p.precio_centavos || 0);
+    costo += DB.cantidad.porPrecio(f.cantidad_centesimas, p.costo_centavos || 0);
+  }
+  document.getElementById("comboPrecio").textContent = DB.dinero.formato(precio, CFG_LANG);
+  document.getElementById("comboGanancia").textContent = DB.dinero.formato(precio - costo, CFG_LANG);
+}
+
+/* ---------- Buscador del catálogo dentro del combo ----------
+   Mismo comportamiento que el de la cotización, incluido el `pointerdown`:
+   en táctil gana antes que el blur, que si no cerraba el menú antes de poder
+   elegir. */
+function renderMenuProductosCombo(){
+  const input = document.getElementById("comboBuscarProducto");
+  const menu = document.getElementById("comboProductoMenu");
+  const lista = DB.catalogo.buscar({ texto: input.value, soloActivos: true }).slice(0, 30);
+  menu.innerHTML = lista.length
+    ? lista.map(p => `<div class="ac-item" data-id="${p.id}">
+        <b>${esc(p.nombre)}</b> <span>${esc(DB.dinero.formato(p.precio_centavos, CFG_LANG))} · ${esc(t("unidad_" + p.unidad))}</span>
+      </div>`).join("")
+    : `<div class="ac-item" style="color:var(--muted);cursor:default">${esc(t(!DB.catalogo.activos().length ? "cot_catalogo_vacio" : "catalogo_sin_resultados"))}</div>`;
+  menu.style.display = "block";
+}
+
+(() => {
+  const input = document.getElementById("comboBuscarProducto");
+  const menu = document.getElementById("comboProductoMenu");
+  input.addEventListener("focus", renderMenuProductosCombo);
+  input.addEventListener("input", renderMenuProductosCombo);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.stopPropagation(); menu.style.display = "none"; }
+  });
+  menu.addEventListener("pointerdown", (e) => {
+    const item = e.target.closest(".ac-item[data-id]");
+    if (!item) return;
+    e.preventDefault();
+    const p = DB.catalogo.get(item.dataset.id);
+    if (!p) return;
+    /* Si ya está, se le suma uno en vez de repetir el renglón: en una receta
+       "dos condensadoras" es una línea con cantidad 2, no dos líneas. */
+    const ya = comboFilas.find(f => f.catalogo_id === p.id);
+    if (ya) ya.cantidad_centesimas += 100;
+    else comboFilas.push({ catalogo_id: p.id, cantidad_centesimas: 100 });
+    input.value = "";
+    menu.style.display = "none";
+    /* Sin foco al buscador, igual que en la cotización: la lista de productos
+       tapaba justo el renglón recién agregado. */
+    input.blur();
+    renderFilasCombo();
+  });
+  document.addEventListener("pointerdown", (e) => {
+    if (!e.target.closest("#comboBuscarProducto, #comboProductoMenu")) menu.style.display = "none";
+  });
+})();
+
+document.getElementById("btnGuardarCombo").addEventListener("click", () => {
+  const nombre = document.getElementById("comboNombre").value.trim();
+  const campo = document.getElementById("fieldComboNombre");
+  if (!nombre) { campo.classList.add("error"); toast(t("error_nombre_requerido"), true); return; }
+  campo.classList.remove("error");
+
+  const datos = {
+    nombre,
+    descripcion: document.getElementById("comboDescripcion").value.trim(),
+    notas: document.getElementById("comboNotas").value.trim(),
+    activo: document.getElementById("comboActivo").checked,
+  };
+  const guardado = conAviso(() => comboEditandoId
+    ? DB.combos.update(comboEditandoId, datos)
+    : DB.combos.create(datos));
+  if (!guardado) return;
+  /* Los renglones se guardan aparte y también con aviso: si fallaran, el combo
+     quedaría creado pero vacío y hay que enterarse. */
+  if (conAviso(() => DB.combos.guardarItems(guardado.id, comboFilas)) === null) return;
+
+  const eraEdicion = !!comboEditandoId;
+  cerrarModal("modalCombo");
+  renderCombos();
+  toast(t(eraEdicion ? "toast_combo_actualizado" : "toast_combo_creado"));
+});
+
+document.getElementById("btnEliminarCombo").addEventListener("click", () => {
+  if (!comboEditandoId) return;
+  if (!DB.combos.get(comboEditandoId)) return;
+  pedirConfirmacion("combos_eliminar_titulo", "combos_eliminar_texto", () => {
+    if (conAviso(() => DB.combos.remove(comboEditandoId))) {
+      cerrarModal("modalCombo");
+      renderCombos();
+      toast(t("toast_combo_eliminado"));
+    }
+  });
+});
+
 /* ---------- Buscador del catálogo dentro de la cotización ---------- */
 function renderMenuProductosCot(){
   const input = document.getElementById("cotBuscarProducto");
   const menu = document.getElementById("cotProductoMenu");
   const lista = DB.catalogo.buscar({ texto: input.value, soloActivos: true }).slice(0, 30);
-  if (lista.length) {
-    menu.innerHTML = lista.map(p => `<div class="ac-item" data-id="${p.id}">
+  /* Los combos salen primero y marcados: son varios renglones de una vez, y
+     conviene que se note antes de tocarlos. */
+  const q = input.value.trim().toLowerCase();
+  const combos = DB.combos.activos()
+    .filter(c => !q || `${c.nombre} ${c.descripcion}`.toLowerCase().includes(q))
+    .slice(0, 10);
+
+  const filasCombos = combos.map(c => {
+    const tot = DB.combos.totales(c.id);
+    const n = DB.combos.items(c.id).length;
+    return `<div class="ac-item" data-combo="${c.id}">
+      <b>${esc(c.nombre)}<span class="ac-tag">${esc(t("combos_marca"))}</span></b>
+      <span>${esc(DB.dinero.formato(tot.precio_centavos, CFG_LANG))} · ${esc(textoNproductos(n))}</span>
+    </div>`;
+  }).join("");
+
+  const filasProductos = lista.map(p => `<div class="ac-item" data-id="${p.id}">
       <b>${esc(p.nombre)}</b> <span>${esc(DB.dinero.formato(p.precio_centavos, CFG_LANG))} · ${esc(t("unidad_" + p.unidad))}</span>
     </div>`).join("");
+
+  if (filasCombos || filasProductos) {
+    menu.innerHTML = filasCombos + filasProductos;
   } else {
-    const vacio = !DB.catalogo.activos().length;
+    const vacio = !DB.catalogo.activos().length && !DB.combos.activos().length;
     menu.innerHTML = `<div class="ac-item" style="color:var(--muted);cursor:default">${esc(t(vacio ? "cot_catalogo_vacio" : "catalogo_sin_resultados"))}</div>`;
   }
   menu.style.display = "block";
@@ -3354,6 +3695,31 @@ function cerrarMenuProductosCot(){ document.getElementById("cotProductoMenu").st
   // pointerdown por lo mismo que en el buscador de técnicos: en táctil gana
   // antes que el blur, que si no cerraba el menú antes de poder elegir.
   menu.addEventListener("pointerdown", (e) => {
+    /* Un combo se abre en sus productos: entran como renglones sueltos y de
+       ahí en adelante se tocan como cualquier otro —cambiar cantidad, sacar
+       uno, esconderlo del PDF—. Los precios se COPIAN acá (regla 3b): la
+       cotización queda congelada aunque mañana cambie el catálogo. */
+    const itemCombo = e.target.closest(".ac-item[data-combo]");
+    if (itemCombo) {
+      e.preventDefault();
+      const combo = DB.combos.get(itemCombo.dataset.combo);
+      const filas = combo ? DB.combos.filasParaCotizacion(combo.id) : [];
+      input.value = "";
+      menu.style.display = "none";
+      input.blur();
+      if (!filas.length) { toast(t("combos_vacio_aviso"), true); return; }
+      cotFilas.push(...filas);
+      renderFilasCot();
+      /* Si el combo tenía productos que después se borraron del catálogo,
+         entran menos renglones de los que dice el combo. Se avisa en vez de
+         dejar que se note recién al mirar el total. */
+      const faltan = DB.combos.items(combo.id).length - filas.length;
+      toast(faltan
+        ? t("combos_agregado_parcial").replace("{n}", filas.length).replace("{f}", faltan)
+        : t("combos_agregado").replace("{n}", filas.length));
+      return;
+    }
+
     const item = e.target.closest(".ac-item[data-id]");
     if (!item) return;
     e.preventDefault();
@@ -4271,21 +4637,33 @@ let proveedorEditandoId = null;
 let catalogoVista = "productos";
 
 /* ---------- Vistas: productos / proveedores ---------- */
+/* Las tres vistas en una tabla, no en cadenas de if: agregar una cuarta es
+   una línea más y no hay forma de que se olvide un `else`. */
+const VISTAS_CATALOGO = {
+  productos:   { panel: "catVistaProductos",   boton: "catalogo_nuevo",    render: () => renderCatalogo(),   nuevo: () => abrirNuevoItemCatalogo() },
+  proveedores: { panel: "catVistaProveedores", boton: "proveedores_nuevo", render: () => renderProveedores(), nuevo: () => abrirNuevoProveedor() },
+  combos:      { panel: "catVistaCombos",      boton: "combos_nuevo",      render: () => renderCombos(),      nuevo: () => abrirNuevoCombo() },
+};
+
+function mostrarVistaCatalogo(nombre){
+  const vista = VISTAS_CATALOGO[nombre] || VISTAS_CATALOGO.productos;
+  catalogoVista = VISTAS_CATALOGO[nombre] ? nombre : "productos";
+  document.querySelectorAll("#catalogoVistas button").forEach(x =>
+    x.classList.toggle("sel", x.dataset.vista === catalogoVista));
+  for (const [clave, v] of Object.entries(VISTAS_CATALOGO)) {
+    document.getElementById(v.panel).style.display = clave === catalogoVista ? "" : "none";
+  }
+  document.getElementById("btnNuevoItemCatalogoLabel").textContent = t(vista.boton);
+  vista.render();
+}
+
 document.getElementById("catalogoVistas").addEventListener("click", (e) => {
   const b = e.target.closest("button[data-vista]");
-  if (!b) return;
-  catalogoVista = b.dataset.vista;
-  document.querySelectorAll("#catalogoVistas button").forEach(x => x.classList.toggle("sel", x === b));
-  const enProductos = catalogoVista === "productos";
-  document.getElementById("catVistaProductos").style.display = enProductos ? "" : "none";
-  document.getElementById("catVistaProveedores").style.display = enProductos ? "none" : "";
-  document.getElementById("btnNuevoItemCatalogoLabel").textContent =
-    t(enProductos ? "catalogo_nuevo" : "proveedores_nuevo");
-  if (enProductos) renderCatalogo(); else renderProveedores();
+  if (b) mostrarVistaCatalogo(b.dataset.vista);
 });
 
 document.getElementById("btnNuevoItemCatalogo").addEventListener("click", () => {
-  if (catalogoVista === "productos") abrirNuevoItemCatalogo(); else abrirNuevoProveedor();
+  (VISTAS_CATALOGO[catalogoVista] || VISTAS_CATALOGO.productos).nuevo();
 });
 
 /* ---------- Filtros (se rearman al cambiar de idioma) ---------- */

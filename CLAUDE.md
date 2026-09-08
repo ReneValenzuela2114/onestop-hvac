@@ -44,7 +44,7 @@ un bundler salvo que el proyecto lo pida de verdad.
 
 1. **Ninguna pantalla toca `localStorage` directamente.** Todo pasa por `DB.*`
    (`DB.clientes`, `DB.trabajos`, `DB.usuarios`, `DB.categoriasClientes`,
-   `DB.catalogo`, `DB.proveedores`, `DB.cotizaciones`, `DB.conversiones`,
+   `DB.catalogo`, `DB.proveedores`, `DB.cotizaciones`, `DB.conversiones`, `DB.combos`,
    `DB.archivos`, `DB.config`). Ese es el contrato que permite cambiar a D1 sin tocar la UI.
 2. **La plata SIEMPRE en centavos enteros** (`precio_centavos`, `costo_centavos`).
    Nunca decimales: los flotantes no representan `0.10` exacto y los reportes
@@ -141,6 +141,19 @@ un bundler salvo que el proyecto lo pida de verdad.
    ninguna: un reporte con fechas estimadas miente. La pantalla lo dice con
    todas las letras ("la ficha es anterior al registro").
 
+   3o. **Un combo apunta al catálogo; una cotización copia.** Es la excepción
+   deliberada a la regla 3b, y el motivo es que son cosas distintas: un combo
+   es una RECETA ("Sistema completo 3 toneladas" = condensadora + evaporadora
+   + línea + mano de obra) y tiene que valer lo que valen sus ingredientes
+   HOY; una cotización es un papel que el cliente recibió y tiene que quedar
+   congelado. Si el combo copiara precios, subir el costo de un equipo dejaría
+   todos los combos mintiendo hasta que alguien los tocara uno por uno. La
+   copia ocurre al llevarlo a la cotización (`filasParaCotizacion()`): ahí
+   entra como renglones sueltos, con el precio de ese día, y de ahí en
+   adelante se tocan como cualquier otro renglón. Un combo **no tiene precio
+   propio**: `totales()` lo calcula y no se guarda, por lo mismo que los
+   totales de la cotización (regla 3d).
+
    3h. **El orden de los renglones lo manda la persona, no el código.** `orden`
    se guarda con la posición en que quedaron después de arrastrar, y es el
    orden en que salen en el PDF. Nunca reordenar por nombre ni por precio.
@@ -165,7 +178,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v59**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v60**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
@@ -194,16 +207,17 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Clientes** (alta/edición/borrado, categorías, filtros, búsqueda, Google Maps + autocompletado) | ✅ terminado |
 | **Trabajos** (calendario mensual, "por agendar", modal completo, precio/costo, asignar trabajadores) | ✅ terminado |
 | **Equipo** (alta de trabajadores, roles, usuario del dispositivo) | ✅ terminado, sin login real |
-| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v10) |
+| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v11) |
 | **Lector de mensajes** (captura/PDF → campos del cliente, con Claude) | ✅ programado; falta desplegar el Worker |
 | **Catálogo** (equipos/materiales/servicios, proveedores, filtros para reportes) | ✅ terminado (esquema v3) |
-| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v10) |
+| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v11) |
 | **Cotización impresa / PDF** (datos de empresa, presentación, términos, firma) | ✅ terminado · igual que DES: HTML + impresión del navegador |
 | **Worker en Cloudflare** | ✅ desplegado en la cuenta de Rene · hoy sirve el lector de mensajes |
-| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v10), pero todavía sin desplegar |
+| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v11), pero todavía sin desplegar |
 | **R2** | ⛔ la tabla `archivos` y `DB.archivos` ya existen; falta el bucket. Hoy solo lo usa el logo |
 | **Login / permisos reales** | ⛔ hoy los roles son solo etiquetas de interfaz |
-| **Conversiones** (historial de lead → cliente, para reportes) | ✅ se registra solo (esquema v10) · la pantalla de reportes lo usará |
+| **Conversiones** (historial de lead → cliente, para reportes) | ✅ se registra solo (esquema v11) · la pantalla de reportes lo usará |
+| **Combos** (recetas de productos que se cotizan juntos) | ✅ terminado (esquema v11) |
 | **Reportes** (cuánto se ganó por cliente / por mes, conversiones) | ⛔ los datos ya están, falta la pantalla |
 
 **Dónde viven los datos hoy:** solo en el navegador de cada dispositivo
@@ -240,6 +254,13 @@ serio hasta que exista D1.**
   debajo del mínimo táctil que pide la guía general, y **Rene lo revisó y
   decidió dejarlo así** (8 sep 2026). No "arreglarlo" de oficio: si una
   medición lo vuelve a marcar, es una excepción aceptada, no un defecto.
+
+- **Una colección nueva necesita SU clave en `CLAVES`** (`data.js`). Sin ella
+  `localStorage[undefined]` es la misma para todas las que falten y los datos
+  salen mezclados. Pasó de verdad: `conversiones` quedó sin clave y no se notó
+  porque era la única; al agregar combos, los tres se pisaron. Ahora hay una
+  guarda que revienta al arrancar si falta alguna, así no vuelve a pasar en
+  silencio.
 
 - **Naming inconsistente**: la pestaña se llama `proyectos` en el HTML pero el módulo,
   la tabla y los textos son "trabajos"/"jobs". Unificar a `trabajos` cuando se toque.

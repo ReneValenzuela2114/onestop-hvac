@@ -130,6 +130,45 @@ CREATE INDEX IF NOT EXISTS idx_conversiones_cliente ON conversiones(cliente_id);
 CREATE INDEX IF NOT EXISTS idx_conversiones_fecha ON conversiones(fecha);
 CREATE INDEX IF NOT EXISTS idx_conversiones_hacia ON conversiones(hacia);
 CREATE INDEX IF NOT EXISTS idx_conversiones_vivos ON conversiones(eliminado);
+
+-- ---- Combos: recetas de productos que se cotizan juntos ----
+-- "Sistema completo 3 toneladas" = condensadora + evaporadora + linea + mano
+-- de obra. Sirve para no cargar los mismos ocho renglones a mano cada vez.
+CREATE TABLE IF NOT EXISTS combos (
+  id TEXT PRIMARY KEY,
+  nombre TEXT NOT NULL,
+  descripcion TEXT NOT NULL DEFAULT '',
+  notas TEXT NOT NULL DEFAULT '',
+  activo INTEGER NOT NULL DEFAULT 1,
+  creado INTEGER NOT NULL,
+  creado_por TEXT REFERENCES usuarios(id),
+  actualizado INTEGER NOT NULL,
+  actualizado_por TEXT REFERENCES usuarios(id),
+  eliminado INTEGER,
+  eliminado_por TEXT REFERENCES usuarios(id)
+);
+CREATE INDEX IF NOT EXISTS idx_combos_vivos ON combos(eliminado);
+
+-- A diferencia de los renglones de una cotizacion, aca NO se copia el precio:
+-- se apunta al catalogo. Una cotizacion firmada tiene que quedar congelada;
+-- una receta tiene que valer lo que valen sus ingredientes hoy. La copia
+-- ocurre despues, al llevar el combo a una cotizacion.
+CREATE TABLE IF NOT EXISTS combo_items (
+  id TEXT PRIMARY KEY,
+  combo_id TEXT NOT NULL REFERENCES combos(id),
+  catalogo_id TEXT NOT NULL REFERENCES catalogo(id),
+  cantidad_centesimas INTEGER NOT NULL,   -- 12.5 unidades = 1250
+  orden INTEGER NOT NULL DEFAULT 0,
+  creado INTEGER NOT NULL,
+  creado_por TEXT REFERENCES usuarios(id),
+  actualizado INTEGER NOT NULL,
+  actualizado_por TEXT REFERENCES usuarios(id),
+  eliminado INTEGER,
+  eliminado_por TEXT REFERENCES usuarios(id)
+);
+CREATE INDEX IF NOT EXISTS idx_combo_items_combo ON combo_items(combo_id);
+CREATE INDEX IF NOT EXISTS idx_combo_items_producto ON combo_items(catalogo_id);
+CREATE INDEX IF NOT EXISTS idx_combo_items_vivos ON combo_items(eliminado);
 CREATE INDEX IF NOT EXISTS idx_clientes_vivos ON clientes(eliminado);
 
 -- ---- Trabajos (jobs) ----
