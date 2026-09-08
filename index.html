@@ -366,6 +366,8 @@
   .hist-resumen > div{background:var(--line-soft);border-radius:var(--radius-sm);padding:10px 12px;min-width:0}
   .hist-resumen span{display:block;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
   .hist-resumen b{display:block;font-size:15px;color:var(--ink);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .aviso-ojo{margin:0 0 var(--sp-4);padding:10px 12px;border-radius:var(--radius-sm);
+    background:var(--calor-soft);color:var(--calor-600);font-size:12px;line-height:1.45}
   .hist-relacion{margin:0 0 var(--sp-3);font-size:12px}
   .hist-bloque + .hist-bloque{margin-top:var(--sp-5)}
   /* En el titulo va el nombre del cliente y puede ser largo: sin este respiro
@@ -1267,11 +1269,9 @@
       </div>
 
       <!-- ---- Totales ---- -->
-      <label class="check-row" id="filaMostrarPrecios">
-        <input type="checkbox" id="cotMostrarPrecios">
-        <span data-i18n="cot_mostrar_precios">Mostrar el precio de cada producto en el PDF</span>
-      </label>
-      <p class="hint" data-i18n="cot_mostrar_precios_ayuda">Apagado, el cliente ve la lista de lo que se va a hacer y la plata una sola vez abajo: subtotal, impuesto y total.</p>
+      <!-- Aparece solo cuando hay algún renglón con el ojo apagado. Sin esto
+           los precios desaparecen del PDF sin que nada lo explique. -->
+      <p class="aviso-ojo" id="cotAvisoOjo" hidden data-i18n="cot_ojo_sin_precios">Hay un producto escondido, así que el PDF no muestra el precio de cada uno: solo subtotal, impuesto y total. Si los mostrara, al cliente no le cerraría la suma.</p>
 
       <div class="cot-totales">
         <div><span data-i18n="cot_subtotal">Subtotal</span><b id="cotSubtotal">$0.00</b></div>
@@ -3598,6 +3598,10 @@ function refrescarTotalesCot(){
   document.getElementById("cotImpuestoMonto").textContent = DB.dinero.formato(impuesto, CFG_LANG);
   document.getElementById("cotTotal").textContent = DB.dinero.formato(subtotal + impuesto, CFG_LANG);
   document.getElementById("cotGanancia").textContent = DB.dinero.formato(ganancia, CFG_LANG);
+  /* El aviso vive acá y no en el ojo: así queda bien puesto se llegue como se
+     llegue —al abrir una cotización guardada, al borrar el renglón escondido
+     o al agregar otro—, sin depender de que alguien se acuerde de llamarlo. */
+  document.getElementById("cotAvisoOjo").hidden = !cotFilas.some(f => f.en_pdf === 0);
   document.querySelector(".cot-ganancia").classList.toggle("perdida", ganancia < 0);
 }
 
@@ -3623,7 +3627,6 @@ function limpiarFormularioCot(){
   document.getElementById("cotCliente").value = "";
   document.getElementById("cotEstado").value = "borrador";
   document.getElementById("cotImpuesto").value = IMPUESTO_POR_DEFECTO;
-  document.getElementById("cotMostrarPrecios").checked = false;
   document.getElementById("cotBuscarProducto").value = "";
   document.getElementById("cotAuditoria").textContent = "";
   document.getElementById("fieldCotCliente").classList.remove("error");
@@ -3663,7 +3666,6 @@ function abrirEdicionCotizacion(id){
     cantidad_centesimas: i.cantidad_centesimas, precio_centavos: i.precio_centavos, costo_centavos: i.costo_centavos,
     en_pdf: i.en_pdf === 0 ? 0 : 1,
   }));
-  document.getElementById("cotMostrarPrecios").checked = c.mostrar_precios === 1;
   renderFilasCot();
   /* Después de fijar los días: si no, el texto de abajo sigue mostrando la
      fecha que calculó limpiarFormularioCot() con los 30 por defecto. */
@@ -3697,7 +3699,6 @@ function guardarCotizacion(){
       parseInt(document.getElementById("cotValidezDias").value, 10) || 0),
     impuesto_centesimas: Math.round((parseFloat(document.getElementById("cotImpuesto").value) || 0) * 100),
     notas: document.getElementById("cotNotas").value.trim(),
-    mostrar_precios: document.getElementById("cotMostrarPrecios").checked ? 1 : 0,
   };
 
   return conAviso(() => {
@@ -3880,7 +3881,7 @@ function abrirPdfCotizacion(cotId){
   /* Con los precios apagados la tabla queda en dos columnas: qué se hace y
      cuánto. La plata aparece una sola vez, abajo. La cuenta no cambia: el
      total sigue saliendo de DB.cotizaciones.totales(). */
-  const conPrecios = cot.mostrar_precios === 1;
+  const conPrecios = DB.cotizaciones.mostrarPrecios(cot);
   const filas = items.filter(i => i.en_pdf !== 0).map(i => `<tr>
       <td class="c">${esc(DB.cantidad.aTexto(i.cantidad_centesimas))} ${esc(t("unidad_" + i.unidad))}</td>
       <td>${esc(i.nombre)}${i.descripcion ? `<span class="d">${esc(i.descripcion)}</span>` : ""}</td>
@@ -5266,7 +5267,6 @@ document.getElementById("btnCargarDemo").addEventListener("click", async () => {
           fecha,
           valida_hasta: sumarDias(fecha, q.val || VALIDEZ_DIAS_POR_DEFECTO),
           impuesto_centesimas: Math.round((q.imp || 0) * 100),
-          mostrar_precios: q.pre ? 1 : 0,
           notas: q.n || "",
         });
         const filas = q.it.map((it, i) => {

@@ -94,10 +94,19 @@ un bundler salvo que el proyecto lo pida de verdad.
    respetar: una fila de la tabla ocupa **3.4% del ancho de la hoja** y la
    banda del total mide **el doble de una fila**.
 
-   3j. **`mostrar_precios` vive en la cotización, no en configuración.** En 0
-   el PDF lista solo qué se hace y la plata sale una vez abajo. Las
-   cotizaciones nuevas nacen en 0; las que ya existían quedaron en 1, porque
-   una cotización que el cliente ya recibió no puede cambiar de forma sola.
+   3j. **Los precios por renglón en el PDF NO se eligen: los decide el ojo.**
+   `DB.cotizaciones.mostrarPrecios(cot)` es la única función que lo resuelve
+   —igual que con los totales, si la pantalla y el PDF lo calcularan cada uno
+   por su lado terminarían discrepando—. Con **un solo renglón escondido, los
+   precios por renglón desaparecen** y la plata sale una vez abajo. El motivo
+   es aritmético: el escondido se sigue cobrando (regla 3g), así que mostrar
+   los precios de los demás le da al cliente una suma que no llega al total.
+   Antes esto era un check a mano y podían quedar las dos cosas juntas.
+   `mostrar_precios` en `null` significa automático. Un 0 o un 1 guardado gana
+   sobre el cálculo: son las cotizaciones que ya se enviaron antes de sep 2026,
+   y una cotización que el cliente recibió no puede cambiar de forma sola —ni
+   siquiera para quedar más coherente—. Las que estaban en borrador pasaron a
+   automático.
 
    3l. **Aprobar una cotización NO crea el trabajo solo: abre el formulario.**
    La pantalla llena lo que sale de la cotización (cliente, título, notas,
@@ -156,7 +165,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v58**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v59**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
@@ -185,16 +194,16 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Clientes** (alta/edición/borrado, categorías, filtros, búsqueda, Google Maps + autocompletado) | ✅ terminado |
 | **Trabajos** (calendario mensual, "por agendar", modal completo, precio/costo, asignar trabajadores) | ✅ terminado |
 | **Equipo** (alta de trabajadores, roles, usuario del dispositivo) | ✅ terminado, sin login real |
-| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v9) |
+| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v10) |
 | **Lector de mensajes** (captura/PDF → campos del cliente, con Claude) | ✅ programado; falta desplegar el Worker |
 | **Catálogo** (equipos/materiales/servicios, proveedores, filtros para reportes) | ✅ terminado (esquema v3) |
-| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v9) |
+| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v10) |
 | **Cotización impresa / PDF** (datos de empresa, presentación, términos, firma) | ✅ terminado · igual que DES: HTML + impresión del navegador |
 | **Worker en Cloudflare** | ✅ desplegado en la cuenta de Rene · hoy sirve el lector de mensajes |
-| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v9), pero todavía sin desplegar |
+| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v10), pero todavía sin desplegar |
 | **R2** | ⛔ la tabla `archivos` y `DB.archivos` ya existen; falta el bucket. Hoy solo lo usa el logo |
 | **Login / permisos reales** | ⛔ hoy los roles son solo etiquetas de interfaz |
-| **Conversiones** (historial de lead → cliente, para reportes) | ✅ se registra solo (esquema v9) · la pantalla de reportes lo usará |
+| **Conversiones** (historial de lead → cliente, para reportes) | ✅ se registra solo (esquema v10) · la pantalla de reportes lo usará |
 | **Reportes** (cuánto se ganó por cliente / por mes, conversiones) | ⛔ los datos ya están, falta la pantalla |
 
 **Dónde viven los datos hoy:** solo en el navegador de cada dispositivo

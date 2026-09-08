@@ -27,7 +27,7 @@
    - IDs: crypto.randomUUID(). Fechas de auditoría: epoch ms (Date.now()).
    ========================================================================= */
 
-const ESQUEMA_VERSION = 9;
+const ESQUEMA_VERSION = 10;
 
 const CLAVES = {
   clientes: "os_clientes_v1",
@@ -699,7 +699,11 @@ const Cotizaciones = {
       /* 0 = el PDF no muestra el precio ni el total de cada producto, solo el
          subtotal, el impuesto y el total. Arranca en 0 porque es como Rene
          manda las cotizaciones; se prende por cotización cuando hace falta. */
-      mostrar_precios: datos.mostrar_precios === 1 || datos.mostrar_precios === true ? 1 : 0,
+      /* null = automático: lo decide `mostrarPrecios()` mirando si hay algún
+         renglón escondido. Solo las cotizaciones de antes de sep 2026 tienen
+         acá un 0 o un 1 congelado. */
+      mostrar_precios: datos.mostrar_precios === 0 || datos.mostrar_precios === 1
+        ? datos.mostrar_precios : null,
       trabajo_id: null,
     };
     _exigir(Validar.cotizacion(limpio));
@@ -720,12 +724,31 @@ const Cotizaciones = {
       cambios.impuesto_centesimas = Math.round(Number(cambios.impuesto_centesimas) || 0);
     }
     if (cambios.mostrar_precios !== undefined) {
-      cambios.mostrar_precios = cambios.mostrar_precios === 1 || cambios.mostrar_precios === true ? 1 : 0;
+      cambios.mostrar_precios = cambios.mostrar_precios === 0 || cambios.mostrar_precios === 1
+        ? cambios.mostrar_precios : null;
     }
     _exigir(Validar.cotizacion({ ...item, ...cambios }));
     Object.assign(item, cambios, _sellosEdicion());
     _persistir(Almacen.actualizar("cotizaciones", item));
     return item;
+  },
+
+  /* ¿El PDF muestra el precio de cada renglón? UNA sola función lo decide,
+     como con los totales: si la pantalla y el PDF lo calcularan cada uno por
+     su lado, terminarían discrepando.
+
+     Manda el ojo: si hay aunque sea un renglón escondido, los precios por
+     renglón no salen. Es que la cuenta no cerraría —el escondido igual se
+     cobra (regla 3g)— y el cliente que suma lo que ve encuentra menos que el
+     total. Antes esto se elegía a mano con un check y podían quedar las dos
+     cosas juntas, que es justo lo incoherente.
+
+     Un 0 o un 1 guardado gana sobre el cálculo: son las cotizaciones que ya
+     se enviaron antes de este cambio y no pueden cambiar de forma solas. */
+  mostrarPrecios(cot) {
+    if (!cot) return false;
+    if (cot.mostrar_precios === 0 || cot.mostrar_precios === 1) return cot.mostrar_precios === 1;
+    return !this.items(cot.id).some((i) => i.en_pdf === 0);
   },
 
   /* Enlaza una cotización con un trabajo que YA existe y la marca aprobada.
@@ -1287,6 +1310,18 @@ function _migrar() {
      arranca el día que se publica esto. */
   if (desde < 9) {
     if (!Array.isArray(_estado.conversiones)) _estado.conversiones = [];
+  }
+
+  /* --- v9 → v10: el ojo del PDF decide solo si se ven los precios ---
+     Las que siguen en borrador pasan a automático (null): todavía no salieron
+     a la calle. Las que ya se enviaron, aprobaron, rechazaron o vencieron
+     conservan el 0 o el 1 que tenían: una cotización que el cliente ya recibió
+     no puede cambiar de forma sola, ni siquiera para quedar más coherente. */
+  if (desde < 10) {
+    _estado.cotizaciones.forEach((c) => {
+      if (c.estado === "borrador") c.mostrar_precios = null;
+      else if (c.mostrar_precios !== 0 && c.mostrar_precios !== 1) c.mostrar_precios = 1;
+    });
   }
 
   _estado.config.esquema_version = ESQUEMA_VERSION;

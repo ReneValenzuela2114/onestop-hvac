@@ -1,5 +1,5 @@
 {
-  "_nota": "Datos inventados para probar la app. El boton que los carga esta en Configuracion > Datos y hay que sacarlo antes de usar la app con clientes reales. Las fechas de las cotizaciones se calculan al cargarlas (campo 'dias' = hace cuantos dias), asi los ejemplos nunca quedan viejos. En cada cliente, 'rel' es lead o cliente y 'est' activo o inactivo (si falta, activo).",
+  "_nota": "Datos inventados para probar la app. El boton que los carga esta en Configuracion > Datos y hay que sacarlo antes de usar la app con clientes reales. Los precios por renglon en el PDF ya no se eligen: los decide el ojo de cada renglon. Las fechas de las cotizaciones se calculan al cargarlas (campo 'dias' = hace cuantos dias), asi los ejemplos nunca quedan viejos. En cada cliente, 'rel' es lead o cliente y 'est' activo o inactivo (si falta, activo).",
   "proveedores": [
     {
       "nombre": "Ferguson HVAC Supply",
@@ -1145,7 +1145,6 @@
       "dias": 6,
       "val": 30,
       "imp": 10,
-      "pre": 1,
       "n": "Incluye un año de garantía en mano de obra y retiro del equipo viejo.",
       "it": [
         {
@@ -1194,7 +1193,6 @@
       "dias": 3,
       "val": 30,
       "imp": 10,
-      "pre": 1,
       "it": [
         {
           "c": "MSZ-12",
@@ -1225,7 +1223,6 @@
       "dias": 14,
       "val": 15,
       "imp": 10,
-      "pre": 1,
       "it": [
         {
           "c": "MANT",
@@ -1248,7 +1245,6 @@
       "dias": 1,
       "val": 30,
       "imp": 10,
-      "pre": 0,
       "it": [
         {
           "c": "GMVC-80",
@@ -1275,7 +1271,6 @@
       "dias": 21,
       "val": 30,
       "imp": 10,
-      "pre": 1,
       "it": [
         {
           "c": "LIMP-DUCT",
@@ -1298,7 +1293,6 @@
       "dias": 9,
       "val": 15,
       "imp": 10,
-      "pre": 1,
       "it": [
         {
           "c": "DIAG",
@@ -1325,7 +1319,6 @@
       "dias": 4,
       "val": 45,
       "imp": 10,
-      "pre": 0,
       "n": "El precio incluye la grúa y el permiso municipal. Trabajo en fin de semana para no parar el local.",
       "it": [
         {
@@ -1366,7 +1359,6 @@
       "dias": 30,
       "val": 30,
       "imp": 10,
-      "pre": 1,
       "it": [
         {
           "c": "NEST-3",
@@ -1389,7 +1381,6 @@
       "dias": 40,
       "val": 15,
       "imp": 10,
-      "pre": 1,
       "n": "El cliente prefirió esperar al cambio del equipo completo.",
       "it": [
         {
@@ -1417,7 +1408,6 @@
       "dias": 2,
       "val": 30,
       "imp": 10,
-      "pre": 0,
       "it": [
         {
           "c": "DUCT-8",
@@ -1460,7 +1450,6 @@
       "dias": 5,
       "val": 30,
       "imp": 10,
-      "pre": 1,
       "it": [
         {
           "c": "HP-36",
@@ -1496,7 +1485,6 @@
       "dias": 11,
       "val": 15,
       "imp": 10,
-      "pre": 1,
       "it": [
         {
           "c": "DIAG-URG",
@@ -1519,7 +1507,6 @@
       "dias": 75,
       "val": 30,
       "imp": 10,
-      "pre": 1,
       "it": [
         {
           "c": "MSZ-24",
@@ -1546,7 +1533,6 @@
       "dias": 8,
       "val": 30,
       "imp": 10,
-      "pre": 1,
       "it": [
         {
           "c": "PURIF-16",
@@ -1569,7 +1555,6 @@
       "dias": 45,
       "val": 30,
       "imp": 10,
-      "pre": 1,
       "it": [
         {
           "c": "INSPEC",
@@ -1592,7 +1577,6 @@
       "dias": 1,
       "val": 30,
       "imp": 7.25,
-      "pre": 1,
       "it": [
         {
           "c": "GSX-48",
@@ -1627,7 +1611,6 @@
       "dias": 18,
       "val": 30,
       "imp": 10,
-      "pre": 1,
       "it": [
         {
           "c": "BALANCE",
@@ -1650,7 +1633,6 @@
       "dias": 7,
       "val": 45,
       "imp": 10,
-      "pre": 0,
       "n": "Se cotiza con equipo Goodman. Si prefiere otra marca lo ajustamos sin costo de revisión.",
       "it": [
         {
@@ -1702,7 +1684,6 @@
       "dias": 25,
       "val": 15,
       "imp": 10,
-      "pre": 1,
       "it": [
         {
           "c": "DIAG",
@@ -1725,7 +1706,6 @@
       "dias": 2,
       "val": 60,
       "imp": 10,
-      "pre": 0,
       "n": "Contrato por cuatro visitas al año. Se factura al terminar cada visita.",
       "it": [
         {
