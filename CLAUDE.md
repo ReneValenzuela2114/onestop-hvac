@@ -140,7 +140,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v56**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v57**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
@@ -204,7 +204,12 @@ serio hasta que exista D1.**
   empresa la use de verdad**: un botón que inventa clientes, cotizaciones y
   trabajos no puede estar al alcance con datos reales adentro.
   Las fechas de las cotizaciones se calculan al cargarlas (campo `dias` = hace
-  cuántos días), no vienen escritas: así los ejemplos no quedan viejos.
+  cuántos días), no vienen escritas: así los ejemplos no quedan viejos. Cada
+  cliente trae además `rel` (lead/cliente) y `est` (activo/inactivo), con las
+  cuatro combinaciones presentes para poder probar los filtros.
+  ⚠️ El archivo se pide con `?v=` + la hora: el service worker responde desde
+  SU caché y se saltea el `cache: "no-cache"`, así que sin eso el botón sigue
+  trayendo la lista vieja cada vez que se agregan ejemplos nuevos.
 - **Naming inconsistente**: la pestaña se llama `proyectos` en el HTML pero el módulo,
   la tabla y los textos son "trabajos"/"jobs". Unificar a `trabajos` cuando se toque.
 - **El Worker queda con una dirección pública hasta que exista el login.** Se filtra

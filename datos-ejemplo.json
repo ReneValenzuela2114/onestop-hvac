@@ -1,5 +1,5 @@
 {
-  "_nota": "Datos inventados para probar la app. El boton que los carga esta en Configuracion > Datos y hay que sacarlo antes de usar la app con clientes reales. Las fechas de las cotizaciones se calculan al cargarlas (campo 'dias' = hace cuantos dias), asi los ejemplos nunca quedan viejos.",
+  "_nota": "Datos inventados para probar la app. El boton que los carga esta en Configuracion > Datos y hay que sacarlo antes de usar la app con clientes reales. Las fechas de las cotizaciones se calculan al cargarlas (campo 'dias' = hace cuantos dias), asi los ejemplos nunca quedan viejos. En cada cliente, 'rel' es lead o cliente y 'est' activo o inactivo (si falta, activo).",
   "proveedores": [
     {
       "nombre": "Ferguson HVAC Supply",
@@ -49,320 +49,376 @@
       "nombre": "Carlos Ruiz",
       "telefono": "(661) 555-0142",
       "email": "carlos.ruiz@ejemplo.com",
-      "direccion": "1420 Oak St, Bakersfield, CA 93301"
+      "direccion": "1420 Oak St, Bakersfield, CA 93301",
+      "rel": "cliente"
     },
     {
       "nombre": "María Delgado",
       "telefono": "(661) 555-0177",
       "email": "maria.delgado@ejemplo.com",
-      "direccion": "738 Chester Ave, Bakersfield, CA 93301"
+      "direccion": "738 Chester Ave, Bakersfield, CA 93301",
+      "rel": "cliente"
     },
     {
       "nombre": "James Whitaker",
       "empresa": "Whitaker Property Group",
       "telefono": "(661) 555-0198",
       "email": "james@whitakerpg.com",
-      "direccion": "2210 Truxtun Ave, Bakersfield, CA 93301"
+      "direccion": "2210 Truxtun Ave, Bakersfield, CA 93301",
+      "rel": "cliente"
     },
     {
       "nombre": "Ana Solís",
       "telefono": "(661) 555-0110",
       "email": "ana.solis@ejemplo.com",
-      "direccion": "905 Niles St, Bakersfield, CA 93305"
+      "direccion": "905 Niles St, Bakersfield, CA 93305",
+      "rel": "lead"
     },
     {
       "nombre": "Robert Chen",
       "empresa": "Chen Family Dental",
       "telefono": "(661) 555-0163",
       "email": "office@chendental.com",
-      "direccion": "4501 Ming Ave, Bakersfield, CA 93309"
+      "direccion": "4501 Ming Ave, Bakersfield, CA 93309",
+      "rel": "cliente",
+      "est": "inactivo"
     },
     {
       "nombre": "Luis Herrera",
       "telefono": "(661) 555-0129",
       "email": "luis.herrera@ejemplo.com",
-      "direccion": "312 Brundage Ln, Bakersfield, CA 93304"
+      "direccion": "312 Brundage Ln, Bakersfield, CA 93304",
+      "rel": "cliente"
     },
     {
       "nombre": "Patricia Nolan",
       "telefono": "(661) 555-0185",
       "email": "patricia.nolan@ejemplo.com",
-      "direccion": "1876 Panorama Dr, Bakersfield, CA 93305"
+      "direccion": "1876 Panorama Dr, Bakersfield, CA 93305",
+      "rel": "cliente"
     },
     {
       "nombre": "Miguel Ángel Torres",
       "empresa": "Torres Auto Repair",
       "telefono": "(661) 555-0154",
       "email": "miguel@torresauto.com",
-      "direccion": "620 Union Ave, Bakersfield, CA 93307"
+      "direccion": "620 Union Ave, Bakersfield, CA 93307",
+      "rel": "cliente"
     },
     {
       "nombre": "Sandra Kim",
       "telefono": "(661) 555-0136",
       "email": "sandra.kim@ejemplo.com",
-      "direccion": "3390 Stockdale Hwy, Bakersfield, CA 93309"
+      "direccion": "3390 Stockdale Hwy, Bakersfield, CA 93309",
+      "rel": "lead"
     },
     {
       "nombre": "Daniel O'Brien",
       "empresa": "O'Brien Rentals",
       "telefono": "(661) 555-0171",
       "email": "dan@obrienrentals.com",
-      "direccion": "1155 Real Rd, Bakersfield, CA 93309"
+      "direccion": "1155 Real Rd, Bakersfield, CA 93309",
+      "rel": "cliente"
     },
     {
       "nombre": "Rosa Jiménez",
       "telefono": "(661) 555-0208",
       "email": "rosa.jimenez@ejemplo.com",
-      "direccion": "2044 Wilson Rd, Bakersfield, CA 93304"
+      "direccion": "2044 Wilson Rd, Bakersfield, CA 93304",
+      "rel": "cliente"
     },
     {
       "nombre": "Kevin Boyd",
       "empresa": "Boyd's Corner Market",
       "telefono": "(661) 555-0217",
       "email": "kevin@boydsmarket.com",
-      "direccion": "3120 Columbus St, Bakersfield, CA 93306"
+      "direccion": "3120 Columbus St, Bakersfield, CA 93306",
+      "rel": "lead"
     },
     {
       "nombre": "Elena Vargas",
       "telefono": "(661) 555-0223",
       "email": "elena.vargas@ejemplo.com",
-      "direccion": "817 Palm St, Bakersfield, CA 93304"
+      "direccion": "817 Palm St, Bakersfield, CA 93304",
+      "rel": "cliente"
     },
     {
       "nombre": "Thomas Reed",
       "empresa": "Reed & Sons Plumbing",
       "telefono": "(661) 555-0239",
       "email": "tom@reedandsons.com",
-      "direccion": "4410 Easton Dr, Bakersfield, CA 93309"
+      "direccion": "4410 Easton Dr, Bakersfield, CA 93309",
+      "rel": "lead",
+      "est": "inactivo"
     },
     {
       "nombre": "Gabriela Núñez",
       "telefono": "(661) 555-0244",
       "email": "gabriela.nunez@ejemplo.com",
-      "direccion": "1502 Monterey St, Bakersfield, CA 93305"
+      "direccion": "1502 Monterey St, Bakersfield, CA 93305",
+      "rel": "cliente"
     },
     {
       "nombre": "Andrew Foster",
       "empresa": "Foster Storage Units",
       "telefono": "(661) 555-0256",
       "email": "andrew@fosterstorage.com",
-      "direccion": "5501 District Blvd, Bakersfield, CA 93313"
+      "direccion": "5501 District Blvd, Bakersfield, CA 93313",
+      "rel": "cliente"
     },
     {
       "nombre": "Verónica Salas",
       "telefono": "(661) 555-0262",
       "email": "veronica.salas@ejemplo.com",
-      "direccion": "930 Bernard St, Bakersfield, CA 93305"
+      "direccion": "930 Bernard St, Bakersfield, CA 93305",
+      "rel": "cliente"
     },
     {
       "nombre": "Michael Grant",
       "empresa": "Grant Elementary School",
       "telefono": "(661) 555-0278",
       "email": "facilities@grantschool.org",
-      "direccion": "7100 Harris Rd, Bakersfield, CA 93313"
+      "direccion": "7100 Harris Rd, Bakersfield, CA 93313",
+      "rel": "cliente"
     },
     {
       "nombre": "Alejandro Peña",
       "telefono": "(661) 555-0284",
       "email": "alejandro.pena@ejemplo.com",
-      "direccion": "2288 Hughes Ln, Bakersfield, CA 93304"
+      "direccion": "2288 Hughes Ln, Bakersfield, CA 93304",
+      "rel": "lead"
     },
     {
       "nombre": "Nancy Whitfield",
       "empresa": "Whitfield Law Offices",
       "telefono": "(661) 555-0295",
       "email": "nancy@whitfieldlaw.com",
-      "direccion": "1601 New Stine Rd, Bakersfield, CA 93309"
+      "direccion": "1601 New Stine Rd, Bakersfield, CA 93309",
+      "rel": "cliente"
     },
     {
       "nombre": "Ricardo Ibarra",
       "telefono": "(661) 555-0301",
       "email": "ricardo.ibarra@ejemplo.com",
-      "direccion": "409 Baker St, Bakersfield, CA 93305"
+      "direccion": "409 Baker St, Bakersfield, CA 93305",
+      "rel": "cliente"
     },
     {
       "nombre": "Deborah Klein",
       "empresa": "Klein Veterinary Clinic",
       "telefono": "(661) 555-0312",
       "email": "front@kleinvet.com",
-      "direccion": "6200 White Ln, Bakersfield, CA 93309"
+      "direccion": "6200 White Ln, Bakersfield, CA 93309",
+      "rel": "cliente",
+      "est": "inactivo"
     },
     {
       "nombre": "Fernando Castillo",
       "telefono": "(661) 555-0327",
       "email": "fernando.castillo@ejemplo.com",
-      "direccion": "1130 Terrace Way, Bakersfield, CA 93304"
+      "direccion": "1130 Terrace Way, Bakersfield, CA 93304",
+      "rel": "lead"
     },
     {
       "nombre": "Olivia Barnes",
       "telefono": "(661) 555-0338",
       "email": "olivia.barnes@ejemplo.com",
-      "direccion": "2717 Sunset Ave, Bakersfield, CA 93304"
+      "direccion": "2717 Sunset Ave, Bakersfield, CA 93304",
+      "rel": "lead"
     },
     {
       "nombre": "Héctor Mendoza",
       "empresa": "Mendoza Landscaping",
       "telefono": "(661) 555-0349",
       "email": "hector@mendozascape.com",
-      "direccion": "845 E California Ave, Bakersfield, CA 93307"
+      "direccion": "845 E California Ave, Bakersfield, CA 93307",
+      "rel": "cliente"
     },
     {
       "nombre": "Karen Ashford",
       "telefono": "(661) 555-0356",
       "email": "karen.ashford@ejemplo.com",
-      "direccion": "3502 Christmas Tree Ln, Bakersfield, CA 93306"
+      "direccion": "3502 Christmas Tree Ln, Bakersfield, CA 93306",
+      "rel": "cliente"
     },
     {
       "nombre": "Jorge Valenzuela",
       "telefono": "(661) 555-0362",
       "email": "jorge.valenzuela@ejemplo.com",
-      "direccion": "1908 Verde St, Bakersfield, CA 93304"
+      "direccion": "1908 Verde St, Bakersfield, CA 93304",
+      "rel": "lead"
     },
     {
       "nombre": "Stephanie Rowe",
       "empresa": "Rowe Insurance Agency",
       "telefono": "(661) 555-0374",
       "email": "steph@roweins.com",
-      "direccion": "5251 Office Park Dr, Bakersfield, CA 93309"
+      "direccion": "5251 Office Park Dr, Bakersfield, CA 93309",
+      "rel": "cliente"
     },
     {
       "nombre": "Pablo Cárdenas",
       "telefono": "(661) 555-0381",
       "email": "pablo.cardenas@ejemplo.com",
-      "direccion": "722 Quincy St, Bakersfield, CA 93305"
+      "direccion": "722 Quincy St, Bakersfield, CA 93305",
+      "rel": "lead"
     },
     {
       "nombre": "Julia Hoffman",
       "telefono": "(661) 555-0393",
       "email": "julia.hoffman@ejemplo.com",
-      "direccion": "4110 Palm Ave, Bakersfield, CA 93309"
+      "direccion": "4110 Palm Ave, Bakersfield, CA 93309",
+      "rel": "cliente"
     },
     {
       "nombre": "Ernesto Aguilar",
       "empresa": "Aguilar Tire Shop",
       "telefono": "(661) 555-0405",
       "email": "ernesto@aguilartire.com",
-      "direccion": "1225 Ming Ave, Bakersfield, CA 93304"
+      "direccion": "1225 Ming Ave, Bakersfield, CA 93304",
+      "rel": "cliente"
     },
     {
       "nombre": "Melissa Cortez",
       "telefono": "(661) 555-0411",
       "email": "melissa.cortez@ejemplo.com",
-      "direccion": "3033 Alta Vista Dr, Bakersfield, CA 93305"
+      "direccion": "3033 Alta Vista Dr, Bakersfield, CA 93305",
+      "rel": "lead"
     },
     {
       "nombre": "Brian Stafford",
       "empresa": "Stafford Fitness",
       "telefono": "(661) 555-0428",
       "email": "brian@staffordfitness.com",
-      "direccion": "9000 Ming Ave, Bakersfield, CA 93311"
+      "direccion": "9000 Ming Ave, Bakersfield, CA 93311",
+      "rel": "cliente",
+      "est": "inactivo"
     },
     {
       "nombre": "Adriana Ponce",
       "telefono": "(661) 555-0433",
       "email": "adriana.ponce@ejemplo.com",
-      "direccion": "614 Dolores St, Bakersfield, CA 93305"
+      "direccion": "614 Dolores St, Bakersfield, CA 93305",
+      "rel": "cliente"
     },
     {
       "nombre": "Gregory Nash",
       "telefono": "(661) 555-0447",
       "email": "gregory.nash@ejemplo.com",
-      "direccion": "2540 Bank St, Bakersfield, CA 93304"
+      "direccion": "2540 Bank St, Bakersfield, CA 93304",
+      "rel": "cliente"
     },
     {
       "nombre": "Silvia Rentería",
       "empresa": "La Sabrosita Bakery",
       "telefono": "(661) 555-0455",
       "email": "silvia@lasabrosita.com",
-      "direccion": "1420 Baker St, Bakersfield, CA 93305"
+      "direccion": "1420 Baker St, Bakersfield, CA 93305",
+      "rel": "lead"
     },
     {
       "nombre": "Curtis Vaughn",
       "telefono": "(661) 555-0468",
       "email": "curtis.vaughn@ejemplo.com",
-      "direccion": "5809 Auburn St, Bakersfield, CA 93306"
+      "direccion": "5809 Auburn St, Bakersfield, CA 93306",
+      "rel": "cliente"
     },
     {
       "nombre": "Teresa Lozano",
       "telefono": "(661) 555-0472",
       "email": "teresa.lozano@ejemplo.com",
-      "direccion": "1017 Woodrow Ave, Bakersfield, CA 93308"
+      "direccion": "1017 Woodrow Ave, Bakersfield, CA 93308",
+      "rel": "cliente"
     },
     {
       "nombre": "Nathan Brooks",
       "empresa": "Brooks Auto Body",
       "telefono": "(661) 555-0486",
       "email": "nathan@brooksautobody.com",
-      "direccion": "331 Chester Ave, Bakersfield, CA 93301"
+      "direccion": "331 Chester Ave, Bakersfield, CA 93301",
+      "rel": "lead"
     },
     {
       "nombre": "Claudia Fuentes",
       "telefono": "(661) 555-0494",
       "email": "claudia.fuentes@ejemplo.com",
-      "direccion": "2803 Panama Ln, Bakersfield, CA 93313"
+      "direccion": "2803 Panama Ln, Bakersfield, CA 93313",
+      "rel": "cliente"
     },
     {
       "nombre": "Wesley Hunt",
       "telefono": "(661) 555-0503",
       "email": "wesley.hunt@ejemplo.com",
-      "direccion": "1244 Oswell St, Bakersfield, CA 93306"
+      "direccion": "1244 Oswell St, Bakersfield, CA 93306",
+      "rel": "lead"
     },
     {
       "nombre": "Beatriz Cordero",
       "empresa": "Cordero Daycare",
       "telefono": "(661) 555-0517",
       "email": "beatriz@corderodaycare.com",
-      "direccion": "708 Planz Rd, Bakersfield, CA 93304"
+      "direccion": "708 Planz Rd, Bakersfield, CA 93304",
+      "rel": "cliente"
     },
     {
       "nombre": "Marcus Ellison",
       "telefono": "(661) 555-0524",
       "email": "marcus.ellison@ejemplo.com",
-      "direccion": "4622 Coffee Rd, Bakersfield, CA 93308"
+      "direccion": "4622 Coffee Rd, Bakersfield, CA 93308",
+      "rel": "cliente",
+      "est": "inactivo"
     },
     {
       "nombre": "Lorena Ávila",
       "telefono": "(661) 555-0539",
       "email": "lorena.avila@ejemplo.com",
-      "direccion": "1601 Belle Terrace, Bakersfield, CA 93304"
+      "direccion": "1601 Belle Terrace, Bakersfield, CA 93304",
+      "rel": "lead"
     },
     {
       "nombre": "Douglas Pryor",
       "empresa": "Pryor Machine Works",
       "telefono": "(661) 555-0546",
       "email": "doug@pryormachine.com",
-      "direccion": "2100 Edison Hwy, Bakersfield, CA 93305"
+      "direccion": "2100 Edison Hwy, Bakersfield, CA 93305",
+      "rel": "lead"
     },
     {
       "nombre": "Cecilia Marín",
       "telefono": "(661) 555-0558",
       "email": "cecilia.marin@ejemplo.com",
-      "direccion": "912 Gage St, Bakersfield, CA 93305"
+      "direccion": "912 Gage St, Bakersfield, CA 93305",
+      "rel": "cliente"
     },
     {
       "nombre": "Trevor Lang",
       "telefono": "(661) 555-0561",
       "email": "trevor.lang@ejemplo.com",
-      "direccion": "3717 Wible Rd, Bakersfield, CA 93309"
+      "direccion": "3717 Wible Rd, Bakersfield, CA 93309",
+      "rel": "cliente"
     },
     {
       "nombre": "Norma Cabrera",
       "empresa": "Cabrera Cleaning Services",
       "telefono": "(661) 555-0579",
       "email": "norma@cabreraclean.com",
-      "direccion": "1530 Pacheco Rd, Bakersfield, CA 93307"
+      "direccion": "1530 Pacheco Rd, Bakersfield, CA 93307",
+      "rel": "lead"
     },
     {
       "nombre": "Ian McAllister",
       "telefono": "(661) 555-0583",
       "email": "ian.mcallister@ejemplo.com",
-      "direccion": "8104 Stine Rd, Bakersfield, CA 93313"
+      "direccion": "8104 Stine Rd, Bakersfield, CA 93313",
+      "rel": "lead",
+      "est": "inactivo"
     },
     {
       "nombre": "Guadalupe Ortega",
       "telefono": "(661) 555-0597",
       "email": "guadalupe.ortega@ejemplo.com",
-      "direccion": "2419 Haley St, Bakersfield, CA 93305"
+      "direccion": "2419 Haley St, Bakersfield, CA 93305",
+      "rel": "cliente"
     }
   ],
   "catalogo": [

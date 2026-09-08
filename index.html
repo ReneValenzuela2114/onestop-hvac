@@ -143,14 +143,17 @@
      <select> no admite ::after. */
   .badge-sel{position:relative;display:inline-flex;align-items:center;gap:4px;
     padding:4px 6px 4px 10px;border-radius:999px;font-size:11.5px;font-weight:600;
-    background:var(--line-soft);color:var(--muted);max-width:100%;min-width:0}
+    background:var(--line-soft);color:var(--muted);max-width:100%;min-width:0;cursor:pointer}
+  /* El select tapa la insignia entera —texto Y flecha— asi que se abre toques
+     donde toques. Va invisible; lo que se lee es el span de abajo. */
+  .badge-sel select{position:absolute;inset:0;width:100%;height:100%;
+    opacity:0;border:none;padding:0;margin:0;cursor:pointer;font:inherit}
   /* `min-width:0` en los dos: sin eso un nombre de categoria largo impone su
      ancho natural, la insignia crece mas que la tarjeta y la pantalla del
      telefono se va de costado. Con esto el texto se recorta con puntitos. */
-  .badge-sel select{appearance:none;-webkit-appearance:none;border:none;background:none;
-    font:inherit;color:inherit;padding:0;margin:0;cursor:pointer;
-    min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .badge-sel select:focus-visible{outline:2px solid currentColor;outline-offset:3px;border-radius:999px}
+  .badge-sel-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* El select es invisible: el foco del teclado se dibuja sobre la insignia. */
+  .badge-sel:has(select:focus-visible){outline:2px solid currentColor;outline-offset:2px}
   .badge-sel svg{width:12px;height:12px;flex-shrink:0;opacity:.75;pointer-events:none}
   .badge-sel.estado-activo{background:var(--success-soft);color:var(--success)}
   .badge-sel.estado-inactivo{background:var(--line-soft);color:var(--muted)}
@@ -2211,10 +2214,15 @@ function renderClientes(){
 function selBadge(c, campo, valor, opciones, estilo, clase){
   const ops = opciones.map(o =>
     `<option value="${esc(o.v)}"${o.v === valor ? " selected" : ""}>${esc(o.txt)}</option>`).join("");
+  const elegida = opciones.find(o => o.v === valor) || opciones[opciones.length - 1];
+  /* El <select> va estirado y transparente ENCIMA de toda la insignia, y el
+     texto que se ve es el span de abajo. Antes el select ocupaba solo el
+     ancho de su texto y tocar la flechita no abría nada. */
   return `<span class="badge-sel ${clase}" style="${estilo}">
+    <span class="badge-sel-txt">${esc(elegida ? elegida.txt : "")}</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
     <select aria-label="${esc(t(campo === "estado" ? "form_estado" : campo === "relacion" ? "form_relacion" : "form_categoria"))}"
       onchange="cambiarCampoCliente('${c.id}', '${campo}', this.value)">${ops}</select>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
   </span>`;
 }
 
@@ -5108,7 +5116,12 @@ document.getElementById("logoTamanoSlider").addEventListener("input", (e) => {
 /* Se baja el archivo solo al tocar el botón: no pesa nada al abrir la app, y
    el día que se quite esta función se borra el archivo y esta sección. */
 async function traerDatosEjemplo(){
-  const r = await fetch("datos-ejemplo.json", { cache: "no-cache" });
+  /* El `?v=` no es adorno: el service worker responde desde SU caché y se
+     saltea el `cache: "no-cache"`, que solo le habla a la caché del navegador.
+     Con la dirección cambiada no encuentra copia guardada y va a la red. Sin
+     esto, al agregar ejemplos nuevos el botón seguía trayendo la lista vieja
+     y parecía que no cargaba nada. */
+  const r = await fetch("datos-ejemplo.json?v=" + Date.now(), { cache: "no-cache" });
   if (!r.ok) throw new DB.ErrorDatos("config_demo_error");
   return r.json();
 }
@@ -5177,9 +5190,16 @@ document.getElementById("btnCargarDemo").addEventListener("click", async () => {
       const clientes = datos.clientes.map((c, i) => {
         const clave = norm(c.nombre) + "|" + norm(c.telefono);
         if (!clisPorClave[clave]) {
+          /* `rel` y `est` vienen del archivo y no se pasan tal cual: la capa
+             de datos espera `relacion` y `estado`. Los ejemplos traen las
+             cuatro combinaciones (lead activo, lead frío, cliente activo,
+             cliente que dejó de llamar) para poder probar los filtros. */
+          const { rel, est, ...campos } = c;
           clisPorClave[clave] = DB.clientes.create({
-            ...c,
+            ...campos,
             categoria_id: cats.length ? cats[i % cats.length].id : null,
+            relacion: rel === "cliente" ? "cliente" : "lead",
+            estado: est === "inactivo" ? "inactivo" : "activo",
           });
         }
         return clisPorClave[clave];
