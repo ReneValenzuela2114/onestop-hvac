@@ -27,7 +27,7 @@
    - IDs: crypto.randomUUID(). Fechas de auditoría: epoch ms (Date.now()).
    ========================================================================= */
 
-const ESQUEMA_VERSION = 7;
+const ESQUEMA_VERSION = 8;
 
 const CLAVES = {
   clientes: "os_clientes_v1",
@@ -226,6 +226,11 @@ function _usuarioActualId() {
    ========================================================================= */
 const ROLES = ["dueno", "administrador", "tecnico"];
 const ESTADOS_CLIENTE = ["activo", "inactivo"];
+/* Lead = todavía no compró nada; cliente = ya le vendimos. Es distinto de
+   activo/inactivo: un lead puede estar activo (lo estamos persiguiendo) y un
+   cliente puede estar inactivo (hace años que no llama). Por eso son dos
+   campos y no uno solo con cuatro valores. */
+const RELACIONES_CLIENTE = ["lead", "cliente"];
 const ESTADOS_TRABAJO_VALIDOS = ["por_agendar", "agendado", "en_curso", "terminado", "cancelado"];
 const TIPOS_ARCHIVO = ["foto", "documento", "firma", "logo"];
 const ENTIDADES_ARCHIVO = ["trabajo", "cliente", "usuario", "empresa"];
@@ -243,6 +248,7 @@ const Validar = {
     if (!_texto(d.nombre)) e.push("error_nombre_requerido");
     if (_texto(d.email) && !RE_EMAIL.test(_texto(d.email))) e.push("error_email_invalido");
     if (d.estado !== undefined && !ESTADOS_CLIENTE.includes(d.estado)) e.push("error_estado_invalido");
+    if (d.relacion !== undefined && !RELACIONES_CLIENTE.includes(d.relacion)) e.push("error_relacion_invalida");
     return e;
   },
   trabajo(d) {
@@ -373,6 +379,7 @@ function _borradoSuave(coleccion, id) {
 const CAMPOS_CLIENTE = [
   "nombre", "empresa", "telefono", "email", "direccion", "direccion_2", "lat", "lng",
   "fact_igual", "direccion_fact", "direccion_fact_2", "categoria_id", "notas", "estado",
+  "relacion",
 ];
 
 const Clientes = {
@@ -400,6 +407,8 @@ const Clientes = {
       categoria_id: datos.categoria_id || null,
       notas: _texto(datos.notas),
       estado: datos.estado === "inactivo" ? "inactivo" : "activo",
+      /* Nace como lead: nadie es cliente hasta que le vendimos algo. */
+      relacion: datos.relacion === "cliente" ? "cliente" : "lead",
       ..._sellosNuevo(),
     };
     _estado.clientes.push(item);
@@ -1191,6 +1200,17 @@ function _migrar() {
   if (desde < 7) {
     _estado.cotizaciones.forEach((c) => {
       if (c.mostrar_precios === undefined || c.mostrar_precios === null) c.mostrar_precios = 1;
+    });
+  }
+
+  /* --- v7 → v8: cada ficha dice si es lead o cliente ---
+     Los que YA estaban quedan como "cliente", no como lead. Toda la app los
+     venía tratando así (la pantalla se llama Clientes) y muchos tienen
+     trabajos cobrados: marcarlos lead sería escribir algo falso en la ficha.
+     Los que se den de alta de acá en adelante nacen lead, que es lo pedido. */
+  if (desde < 8) {
+    _estado.clientes.forEach((c) => {
+      if (!RELACIONES_CLIENTE.includes(c.relacion)) c.relacion = "cliente";
     });
   }
 

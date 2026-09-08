@@ -86,6 +86,9 @@ CREATE TABLE IF NOT EXISTS clientes (
   categoria_id TEXT REFERENCES categorias_clientes(id) ON DELETE SET NULL,
   notas TEXT NOT NULL DEFAULT '',
   estado TEXT NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo','inactivo')),
+  -- lead = todavia no compro; cliente = ya le vendimos. Es aparte de
+  -- activo/inactivo: un lead puede estar activo y un cliente inactivo.
+  relacion TEXT NOT NULL DEFAULT 'lead' CHECK (relacion IN ('lead','cliente')),
   creado INTEGER NOT NULL,
   creado_por TEXT REFERENCES usuarios(id),
   actualizado INTEGER NOT NULL,
@@ -95,6 +98,7 @@ CREATE TABLE IF NOT EXISTS clientes (
 );
 CREATE INDEX IF NOT EXISTS idx_clientes_categoria ON clientes(categoria_id);
 CREATE INDEX IF NOT EXISTS idx_clientes_estado ON clientes(estado);
+CREATE INDEX IF NOT EXISTS idx_clientes_relacion ON clientes(relacion);
 CREATE INDEX IF NOT EXISTS idx_clientes_vivos ON clientes(eliminado);
 
 -- ---- Trabajos (jobs) ----

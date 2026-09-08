@@ -113,7 +113,10 @@
   .search-box{position:relative;flex:1;min-width:220px}
   .search-box svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
   .search-box input{width:100%;padding:10px 12px 10px 36px;border:1px solid var(--line-campo);border-radius:var(--radius-sm);background:var(--panel);font-size:13.5px}
-  select.filter{padding:10px 12px;border:1px solid var(--line-campo);border-radius:var(--radius-sm);background:var(--panel);font-size:13.5px;color:var(--ink)}
+  /* `max-width` + `min-width:0`: un <select> se ensancha hasta el largo de su
+     opcion mas larga. Con una categoria de nombre largo el filtro medía 436px
+     dentro de una pantalla de 375 y toda la app se iba de costado. */
+  select.filter{padding:10px 12px;border:1px solid var(--line-campo);border-radius:var(--radius-sm);background:var(--panel);font-size:13.5px;color:var(--ink);max-width:100%;min-width:0}
 
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
 
@@ -134,6 +137,31 @@
   .badge.estado-activo{background:var(--success-soft);color:var(--success)}
   .badge.estado-inactivo{background:var(--line-soft);color:var(--muted)}
 
+  /* Insignia que ademas es un selector. Por dentro es un <select> real,
+     transparente y estirado sobre toda la insignia: se ve como una etiqueta
+     pero se toca y abre la lista del sistema. El chevron va aparte porque un
+     <select> no admite ::after. */
+  .badge-sel{position:relative;display:inline-flex;align-items:center;gap:4px;
+    padding:4px 6px 4px 10px;border-radius:999px;font-size:11.5px;font-weight:600;
+    background:var(--line-soft);color:var(--muted);max-width:100%;min-width:0}
+  /* `min-width:0` en los dos: sin eso un nombre de categoria largo impone su
+     ancho natural, la insignia crece mas que la tarjeta y la pantalla del
+     telefono se va de costado. Con esto el texto se recorta con puntitos. */
+  .badge-sel select{appearance:none;-webkit-appearance:none;border:none;background:none;
+    font:inherit;color:inherit;padding:0;margin:0;cursor:pointer;
+    min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .badge-sel select:focus-visible{outline:2px solid currentColor;outline-offset:3px;border-radius:999px}
+  .badge-sel svg{width:12px;height:12px;flex-shrink:0;opacity:.75;pointer-events:none}
+  .badge-sel.estado-activo{background:var(--success-soft);color:var(--success)}
+  .badge-sel.estado-inactivo{background:var(--line-soft);color:var(--muted)}
+  /* Lead usa el naranja de la marca y cliente el azul: se distinguen de un
+     vistazo y no se confunden con el verde/gris de activo-inactivo. */
+  .badge-sel.rel-lead{background:var(--calor-soft);color:var(--calor-600)}
+  .badge-sel.rel-cliente{background:#E3EEF8;color:var(--frio-600)}
+  .badge-sel.vacio{background:var(--line-soft);color:var(--muted)}
+  /* En la tabla la insignia no puede estirar su columna: un nombre de
+     categoria largo empujaba Tipo y Estado fuera de la vista. Se recorta. */
+  #clientesTbody .badge-sel{max-width:170px}
   .row-actions{display:flex;gap:6px}
 
   /* ---------- Cards clientes (mobile) ---------- */
@@ -143,7 +171,8 @@
   .client-card-top b{font-size:14.5px}
   .client-card-top span{display:block;font-size:12px;color:var(--muted)}
   .client-card-row{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--frio-600);margin-top:6px;text-decoration:none}
-  .client-card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)}
+  .client-card-foot{display:flex;justify-content:flex-end;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)}
+  .client-card-sel{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 
   /* ---------- Calendario de trabajos ---------- */
   .cal-card{padding:var(--sp-4);margin-bottom:var(--sp-4)}
@@ -286,6 +315,8 @@
   .estado-toggle button{padding:8px 16px;border:none;background:var(--panel);font-size:13px;font-weight:600;color:var(--muted)}
   .estado-toggle button.active[data-v=activo]{background:var(--success-soft);color:var(--success)}
   .estado-toggle button.active[data-v=inactivo]{background:var(--line-soft);color:var(--ink)}
+  .estado-toggle button.active[data-v=lead]{background:var(--calor-soft);color:var(--calor-600)}
+  .estado-toggle button.active[data-v=cliente]{background:#E3EEF8;color:var(--frio-600)}
 
   /* ---------- Mapa ---------- */
   #mapaCanvas{width:100%;height:340px;border-radius:var(--radius-sm);background:var(--line-soft)}
@@ -555,6 +586,7 @@
        32 y los de Equipo/Material/Servicio en 34. */
     .btn.sm{min-height:38px}
     .estado-toggle button,.segmented button{min-height:38px}
+    .client-card-sel .badge-sel{min-height:38px;font-size:12.5px;padding:0 8px 0 12px}
     /* Al no haber campos adentro, el renglón entra en una línea también acá:
        la manija, el nombre con su "3 Unidad · $115.00" debajo, el total, el
        ojo y la ✕. Antes hacían falta veinte líneas de CSS para acomodar tres
@@ -675,6 +707,7 @@
             <input type="text" id="buscarCliente" data-i18n-ph="clientes_buscar" placeholder="Search by name, company or phone…">
           </div>
           <select class="filter" id="filtroCategoria"></select>
+          <select class="filter" id="filtroRelacion"></select>
           <select class="filter" id="filtroEstado"></select>
         </div>
 
@@ -686,6 +719,7 @@
                 <th data-i18n="clientes_col_contacto">Contacto</th>
                 <th data-i18n="clientes_col_direccion">Dirección</th>
                 <th data-i18n="clientes_col_categoria">Categoría</th>
+                <th data-i18n="clientes_col_relacion">Tipo</th>
                 <th data-i18n="clientes_col_estado">Estado</th>
                 <th style="width:90px"></th>
               </tr>
@@ -1605,6 +1639,14 @@
       </div>
 
       <div class="field">
+        <label data-i18n="form_relacion">Tipo</label>
+        <div class="estado-toggle" id="clienteRelacionToggle">
+          <button type="button" data-v="lead" data-i18n="clientes_lead">Lead</button>
+          <button type="button" data-v="cliente" data-i18n="clientes_cliente">Cliente</button>
+        </div>
+      </div>
+
+      <div class="field">
         <label data-i18n="form_estado">Estado del cliente</label>
         <div class="estado-toggle" id="clienteEstadoToggle">
           <button type="button" data-v="activo" data-i18n="clientes_activo">Activo</button>
@@ -1995,7 +2037,8 @@ function huellaModal(id){
 /* Lo que NO vive en un campo: interruptores hechos con botones, y listas que
    viven en memoria. */
 const EXTRAS_MODAL = {
-  modalCliente: () => document.getElementById("clienteEstadoToggle").dataset.value || "activo",
+  modalCliente: () => (document.getElementById("clienteEstadoToggle").dataset.value || "activo") +
+    "|" + (document.getElementById("clienteRelacionToggle").dataset.value || "lead"),
   modalTrabajador: () => document.getElementById("trabEstadoToggle").dataset.value || "activo",
   modalTrabajo: () => [...trabajoTrabSel].sort().join(","),
   modalCotizacion: () => JSON.stringify(cotFilas),
@@ -2074,6 +2117,12 @@ function renderFiltros(){
     `<option value="activo">${t("clientes_activo")}</option><option value="inactivo">${t("clientes_inactivo")}</option>`;
   selEstado.value = actualEstado;
 
+  const selRel = document.getElementById("filtroRelacion");
+  const actualRel = selRel.value;
+  selRel.innerHTML = `<option value="">${t("clientes_filtro_relacion")}</option>` +
+    `<option value="lead">${t("clientes_lead")}</option><option value="cliente">${t("clientes_cliente")}</option>`;
+  selRel.value = actualRel;
+
   const selForm = document.getElementById("clienteCategoria");
   selForm.innerHTML = cats.map(c => `<option value="${c.id}">${c.nombre}</option>`).join("") +
     `<option value="">${t("clientes_sin_categoria")}</option>`;
@@ -2095,9 +2144,11 @@ function filtrarClientes(){
   const q = document.getElementById("buscarCliente").value.trim().toLowerCase();
   const cat = document.getElementById("filtroCategoria").value;
   const estado = document.getElementById("filtroEstado").value;
+  const relacion = document.getElementById("filtroRelacion").value;
   return DB.clientes.getAll().filter(c => {
     if (cat && c.categoria_id !== cat) return false;
     if (estado && c.estado !== estado) return false;
+    if (relacion && c.relacion !== relacion) return false;
     if (q && !(`${c.nombre} ${c.empresa} ${c.telefono}`.toLowerCase().includes(q))) return false;
     return true;
   });
@@ -2114,7 +2165,6 @@ function renderClientes(){
   cards.style.display = lista.length ? "" : "none";
 
   tbody.innerHTML = lista.map(c => {
-    const cat = categoriaDe(c.categoria_id);
     return `<tr>
       <td class="cell-nombre"><b>${esc(c.nombre)}</b>${c.empresa ? `<span>${esc(c.empresa)}</span>` : ""}</td>
       <td class="cell-contacto">
@@ -2122,8 +2172,9 @@ function renderClientes(){
         ${c.email ? `<a href="mailto:${esc(c.email)}">${iconMail()}${esc(c.email)}</a>` : ""}
       </td>
       <td class="cell-muted">${c.direccion ? esc(direccionCompleta(c)) : t("clientes_sin_direccion")}</td>
-      <td>${cat ? `<span class="badge" style="background:${cat.color}22;color:${cat.color}"><span class="dot" style="background:${cat.color}"></span>${esc(cat.nombre)}</span>` : `<span class="cell-muted">${t("clientes_sin_categoria")}</span>`}</td>
-      <td><span class="badge estado-${c.estado}"><span class="dot" style="background:currentColor"></span>${t(c.estado === "activo" ? "clientes_activo" : "clientes_inactivo")}</span></td>
+      <td>${selCategoria(c)}</td>
+      <td>${selRelacion(c)}</td>
+      <td>${selEstadoCliente(c)}</td>
       <td><div class="row-actions">
         <button class="btn icon ghost sm" title="${esc(t("cliente_ver_historial"))}" aria-label="${esc(t("cliente_ver_historial"))}" onclick="abrirHistorialCliente('${c.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h4"/></svg></button>
         <button class="btn icon ghost sm" onclick="abrirEdicionCliente('${c.id}')">${iconEdit()}</button>
@@ -2133,16 +2184,14 @@ function renderClientes(){
   }).join("");
 
   cards.innerHTML = lista.map(c => {
-    const cat = categoriaDe(c.categoria_id);
     return `<div class="client-card">
       <div class="client-card-top">
         <div><b>${esc(c.nombre)}</b>${c.empresa ? `<span>${esc(c.empresa)}</span>` : ""}</div>
-        <span class="badge estado-${c.estado}">${t(c.estado === "activo" ? "clientes_activo" : "clientes_inactivo")}</span>
       </div>
+      <div class="client-card-sel">${selCategoria(c)}${selRelacion(c)}${selEstadoCliente(c)}</div>
       ${c.telefono ? `<a class="client-card-row" href="tel:${esc(c.telefono)}">${iconTel()}${esc(c.telefono)}</a>` : ""}
       ${c.direccion ? `<div class="client-card-row" style="color:var(--muted)">${iconPin()}${esc(direccionCompleta(c))}</div>` : ""}
       <div class="client-card-foot">
-        ${cat ? `<span class="badge" style="background:${cat.color}22;color:${cat.color}"><span class="dot" style="background:${cat.color}"></span>${esc(cat.nombre)}</span>` : "<span></span>"}
         <div class="row-actions">
           <button class="btn icon ghost sm" title="${esc(t("cliente_ver_historial"))}" aria-label="${esc(t("cliente_ver_historial"))}" onclick="abrirHistorialCliente('${c.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h4"/></svg></button>
           <button class="btn icon ghost sm" onclick="abrirEdicionCliente('${c.id}')">${iconEdit()}</button>
@@ -2151,6 +2200,55 @@ function renderClientes(){
       </div>
     </div>`;
   }).join("");
+}
+
+/* ---------- Las tres cosas que se cambian sin salir de la lista ----------
+   Rene las cambia a diario (un lead que compra, un cliente que se da de baja,
+   una categoría mal puesta) y abrir el formulario entero para eso era mucho
+   ruido. Se usa un <select> de verdad y no un menú dibujado a mano: en el
+   teléfono abre la rueda nativa, se puede recorrer con el teclado, y no hay
+   posiciones que calcular que se rompan al hacer scroll. */
+function selBadge(c, campo, valor, opciones, estilo, clase){
+  const ops = opciones.map(o =>
+    `<option value="${esc(o.v)}"${o.v === valor ? " selected" : ""}>${esc(o.txt)}</option>`).join("");
+  return `<span class="badge-sel ${clase}" style="${estilo}">
+    <select aria-label="${esc(t(campo === "estado" ? "form_estado" : campo === "relacion" ? "form_relacion" : "form_categoria"))}"
+      onchange="cambiarCampoCliente('${c.id}', '${campo}', this.value)">${ops}</select>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </span>`;
+}
+
+function selCategoria(c){
+  const cat = categoriaDe(c.categoria_id);
+  const ops = DB.categoriasClientes.getAll().map(x => ({ v: x.id, txt: x.nombre }));
+  ops.push({ v: "", txt: t("clientes_sin_categoria") });
+  const estilo = cat ? `background:${cat.color}22;color:${cat.color}` : "";
+  return selBadge(c, "categoria_id", c.categoria_id || "", ops, estilo, cat ? "" : "vacio");
+}
+
+function selRelacion(c){
+  return selBadge(c, "relacion", c.relacion === "cliente" ? "cliente" : "lead",
+    [{ v: "lead", txt: t("clientes_lead") }, { v: "cliente", txt: t("clientes_cliente") }],
+    "", "rel-" + (c.relacion === "cliente" ? "cliente" : "lead"));
+}
+
+function selEstadoCliente(c){
+  return selBadge(c, "estado", c.estado === "inactivo" ? "inactivo" : "activo",
+    [{ v: "activo", txt: t("clientes_activo") }, { v: "inactivo", txt: t("clientes_inactivo") }],
+    "", "estado-" + (c.estado === "inactivo" ? "inactivo" : "activo"));
+}
+
+/* Guarda UN campo del cliente. Si el guardado falla, `renderClientes()` vuelve
+   a dibujar con lo que hay en la base: el select nunca queda mostrando algo
+   que en realidad no se guardó. */
+function cambiarCampoCliente(id, campo, valor){
+  const cli = DB.clientes.get(id);
+  if (!cli) return;
+  const nuevo = campo === "categoria_id" ? (valor || null) : valor;
+  if (cli[campo] === nuevo) return;
+  const ok = conAviso(() => DB.clientes.update(id, { [campo]: nuevo }));
+  renderClientes();
+  if (ok) toast(t("toast_cliente_actualizado"));
 }
 
 function esc(s){ return String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
@@ -2163,6 +2261,7 @@ function iconTrash(){ return `<svg width="15" height="15" viewBox="0 0 24 24" fi
 document.getElementById("buscarCliente").addEventListener("input", renderClientes);
 document.getElementById("filtroCategoria").addEventListener("change", renderClientes);
 document.getElementById("filtroEstado").addEventListener("change", renderClientes);
+document.getElementById("filtroRelacion").addEventListener("change", renderClientes);
 
 function limpiarFormularioCliente(){
   clienteEditandoId = null;
@@ -2182,6 +2281,7 @@ function limpiarFormularioCliente(){
   document.getElementById("clienteNotas").value = "";
   document.getElementById("clienteCategoria").value = "";
   setEstadoToggle("activo");
+  setRelacionToggle("lead");   // un cliente nuevo nace lead
   document.getElementById("fieldNombre").classList.remove("error");
   const estadoIa = document.getElementById("clienteIaEstado");
   estadoIa.className = "ia-estado";
@@ -2200,6 +2300,14 @@ function setEstadoToggle(v){
 }
 document.getElementById("clienteEstadoToggle").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return; setEstadoToggle(b.dataset.v);
+});
+
+function setRelacionToggle(v){
+  document.querySelectorAll("#clienteRelacionToggle button").forEach(b => b.classList.toggle("active", b.dataset.v === v));
+  document.getElementById("clienteRelacionToggle").dataset.value = v;
+}
+document.getElementById("clienteRelacionToggle").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return; setRelacionToggle(b.dataset.v);
 });
 
 document.getElementById("btnNuevoCliente").addEventListener("click", abrirNuevoCliente);
@@ -2232,6 +2340,7 @@ function abrirEdicionCliente(id){
   actualizarGrupoFacturacion();
   document.getElementById("clienteNotas").value = c.notas || "";
   document.getElementById("clienteCategoria").value = c.categoria_id || "";
+  setRelacionToggle(c.relacion === "cliente" ? "cliente" : "lead");
   setEstadoToggle(c.estado);
   document.getElementById("fieldNombre").classList.remove("error");
   document.getElementById("modalClienteTitulo").textContent = t("form_editar_titulo");
@@ -2263,6 +2372,7 @@ document.getElementById("btnGuardarCliente").addEventListener("click", () => {
     categoria_id: document.getElementById("clienteCategoria").value || null,
     notas: document.getElementById("clienteNotas").value,
     estado: document.getElementById("clienteEstadoToggle").dataset.value || "activo",
+    relacion: document.getElementById("clienteRelacionToggle").dataset.value || "lead",
   };
 
   let guardado;

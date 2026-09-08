@@ -107,6 +107,15 @@ un bundler salvo que el proyecto lo pida de verdad.
    nada cambia y el botón sigue estando. `aprobar()` —que crea el trabajo solo—
    queda para la carga de datos de ejemplo, que crea muchos de una vez.
 
+   3m. **Un cliente tiene DOS estados, no uno.** `relacion` dice si es lead
+   (todavía no compró) o cliente (ya le vendimos); `estado` dice si está
+   activo o inactivo. Son cosas distintas y se cruzan: un lead puede estar
+   activo (lo estamos persiguiendo) y un cliente puede estar inactivo (hace
+   años que no llama). Los dos, más la categoría, se cambian **desde la propia
+   lista** con `cambiarCampoCliente()`, sin abrir el formulario. Las fichas
+   que ya existían quedaron en "cliente" al migrar, no en "lead": la app las
+   venía tratando así y muchas tienen trabajos cobrados.
+
    3h. **El orden de los renglones lo manda la persona, no el código.** `orden`
    se guarda con la posición en que quedaron después de arrastrar, y es el
    orden en que salen en el PDF. Nunca reordenar por nombre ni por precio.
@@ -131,7 +140,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v55**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v56**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
@@ -160,13 +169,13 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Clientes** (alta/edición/borrado, categorías, filtros, búsqueda, Google Maps + autocompletado) | ✅ terminado |
 | **Trabajos** (calendario mensual, "por agendar", modal completo, precio/costo, asignar trabajadores) | ✅ terminado |
 | **Equipo** (alta de trabajadores, roles, usuario del dispositivo) | ✅ terminado, sin login real |
-| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v7) |
+| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v8) |
 | **Lector de mensajes** (captura/PDF → campos del cliente, con Claude) | ✅ programado; falta desplegar el Worker |
 | **Catálogo** (equipos/materiales/servicios, proveedores, filtros para reportes) | ✅ terminado (esquema v3) |
-| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v7) |
+| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v8) |
 | **Cotización impresa / PDF** (datos de empresa, presentación, términos, firma) | ✅ terminado · igual que DES: HTML + impresión del navegador |
 | **Worker en Cloudflare** | ✅ desplegado en la cuenta de Rene · hoy sirve el lector de mensajes |
-| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v7), pero todavía sin desplegar |
+| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v8), pero todavía sin desplegar |
 | **R2** | ⛔ la tabla `archivos` y `DB.archivos` ya existen; falta el bucket. Hoy solo lo usa el logo |
 | **Login / permisos reales** | ⛔ hoy los roles son solo etiquetas de interfaz |
 | **Reportes** (cuánto se ganó por cliente / por mes) | ⛔ los datos ya están, falta la pantalla |
