@@ -366,6 +366,7 @@
   .hist-resumen > div{background:var(--line-soft);border-radius:var(--radius-sm);padding:10px 12px;min-width:0}
   .hist-resumen span{display:block;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
   .hist-resumen b{display:block;font-size:15px;color:var(--ink);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hist-relacion{margin:0 0 var(--sp-3);font-size:12px}
   .hist-bloque + .hist-bloque{margin-top:var(--sp-5)}
   /* En el titulo va el nombre del cliente y puede ser largo: sin este respiro
      la ultima palabra queda pegada al boton de cerrar. */
@@ -1318,6 +1319,7 @@
       <button class="btn icon ghost" data-close-modal="modalHistorial"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="modal-body">
+      <p class="hint hist-relacion" id="histRelacion" hidden></p>
       <div class="hist-resumen" id="histResumen"></div>
       <div class="hist-bloque">
         <h4 data-i18n="nav_cotizaciones">Cotizaciones</h4>
@@ -3235,6 +3237,16 @@ function refrescarValidezCot(){
 }
 document.getElementById("cotValidezDias").addEventListener("input", refrescarValidezCot);
 
+/* Un "2026-09-08" suelto se lee como medianoche UTC y en California puede
+   retroceder al día anterior. Con Date.UTC de punta a punta la fecha no se
+   corre nunca. Es el mismo criterio que usa la validez de la cotización. */
+function fechaLargaISO(iso){
+  if (!iso) return "";
+  const [a, m, d] = String(iso).split("-").map(Number);
+  return new Date(Date.UTC(a, m - 1, d)).toLocaleDateString(CFG_LANG === "es" ? "es-US" : "en-US",
+    { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
 /* ---------- Historial del cliente: sus cotizaciones y sus trabajos ----------
    Todo cuelga de cliente_id, así que se responde "¿qué tiene este cliente?"
    sin salir de su ficha. */
@@ -3258,6 +3270,26 @@ function abrirHistorialCliente(clienteId){
     .reduce((s, tj) => s + (tj.precio_centavos || 0), 0);
 
   document.getElementById("modalHistorialTitulo").textContent = cli.nombre;
+
+  /* Desde cuándo es cliente. Sale del historial de conversiones, no de un
+     campo en la ficha: así sigue siendo cierto aunque después alguien la
+     vuelva a marcar como lead. Las fichas de antes del 8 sep 2026 no tienen
+     este dato porque nunca se guardó, y no se inventa. */
+  const paso = DB.conversiones.primeraAcliente(clienteId);
+  const linea = document.getElementById("histRelacion");
+  /* Manda lo que la ficha es HOY. Si se mirara solo la conversión, uno que
+     fue cliente y volvió a lead seguiría diciendo "Cliente desde el 8 de
+     septiembre", que es engañoso: ya no lo es. */
+  if (cli.relacion !== "cliente") {
+    linea.textContent = paso
+      ? t("hist_volvio_lead").replace("{f}", fechaLargaISO(paso.fecha))
+      : t("hist_todavia_lead");
+  } else {
+    linea.textContent = paso
+      ? t("hist_cliente_desde").replace("{f}", fechaLargaISO(paso.fecha))
+      : t("hist_cliente_sin_fecha");
+  }
+  linea.hidden = false;
   document.getElementById("histResumen").innerHTML = `
     <div><span>${esc(t("hist_cotizaciones"))}</span><b>${cots.length}</b></div>
     <div><span>${esc(t("hist_cotizado"))}</span><b>${esc(DB.dinero.formato(cotizado, CFG_LANG))}</b></div>

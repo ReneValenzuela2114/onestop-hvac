@@ -27,7 +27,7 @@
    - IDs: crypto.randomUUID(). Fechas de auditoría: epoch ms (Date.now()).
    ========================================================================= */
 
-const ESQUEMA_VERSION = 8;
+const ESQUEMA_VERSION = 9;
 
 const CLAVES = {
   clientes: "os_clientes_v1",
@@ -42,7 +42,7 @@ const CLAVES = {
   config: "os_config_v1",
 };
 
-const COLECCIONES = ["clientes", "categoriasClientes", "usuarios", "trabajos", "archivos", "proveedores", "catalogo", "cotizaciones", "cotizacionItems"];
+const COLECCIONES = ["clientes", "categoriasClientes", "usuarios", "trabajos", "archivos", "proveedores", "catalogo", "cotizaciones", "cotizacionItems", "conversiones"];
 
 /* Los bytes de los archivos (logo, y en el futuro fotos) no viven con los
    demás datos: van aparte, igual que van a vivir aparte en R2. */
@@ -413,6 +413,9 @@ const Clientes = {
     };
     _estado.clientes.push(item);
     _persistir(Almacen.crear("clientes", item));
+    /* Nacer ya como cliente cuenta para los reportes: si no se registrara,
+       "clientes ganados este mes" dejaría fuera al que se dio de alta así. */
+    if (item.relacion === "cliente") Conversiones._registrar(item.id, null, "cliente");
     return item;
   },
   update(id, datos) {
@@ -420,6 +423,7 @@ const Clientes = {
     if (!item) return null;
     _exigir(Validar.cliente({ ...item, ..._tomar(datos, CAMPOS_CLIENTE) }));
     const cambios = _tomar(datos, CAMPOS_CLIENTE);
+    const relacionAntes = item.relacion;
     for (const campo of ["nombre", "empresa", "telefono", "email", "direccion", "direccion_2",
       "direccion_fact", "direccion_fact_2", "notas"]) {
       if (cambios[campo] !== undefined) cambios[campo] = _texto(cambios[campo]);
@@ -429,6 +433,12 @@ const Clientes = {
     if (cambios.categoria_id !== undefined) cambios.categoria_id = cambios.categoria_id || null;
     Object.assign(item, cambios, _sellosEdicion());
     _persistir(Almacen.actualizar("clientes", item));
+    /* Va acá adentro y no en la pantalla: así queda grabado venga de donde
+       venga el cambio —la lista, el formulario o una importación— y ninguna
+       pantalla nueva puede olvidarse de registrarlo. */
+    if (item.relacion !== relacionAntes) {
+      Conversiones._registrar(item.id, relacionAntes, item.relacion);
+    }
     return item;
   },
   /* No borra: marca como eliminado. Se bloquea si tiene trabajos, para no
@@ -436,6 +446,61 @@ const Clientes = {
   remove(id) {
     if (Trabajos.deCliente(id).length) throw new ErrorDatos("error_cliente_con_trabajos");
     return _borradoSuave("clientes", id);
+  },
+};
+
+/* ---------------- Conversiones ----------------
+   Una fila cada vez que una ficha cambia de lead a cliente o al revés. NO es
+   un campo "fecha en que se hizo cliente": ese guarda solo la última vez y
+   pierde el historial si alguien va y viene. Con una fila por cambio se puede
+   preguntar "cuántos leads convertimos en septiembre" y la respuesta no
+   depende de que nadie haya tocado la ficha después.
+
+   Las escribe la capa de datos sola, dentro de `Clientes.create` y
+   `Clientes.update`. Así queda registrado venga de donde venga —la lista, el
+   formulario o una importación— y ninguna pantalla puede olvidarse.
+
+   Un evento pasado no se edita ni se borra: es lo que hace que un reporte de
+   marzo siga diciendo lo mismo dentro de dos años. Por eso este módulo no
+   tiene `update` ni `remove`. */
+const Conversiones = {
+  getAll() {
+    return _vivos("conversiones").slice().sort((a, b) => b.creado - a.creado);
+  },
+  deCliente(clienteId) {
+    return this.getAll().filter((c) => c.cliente_id === clienteId);
+  },
+  /* Para los reportes: todo lo que pasó entre dos fechas, inclusive. Se
+     compara sobre `fecha` (YYYY-MM-DD local) y no sobre `creado`, que es epoch
+     UTC: agrupar por mes con el epoch corre los eventos de la noche al día
+     siguiente y el reporte de fin de mes sale mal. */
+  entre(desdeISO, hastaISO) {
+    return this.getAll().filter((c) =>
+      (!desdeISO || c.fecha >= desdeISO) && (!hastaISO || c.fecha <= hastaISO));
+  },
+  /* La primera vez que esta ficha pasó a cliente, que es la que interesa para
+     medir cuánto tardó en convertir. Devuelve null si nunca lo fue. */
+  primeraAcliente(clienteId) {
+    return this.deCliente(clienteId).filter((c) => c.hacia === "cliente")
+      .sort((a, b) => a.creado - b.creado)[0] || null;
+  },
+  /* Uso interno de Clientes. `desde` en null = la ficha nació así, no hubo
+     conversión; se registra igual para que "clientes ganados en septiembre"
+     no deje fuera al que se dio de alta ya como cliente. */
+  _registrar(clienteId, desde, hacia) {
+    if (!RELACIONES_CLIENTE.includes(hacia)) return null;
+    if (desde === hacia) return null;
+    const item = {
+      id: _uuid(),
+      cliente_id: clienteId,
+      desde: RELACIONES_CLIENTE.includes(desde) ? desde : null,
+      hacia,
+      fecha: _fechaLocalISO(Date.now()),
+      ..._sellosNuevo(),
+    };
+    _estado.conversiones.push(item);
+    _persistir(Almacen.crear("conversiones", item));
+    return item;
   },
 };
 
@@ -1214,6 +1279,16 @@ function _migrar() {
     });
   }
 
+  /* --- v8 → v9: queda registrado cada paso de lead a cliente ---
+     La colección nace VACÍA a propósito. Las fichas que ya existen pasaron a
+     "cliente" en la migración anterior, pero nadie sabe qué día ocurrió de
+     verdad: ese dato nunca se guardó. Rellenarlo con una fecha inventada
+     llenaría los reportes de conversiones que nunca pasaron. El historial
+     arranca el día que se publica esto. */
+  if (desde < 9) {
+    if (!Array.isArray(_estado.conversiones)) _estado.conversiones = [];
+  }
+
   _estado.config.esquema_version = ESQUEMA_VERSION;
   return true;
 }
@@ -1309,6 +1384,7 @@ const DB = {
   proveedores: Proveedores,
   catalogo: Catalogo,
   cotizaciones: Cotizaciones,
+  conversiones: Conversiones,
   config: Config,
   respaldo: Respaldo,
   dinero: Dinero,

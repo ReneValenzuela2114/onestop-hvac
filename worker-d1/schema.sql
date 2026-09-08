@@ -99,6 +99,37 @@ CREATE TABLE IF NOT EXISTS clientes (
 CREATE INDEX IF NOT EXISTS idx_clientes_categoria ON clientes(categoria_id);
 CREATE INDEX IF NOT EXISTS idx_clientes_estado ON clientes(estado);
 CREATE INDEX IF NOT EXISTS idx_clientes_relacion ON clientes(relacion);
+
+-- ---- Conversiones: una fila cada vez que una ficha cambia de lead a
+-- cliente o al reves. NO es un campo "fecha en que se hizo cliente": ese
+-- guarda solo la ultima vez y pierde el historial si alguien va y viene.
+-- Un evento pasado no se edita ni se borra; es lo que hace que el reporte
+-- de marzo siga diciendo lo mismo dentro de dos anios.
+CREATE TABLE IF NOT EXISTS conversiones (
+  id TEXT PRIMARY KEY,
+  cliente_id TEXT NOT NULL REFERENCES clientes(id),
+  -- NULL = la ficha nacio asi, no hubo conversion. Se guarda igual para que
+  -- "clientes ganados en septiembre" no deje fuera al que se dio de alta
+  -- ya como cliente.
+  desde TEXT CHECK (desde IS NULL OR desde IN ('lead','cliente')),
+  hacia TEXT NOT NULL CHECK (hacia IN ('lead','cliente')),
+  -- Fecha local YYYY-MM-DD, no el epoch: agrupar por mes con el epoch UTC
+  -- corre los eventos de la noche al dia siguiente y el corte de fin de mes
+  -- sale mal. `creado` guarda el instante exacto para auditoria.
+  fecha TEXT NOT NULL,
+  creado INTEGER NOT NULL,
+  creado_por TEXT REFERENCES usuarios(id),
+  actualizado INTEGER NOT NULL,
+  actualizado_por TEXT REFERENCES usuarios(id),
+  eliminado INTEGER,
+  eliminado_por TEXT REFERENCES usuarios(id)
+);
+-- Los tres indices son los tres filtros que van a pedir los reportes:
+-- por cliente, por rango de fechas y "solo las que se volvieron cliente".
+CREATE INDEX IF NOT EXISTS idx_conversiones_cliente ON conversiones(cliente_id);
+CREATE INDEX IF NOT EXISTS idx_conversiones_fecha ON conversiones(fecha);
+CREATE INDEX IF NOT EXISTS idx_conversiones_hacia ON conversiones(hacia);
+CREATE INDEX IF NOT EXISTS idx_conversiones_vivos ON conversiones(eliminado);
 CREATE INDEX IF NOT EXISTS idx_clientes_vivos ON clientes(eliminado);
 
 -- ---- Trabajos (jobs) ----

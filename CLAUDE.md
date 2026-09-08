@@ -44,8 +44,8 @@ un bundler salvo que el proyecto lo pida de verdad.
 
 1. **Ninguna pantalla toca `localStorage` directamente.** Todo pasa por `DB.*`
    (`DB.clientes`, `DB.trabajos`, `DB.usuarios`, `DB.categoriasClientes`,
-   `DB.catalogo`, `DB.proveedores`, `DB.cotizaciones`, `DB.archivos`,
-   `DB.config`). Ese es el contrato que permite cambiar a D1 sin tocar la UI.
+   `DB.catalogo`, `DB.proveedores`, `DB.cotizaciones`, `DB.conversiones`,
+   `DB.archivos`, `DB.config`). Ese es el contrato que permite cambiar a D1 sin tocar la UI.
 2. **La plata SIEMPRE en centavos enteros** (`precio_centavos`, `costo_centavos`).
    Nunca decimales: los flotantes no representan `0.10` exacto y los reportes
    terminan sin cuadrar. Convertir con `DB.dinero.aCentavos()` / `.aTexto()` /
@@ -116,6 +116,22 @@ un bundler salvo que el proyecto lo pida de verdad.
    que ya existían quedaron en "cliente" al migrar, no en "lead": la app las
    venía tratando así y muchas tienen trabajos cobrados.
 
+   3n. **Cada paso de lead a cliente es una FILA en `conversiones`**, no un
+   campo "fecha en que se hizo cliente". Ese campo guarda solo la última vez
+   y pierde el historial si la ficha va y viene; con una fila por cambio,
+   "cuántos leads convertimos en septiembre" se responde aunque después
+   alguien haya tocado la ficha. La escribe `Clientes.create` / `.update`
+   **dentro de la capa de datos**, para que quede grabado venga de donde
+   venga —la lista, el formulario o una importación— y ninguna pantalla nueva
+   pueda olvidarse. `desde = null` significa que la ficha nació ya como
+   cliente. Un evento pasado **no se edita ni se borra**: es lo que hace que
+   el reporte de marzo siga diciendo lo mismo dentro de dos años, y por eso
+   el módulo no tiene `update` ni `remove`.
+   ⚠️ **El historial arranca el 8 sep 2026.** Las fichas anteriores no tienen
+   fecha de conversión porque ese dato nunca se guardó, y no se inventó
+   ninguna: un reporte con fechas estimadas miente. La pantalla lo dice con
+   todas las letras ("la ficha es anterior al registro").
+
    3h. **El orden de los renglones lo manda la persona, no el código.** `orden`
    se guarda con la posición en que quedaron después de arrastrar, y es el
    orden en que salen en el PDF. Nunca reordenar por nombre ni por precio.
@@ -140,7 +156,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v57**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v58**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
@@ -169,16 +185,17 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Clientes** (alta/edición/borrado, categorías, filtros, búsqueda, Google Maps + autocompletado) | ✅ terminado |
 | **Trabajos** (calendario mensual, "por agendar", modal completo, precio/costo, asignar trabajadores) | ✅ terminado |
 | **Equipo** (alta de trabajadores, roles, usuario del dispositivo) | ✅ terminado, sin login real |
-| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v8) |
+| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v9) |
 | **Lector de mensajes** (captura/PDF → campos del cliente, con Claude) | ✅ programado; falta desplegar el Worker |
 | **Catálogo** (equipos/materiales/servicios, proveedores, filtros para reportes) | ✅ terminado (esquema v3) |
-| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v8) |
+| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v9) |
 | **Cotización impresa / PDF** (datos de empresa, presentación, términos, firma) | ✅ terminado · igual que DES: HTML + impresión del navegador |
 | **Worker en Cloudflare** | ✅ desplegado en la cuenta de Rene · hoy sirve el lector de mensajes |
-| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v8), pero todavía sin desplegar |
+| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v9), pero todavía sin desplegar |
 | **R2** | ⛔ la tabla `archivos` y `DB.archivos` ya existen; falta el bucket. Hoy solo lo usa el logo |
 | **Login / permisos reales** | ⛔ hoy los roles son solo etiquetas de interfaz |
-| **Reportes** (cuánto se ganó por cliente / por mes) | ⛔ los datos ya están, falta la pantalla |
+| **Conversiones** (historial de lead → cliente, para reportes) | ✅ se registra solo (esquema v9) · la pantalla de reportes lo usará |
+| **Reportes** (cuánto se ganó por cliente / por mes, conversiones) | ⛔ los datos ya están, falta la pantalla |
 
 **Dónde viven los datos hoy:** solo en el navegador de cada dispositivo
 (`localStorage`, claves `os_*_v1`, y los bytes de archivos bajo `os_bytes_*`).
