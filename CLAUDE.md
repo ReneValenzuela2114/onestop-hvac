@@ -123,7 +123,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v51**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v52**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
@@ -181,10 +181,13 @@ serio hasta que exista D1.**
   las pantallas. Todavía se navega, pero es lo próximo que va a doler. Partirlo
   conviene hacerlo **junto con D1**, no antes: ese cambio ya toca la capa de datos.
 - **El botón "Cargar datos de ejemplo"** (Configuración → Datos) y el archivo
-  `datos-ejemplo.json` meten 50 clientes, 70 productos y 6 proveedores
-  inventados. Es para probar. **Sacar los dos antes de que la empresa la use de
-  verdad**: un botón que inventa clientes no puede estar al alcance con datos
-  reales adentro.
+  `datos-ejemplo.json` meten 50 clientes, 70 productos, 6 proveedores y 20
+  cotizaciones inventadas — y las 9 aprobadas **crean su trabajo**, así que
+  también aparecen 9 trabajos. Es para probar. **Sacar los dos antes de que la
+  empresa la use de verdad**: un botón que inventa clientes, cotizaciones y
+  trabajos no puede estar al alcance con datos reales adentro.
+  Las fechas de las cotizaciones se calculan al cargarlas (campo `dias` = hace
+  cuántos días), no vienen escritas: así los ejemplos no quedan viejos.
 - **Naming inconsistente**: la pestaña se llama `proyectos` en el HTML pero el módulo,
   la tabla y los textos son "trabajos"/"jobs". Unificar a `trabajos` cuando se toque.
 - **El Worker queda con una dirección pública hasta que exista el login.** Se filtra

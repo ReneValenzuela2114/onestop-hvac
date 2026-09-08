@@ -203,8 +203,8 @@ const I18N = {
     config_demo_texto: "Agrega clientes, productos y proveedores inventados para probar la app. No borra nada de lo que ya tengas.",
     config_demo_cargar: "Cargar datos de ejemplo",
     config_demo_titulo: "¿Cargar datos de ejemplo?",
-    config_demo_confirma: "Se agregan {c} clientes, {p} productos y {v} proveedores inventados. Lo que ya tenés no se toca. Después los podés borrar uno por uno.",
-    toast_demo_cargado: "Listo: {c} clientes y {p} productos de ejemplo",
+    config_demo_confirma: "Se agregan {c} clientes, {p} productos, {v} proveedores y {q} cotizaciones inventadas. Las aprobadas crean su trabajo. Lo que ya tenés no se toca.",
+    toast_demo_cargado: "Listo: {c} clientes, {p} productos y {q} cotizaciones de ejemplo",
     config_demo_ya_estan: "Los datos de ejemplo ya están cargados",
 
     cliente_historial: "Cotizaciones y trabajos",
@@ -674,8 +674,8 @@ const I18N = {
     config_demo_texto: "Adds made-up clients, products and suppliers so you can try the app. Nothing you already have is removed.",
     config_demo_cargar: "Load sample data",
     config_demo_titulo: "Load sample data?",
-    config_demo_confirma: "This adds {c} made-up clients, {p} products and {v} suppliers. What you already have is left untouched. You can delete them one by one afterwards.",
-    toast_demo_cargado: "Done: {c} sample clients and {p} products",
+    config_demo_confirma: "This adds {c} made-up clients, {p} products, {v} suppliers and {q} quotes. Approved ones create their job. What you already have is left untouched.",
+    toast_demo_cargado: "Done: {c} sample clients, {p} products and {q} quotes",
     config_demo_ya_estan: "Sample data is already loaded",
 
     cliente_historial: "Quotes and jobs",

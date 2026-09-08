@@ -4908,28 +4908,69 @@ document.getElementById("btnCargarDemo").addEventListener("click", async () => {
     const creado = conAviso(() => {
       const cats = DB.categoriasClientes.getAll();
       const provs = datos.proveedores.map(p => DB.proveedores.create(p));
-      datos.clientes.forEach((c, i) => DB.clientes.create({
+      const clientes = datos.clientes.map((c, i) => DB.clientes.create({
         ...c,
         categoria_id: cats.length ? cats[i % cats.length].id : null,
       }));
-      datos.catalogo.forEach(p => DB.catalogo.create({
-        tipo: p.tipo, codigo: p.codigo, nombre: p.nombre,
-        marca: p.marca || "", modelo: p.modelo || "",
-        capacidad_btu: p.capacidad_btu ?? null,
-        unidad: p.unidad,
-        proveedor_id: p.prov !== undefined ? provs[p.prov].id : null,
-        costo_centavos: DB.dinero.aCentavos(p.costo),
-        precio_centavos: DB.dinero.aCentavos(p.precio),
-      }));
+      /* Los renglones de las cotizaciones nombran productos por su código, no
+         por su id: los ids se inventan recién acá. */
+      const porCodigo = {};
+      datos.catalogo.forEach(p => {
+        porCodigo[p.codigo] = DB.catalogo.create({
+          tipo: p.tipo, codigo: p.codigo, nombre: p.nombre,
+          marca: p.marca || "", modelo: p.modelo || "",
+          capacidad_btu: p.capacidad_btu ?? null,
+          unidad: p.unidad,
+          proveedor_id: p.prov !== undefined ? provs[p.prov].id : null,
+          costo_centavos: DB.dinero.aCentavos(p.costo),
+          precio_centavos: DB.dinero.aCentavos(p.precio),
+        });
+      });
+
+      (datos.cotizaciones || []).forEach(q => {
+        const cliente = clientes[q.cli];
+        if (!cliente) return;
+        /* La fecha se calcula desde "hace cuántos días", no viene escrita en el
+           archivo: así los ejemplos no quedan viejos aunque el botón se toque
+           dentro de un año. */
+        const fecha = sumarDias(hoyISO(), -(q.dias || 0));
+        const cot = DB.cotizaciones.create({
+          cliente_id: cliente.id,
+          titulo: q.t,
+          estado: q.e === "aprobada" ? "borrador" : q.e,  // se aprueba abajo, para que cree su trabajo
+          fecha,
+          valida_hasta: sumarDias(fecha, q.val || VALIDEZ_DIAS_POR_DEFECTO),
+          impuesto_centesimas: Math.round((q.imp || 0) * 100),
+          mostrar_precios: q.pre ? 1 : 0,
+          notas: q.n || "",
+        });
+        const filas = q.it.map((it, i) => {
+          /* Con código sale del catálogo, y el precio se COPIA como manda la
+             regla 3b. Sin código es un renglón escrito a mano. */
+          const base = it.c
+            ? DB.cotizaciones.filaDesdeCatalogo(porCodigo[it.c].id, Math.round(it.n * 100))
+            : { ...DB.cotizaciones.filaManual(), nombre: it.m, unidad: it.u,
+                cantidad_centesimas: Math.round(it.n * 100),
+                precio_centavos: DB.dinero.aCentavos(it.p),
+                costo_centavos: DB.dinero.aCentavos(it.k) };
+          return { ...base, en_pdf: it.off ? 0 : 1, orden: i };
+        }).filter(Boolean);
+        DB.cotizaciones.guardarItems(cot.id, filas);
+        /* Las aprobadas se aprueban de verdad: así crean su trabajo y el
+           ejemplo muestra el circuito entero, cliente → cotización → trabajo. */
+        if (q.e === "aprobada") DB.cotizaciones.aprobar(cot.id);
+      });
       return true;
     });
     if (!creado) return;
     toast(t("toast_demo_cargado")
       .replace("{c}", datos.clientes.length)
-      .replace("{p}", datos.catalogo.length));
+      .replace("{p}", datos.catalogo.length)
+      .replace("{q}", (datos.cotizaciones || []).length));
     renderFiltros(); renderClientes();
     renderFiltrosCatalogo(); renderCatalogo(); renderProveedores();
     renderFiltrosCotizaciones(); renderCotizaciones();
+    renderTrabajos();
   }, "config_demo_cargar");
 
   /* Las cantidades del aviso salen del archivo, no escritas a mano: si mañana
@@ -4937,7 +4978,8 @@ document.getElementById("btnCargarDemo").addEventListener("click", async () => {
   document.getElementById("confirmarTexto").textContent = t("config_demo_confirma")
     .replace("{c}", datos.clientes.length)
     .replace("{p}", datos.catalogo.length)
-    .replace("{v}", datos.proveedores.length);
+    .replace("{v}", datos.proveedores.length)
+    .replace("{q}", (datos.cotizaciones || []).length);
 });
 
 /* ---------- Respaldo: descargar / restaurar ----------
