@@ -99,6 +99,14 @@ un bundler salvo que el proyecto lo pida de verdad.
    cotizaciones nuevas nacen en 0; las que ya existían quedaron en 1, porque
    una cotización que el cliente ya recibió no puede cambiar de forma sola.
 
+   3l. **Aprobar una cotización NO crea el trabajo solo: abre el formulario.**
+   La pantalla llena lo que sale de la cotización (cliente, título, notas,
+   subtotal, costo y la dirección del cliente) y la persona completa fecha,
+   horario y técnicos. La cotización queda aprobada y enlazada recién cuando el
+   trabajo se **guarda**, con `DB.cotizaciones.enlazarTrabajo()`. Si se cancela,
+   nada cambia y el botón sigue estando. `aprobar()` —que crea el trabajo solo—
+   queda para la carga de datos de ejemplo, que crea muchos de una vez.
+
    3h. **El orden de los renglones lo manda la persona, no el código.** `orden`
    se guarda con la posición en que quedaron después de arrastrar, y es el
    orden en que salen en el PDF. Nunca reordenar por nombre ni por precio.
@@ -123,7 +131,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v53**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v54**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`

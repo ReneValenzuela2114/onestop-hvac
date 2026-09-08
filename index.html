@@ -2825,8 +2825,10 @@ function limpiarFormularioTrabajo(){
   ["fieldTrabajoCliente", "fieldTrabajoTitulo", "fieldTrabajoFecha"].forEach(id => document.getElementById(id).classList.remove("error"));
 }
 
-document.getElementById("btnNuevoTrabajo").addEventListener("click", () => {
-  if (!puedeGestionarTrabajos()) { toast(t("sin_permiso_trabajos"), true); return; }
+/* Abre el formulario de trabajo en blanco. Está aparte del botón porque
+   también lo usa "Aprobar y crear trabajo", que después le llena los campos
+   con lo que sale de la cotización. */
+function abrirNuevoTrabajo(){
   limpiarFormularioTrabajo();
   poblarSelectClientes("");
   renderChipsTrabajadores();
@@ -2843,6 +2845,12 @@ document.getElementById("btnNuevoTrabajo").addEventListener("click", () => {
   activarAutocompletadoDireccion();
   marcarBaseModal("modalTrabajo");
   refrescarBotonesLimpiar();
+}
+
+document.getElementById("btnNuevoTrabajo").addEventListener("click", () => {
+  if (!puedeGestionarTrabajos()) { toast(t("sin_permiso_trabajos"), true); return; }
+  cotEsperandoTrabajo = null;   // un trabajo suelto no enlaza ninguna cotización
+  abrirNuevoTrabajo();
 });
 
 function abrirEdicionTrabajo(id){
@@ -2912,16 +2920,33 @@ document.getElementById("btnGuardarTrabajo").addEventListener("click", () => {
     descripcion: document.getElementById("trabajoDescripcion").value,
   };
 
-  const ok = conAviso(() => {
+  const guardado = conAviso(() => {
     if (trabajoEditandoId) {
-      DB.trabajos.update(trabajoEditandoId, datos);
+      const tj = DB.trabajos.update(trabajoEditandoId, datos);
       toast(t("toast_trabajo_actualizado"));
-    } else {
-      DB.trabajos.create(datos);
-      toast(t("toast_trabajo_creado"));
+      return tj;
     }
+    const tj = DB.trabajos.create(datos);
+    toast(t("toast_trabajo_creado"));
+    return tj;
   });
-  if (!ok) return;
+  if (!guardado) return;
+
+  /* Si este trabajo venía de una cotización, recién ahora se cierra el
+     circuito: la cotización pasa a aprobada y queda enlazada. Antes se
+     aprobaba al tocar el botón, y una cotización podía quedar "aprobada" por
+     un trabajo que la persona terminó cancelando. */
+  if (cotEsperandoTrabajo && !trabajoEditandoId) {
+    const cotId = cotEsperandoTrabajo;
+    cotEsperandoTrabajo = null;
+    const enlazada = conAviso(() => DB.cotizaciones.enlazarTrabajo(cotId, guardado.id));
+    if (enlazada) {
+      toast(t("toast_cot_aprobada").replace("{n}", guardado.numero));
+      renderFiltrosCotizaciones();
+      renderCotizaciones();
+    }
+  }
+
   if (datos.fecha) diaSeleccionado = datos.fecha; // el calendario salta al día del trabajo
   if (datos.fecha) calFecha = new Date(datos.fecha + "T12:00:00");
   cerrarModal("modalTrabajo");
@@ -3482,18 +3507,52 @@ document.getElementById("btnGuardarCotizacion").addEventListener("click", () => 
   renderCotizaciones();
 });
 
+/* La cotización que está esperando su trabajo. Se llena al tocar "Aprobar y
+   crear trabajo" y se vacía cuando el trabajo se guarda o se cancela. Mientras
+   tenga valor, guardar el trabajo cierra el circuito. */
+let cotEsperandoTrabajo = null;
+
 document.getElementById("btnAprobarCotizacion").addEventListener("click", () => {
   const cot = guardarCotizacion();
   if (!cot) return;
-  pedirConfirmacion("cot_aprobar_titulo", "cot_aprobar_texto", () => {
-    const trabajo = conAviso(() => DB.cotizaciones.aprobar(cot.id));
-    if (!trabajo) return;
-    cerrarModal("modalCotizacion");
-    toast(t("toast_cot_aprobada").replace("{n}", trabajo.numero));
-    renderFiltrosCotizaciones();
-    renderCotizaciones();
-    renderTrabajos();
-  }, "cot_aprobar_btn");
+  if (!puedeGestionarTrabajos()) { toast(t("sin_permiso_trabajos"), true); return; }
+
+  /* Antes esto creaba el trabajo solo y cerraba. Ahora abre el formulario con
+     lo que se puede sacar de la cotización, para que Rene le ponga la fecha,
+     los técnicos y la dirección antes de guardarlo. La cotización NO queda
+     aprobada hasta que el trabajo se guarde: si cancela, todo sigue igual y el
+     botón sigue estando. */
+  const t2 = DB.cotizaciones.totales(cot);
+  const cli = DB.clientes.get(cot.cliente_id);
+  cerrarModal("modalCotizacion");
+  abrirNuevoTrabajo();
+  document.getElementById("trabajoCliente").value = cot.cliente_id || "";
+  document.getElementById("trabajoTitulo").value = cot.titulo || "";
+  document.getElementById("trabajoDescripcion").value = cot.notas || "";
+  /* Al trabajo va el SUBTOTAL, sin impuesto: el impuesto se cobra y se
+     entrega, no es ganancia de la empresa (regla 3f). */
+  document.getElementById("trabajoPrecio").value = DB.dinero.aTexto(t2.subtotal_centavos);
+  document.getElementById("trabajoCosto").value = DB.dinero.aTexto(t2.costo_centavos);
+  if (cli) {
+    document.getElementById("trabajoDireccion").value = cli.direccion || "";
+    document.getElementById("trabajoDireccion2").value = cli.direccion_2 || "";
+    document.getElementById("trabajoLat").value = cli.lat ?? "";
+    document.getElementById("trabajoLng").value = cli.lng ?? "";
+  }
+  cotEsperandoTrabajo = cot.id;
+  document.getElementById("modalTrabajoTitulo").textContent = t("cot_trabajo_desde_coti").replace("{n}", numeroCot(cot));
+  refrescarBotonesLimpiar();
+  /* La foto se vuelve a tomar DESPUÉS de llenar los campos: si no, el
+     formulario nace marcado como "con cambios sin guardar". */
+  marcarBaseModal("modalTrabajo");
+});
+
+/* Si el formulario del trabajo se cierra sin guardar, la cotización se queda
+   como estaba y el botón de aprobar sigue disponible. */
+document.querySelectorAll('#modalTrabajo [data-close-modal]').forEach(b =>
+  b.addEventListener("click", () => { cotEsperandoTrabajo = null; }));
+document.getElementById("modalTrabajo").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget && !modalSucio("modalTrabajo")) cotEsperandoTrabajo = null;
 });
 
 document.getElementById("btnEliminarCotizacion").addEventListener("click", () => {

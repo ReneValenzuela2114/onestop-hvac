@@ -654,7 +654,22 @@ const Cotizaciones = {
     return item;
   },
 
-  /* Aprobar crea el trabajo con el total ya puesto, y los deja enlazados.
+  /* Enlaza una cotización con un trabajo que YA existe y la marca aprobada.
+     Es lo que usa la pantalla: el trabajo lo arma la persona en su formulario
+     —con fecha, técnicos y dirección— y recién cuando lo guarda se cierra el
+     circuito. Así una cotización nunca queda "aprobada" por un trabajo que la
+     persona terminó cancelando. */
+  enlazarTrabajo(id, trabajoId) {
+    const cot = this.get(id);
+    const trabajo = Trabajos.get(trabajoId);
+    if (!cot || !trabajo) return null;
+    this.update(id, { estado: "aprobada", trabajo_id: trabajo.id });
+    return trabajo;
+  },
+
+  /* Aprobar crea el trabajo solo, con el total ya puesto, y los deja enlazados.
+     Lo usa la carga de datos de ejemplo, que crea muchos de una vez. La
+     pantalla usa enlazarTrabajo(), para que la persona complete el trabajo.
      Así el circuito queda cerrado: cliente → cotización → trabajo → reporte. */
   aprobar(id) {
     const cot = this.get(id);

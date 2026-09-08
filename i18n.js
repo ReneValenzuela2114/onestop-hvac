@@ -318,6 +318,7 @@ const I18N = {
     toast_cot_creada: "Cotización creada",
     toast_cot_actualizada: "Cambios guardados",
     toast_cot_eliminada: "Cotización eliminada",
+    cot_trabajo_desde_coti: "Nuevo trabajo · desde {n}",
     toast_cot_aprobada: "Aprobada · se creó el trabajo #{n}",
     error_impuesto_invalido: "El impuesto tiene que estar entre 0 y 100%",
 
@@ -789,6 +790,7 @@ const I18N = {
     toast_cot_creada: "Quote created",
     toast_cot_actualizada: "Changes saved",
     toast_cot_eliminada: "Quote deleted",
+    cot_trabajo_desde_coti: "New job · from {n}",
     toast_cot_aprobada: "Approved · job #{n} created",
     error_impuesto_invalido: "Tax must be between 0 and 100%",
 
