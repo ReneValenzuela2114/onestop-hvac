@@ -887,7 +887,9 @@
         <div class="page-head"><div><h1 data-i18n="config_titulo">Configuración</h1></div></div>
         <div class="card" id="configAcordeon">
 
-          <div class="config-group open">
+          <!-- Ninguno arranca abierto: al entrar se ve la lista completa de
+               grupos y se elige, en vez de aparecer ya metido en uno. -->
+          <div class="config-group">
             <button class="config-group-head" type="button">
               <span class="cfg-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>
               <span class="cfg-txt"><b data-i18n="config_grupo_general">General</b><span data-i18n="config_grupo_general_desc">Language, logo and appearance</span></span>
@@ -1099,15 +1101,32 @@
               </label>
               <p class="hint" data-i18n="config_pdf_terminos_ayuda">Si lo desmarcás, salen a continuación de la cotización en la misma hoja.</p>
             </div>
+            <!-- Aparte de los términos a propósito: los términos son las
+                 condiciones del trabajo; esto es la frase que el cliente firma.
+                 Separado se puede cambiar una sin tocar la otra, y en el PDF
+                 cada una lleva su título. -->
+            <div class="field">
+              <label data-i18n="config_pdf_aceptacion">Aceptación del trabajo</label>
+              <textarea id="pdfAceptacion" rows="4" data-i18n-ph="config_pdf_aceptacion_ph" placeholder="e.g. By signing below, the client accepts this quote and authorizes the work described."></textarea>
+              <p class="hint" data-i18n="config_pdf_aceptacion_ayuda">Sale al final, con su propio título y arriba de las firmas.</p>
+            </div>
           </div>
 
           <div class="config-section">
-            <h3 data-i18n="config_pdf_firmas">Tu firma</h3>
-            <p class="desc" data-i18n="config_pdf_firmas_texto">Sale al final de la cotización, con tu nombre y cargo.</p>
+            <h3 data-i18n="config_pdf_firmas">Firmas</h3>
+            <p class="desc" data-i18n="config_pdf_firmas_texto">Salen al final de la cotización, una al lado de la otra.</p>
             <label class="check-row">
               <input type="checkbox" id="pdfFirmaEmpresa" checked>
               <span data-i18n="config_pdf_firma_empresa">Incluir mi firma</span>
             </label>
+            <!-- La del cliente es una línea EN BLANCO para que firme sobre el
+                 papel: no se dibuja acá. Debajo sale su nombre, que ya lo
+                 tiene la cotización. -->
+            <label class="check-row">
+              <input type="checkbox" id="pdfFirmaCliente" checked>
+              <span data-i18n="config_pdf_firma_cliente">Incluir la firma del cliente</span>
+            </label>
+            <p class="hint" data-i18n="config_pdf_firma_cliente_ayuda">Deja la línea en blanco para que firme cuando reciba la cotización, con su nombre debajo.</p>
             <div id="bloqueFirmaEmpresa">
               <div class="field-row" style="margin-top:var(--sp-3)">
                 <div class="field">
@@ -4271,8 +4290,10 @@ function cfgPdf(){
     licencia: DB.config.get("pdf_empresa_licencia", ""),
     intro: DB.config.get("pdf_intro", ""),
     terminos: DB.config.get("pdf_terminos", ""),
+    aceptacion: DB.config.get("pdf_aceptacion", ""),
     terminosHojaAparte: DB.config.get("pdf_terminos_hoja_aparte", true) !== false,
     firmaEmpresa: DB.config.get("pdf_firma_empresa", true) !== false,
+    firmaCliente: DB.config.get("pdf_firma_cliente", true) !== false,
     firmaNombre: DB.config.get("pdf_firma_nombre", ""),
     firmaCargo: DB.config.get("pdf_firma_cargo", ""),
     margen: parseFloat(DB.config.get("pdf_margen", 0.6)) || 0.6,
@@ -4367,12 +4388,22 @@ function abrirPdfCotizacion(cotId){
       <div class="tx">${textoAHtml(cfg.terminos)}</div>
     </section>` : "";
 
+  /* El texto que el cliente firma. Va aparte de los términos porque son dos
+     cosas distintas: los términos son las condiciones del trabajo, esto es la
+     frase de aceptación. Cada una con su título. */
+  const bloqueAceptacion = cfg.aceptacion ? `
+    <section class="aceptacion">
+      <h2>${esc(t("pdf_aceptacion_titulo"))}</h2>
+      <div class="tx">${textoAHtml(cfg.aceptacion)}</div>
+    </section>` : "";
+
   /* Dos firmas independientes, cada una con su interruptor:
-       · la de la empresa dice QUIÉN emite el presupuesto (como en DES: la
-         imagen de la firma arriba de la línea, con nombre y cargo debajo);
-       · la del cliente es su ACEPTACIÓN, y deja constancia.
-     Si las dos están prendidas van lado a lado. Si va una sola, ocupa su lugar
-     sin dejar un hueco raro al costado. */
+       · la de la empresa dice QUIÉN emite el presupuesto (la imagen de la
+         firma arriba de la línea, con nombre y cargo debajo);
+       · la del cliente es una línea EN BLANCO para que firme sobre el papel,
+         con su nombre impreso debajo para que no haya dudas de quién firma.
+     Si van las dos, quedan lado a lado. Si va una sola, ocupa su lugar sin
+     dejar un hueco raro al costado. */
   const firmaImg = DB.archivos.url(DB.archivos.firmaEmpresa());
   const columnaEmpresa = cfg.firmaEmpresa ? `
     <div class="col-firma">
@@ -4383,11 +4414,18 @@ function abrirPdfCotizacion(cotId){
         ${!cfg.firmaNombre && !cfg.firmaCargo ? `<span>${esc(t("pdf_firma_empresa"))}</span>` : ""}
       </div>
     </div>` : "";
-  /* Datos de la empresa: a la derecha de la firma, como en DES. Antes iban en
-     un pie aparte más abajo, y el cierre de la hoja quedaba en dos bloques
-     separados en vez de uno solo.
-     Se arma acá porque este bloque sale SIEMPRE, aunque la firma esté apagada:
-     la dirección y la licencia no pueden depender de que Rene firme. */
+  /* El hueco de arriba iguala el alto de la imagen de la firma, así las dos
+     líneas quedan a la misma altura aunque de este lado no haya nada dibujado.
+     Sin eso, la del cliente subía y el cierre quedaba torcido. */
+  const columnaCliente = cfg.firmaCliente ? `
+    <div class="col-firma">
+      <span class="firma-hueco" aria-hidden="true"></span>
+      <div class="linea">
+        <div class="n">${esc(cli ? cli.nombre : "")}</div>
+        <div class="r">${esc(t("pdf_firma_cliente"))}</div>
+      </div>
+    </div>` : "";
+
   const iconosRedes = cfg.redes.map(r => {
     const url = r.red === "whatsapp" ? urlWhatsapp(r.valor) : urlSegura(r.valor);
     const ico = ICONOS_REDES[r.red];
@@ -4395,21 +4433,26 @@ function abrirPdfCotizacion(cotId){
     return `<a href="${esc(url)}" target="_blank" rel="noopener" aria-label="${esc(r.red)}"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="${ico.color}" d="${ico.d}"/></svg></a>`;
   }).join("");
   const webSegura = urlSegura(cfg.web);
-  const lineasEmpresa = [
+  /* Los datos de la empresa bajaron a un pie de una sola línea. Antes iban al
+     costado de la firma, y ese lugar ahora es el del cliente. Al pie ocupan
+     poco, cierran la hoja y no compiten con las firmas. */
+  const datosPie = [
     cfg.nombre ? `<b>${esc(cfg.nombre)}</b>` : "",
     esc(cfg.direccion || ""),
-    [cfg.telefono ? esc(cfg.telefono) : "", cfg.email ? esc(cfg.email) : ""].filter(Boolean).join(" · "),
-    [cfg.web ? (webSegura ? `<a class="enlace" href="${esc(webSegura)}" target="_blank" rel="noopener">${esc(cfg.web)}</a>` : esc(cfg.web)) : "",
-     cfg.licencia ? esc(cfg.licencia) : ""].filter(Boolean).join(" · "),
+    cfg.telefono ? esc(cfg.telefono) : "",
+    cfg.email ? esc(cfg.email) : "",
+    cfg.web ? (webSegura ? `<a class="enlace" href="${esc(webSegura)}" target="_blank" rel="noopener">${esc(cfg.web)}</a>` : esc(cfg.web)) : "",
+    cfg.licencia ? esc(cfg.licencia) : "",
   ].filter(Boolean);
-  const columnaDatos = (lineasEmpresa.length || iconosRedes) ? `
-    <div class="datos-cierre">
-      ${lineasEmpresa.map(l => `<div>${l}</div>`).join("")}
-      ${iconosRedes ? `<div class="redes">${iconosRedes}</div>` : ""}
-    </div>` : "";
-  const bloqueFirma = (columnaEmpresa || columnaDatos) ? `
+  const bloquePie = (datosPie.length || iconosRedes) ? `
+    <footer class="pie-empresa">
+      <span class="txt">${datosPie.join('<span class="sep">·</span>')}</span>
+      ${iconosRedes ? `<span class="redes">${iconosRedes}</span>` : ""}
+    </footer>` : "";
+
+  const bloqueFirma = (columnaEmpresa || columnaCliente) ? `
     <section class="firma">
-      <div class="firmas">${columnaEmpresa}${columnaDatos}</div>
+      <div class="firmas">${columnaEmpresa}${columnaCliente}</div>
     </section>` : "";
 
   const html = `<!doctype html>
@@ -4560,19 +4603,24 @@ function abrirPdfCotizacion(cotId){
   .terminos{margin-top:20px;padding-top:13px;border-top:1px solid var(--line)}
   .terminos h2{margin:0 0 7px;font-size:8px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:700}
   .terminos .tx{font-size:9.5px;line-height:1.7;color:var(--ink)}
-  /* La aceptación va en su propio recuadro: se ve que hay algo para firmar. */
-  /* Medidas tomadas de DES: la línea mide 235px, el nombre 13 y el cargo 10.5.
-     Las columnas se reparten el ancho; si va una sola firma, ocupa su lugar sin
-     dejar un hueco al costado. */
-  /* Cierre de la hoja, con el patrón de DES: la firma a la izquierda y los
-     datos de la empresa a la derecha, en la misma fila. Antes eran dos bloques
-     separados y el final de la hoja se leía en dos tiempos. */
+  /* La aceptación usa el MISMO estilo que los términos, como pidió Rene: son
+     dos textos del mismo peso, cada uno con su título. Solo se despega un poco
+     menos, porque viene pegada arriba de las firmas que le corresponden. */
+  .aceptacion{margin-top:16px}
+  .aceptacion h2{margin:0 0 7px;font-size:8px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:700}
+  .aceptacion .tx{font-size:9.5px;line-height:1.7;color:var(--ink)}
+
+  /* Cierre de la hoja: las dos firmas, la de la empresa y la del cliente, a
+     la misma altura. Medidas tomadas de DES: la línea mide 235px, el nombre
+     13 y el cargo 10.5. Si va una sola firma ocupa su lugar sin dejar un
+     hueco raro al costado. */
   .firma{margin-top:26px;padding-top:14px;border-top:2px solid var(--marino)}
   .firmas{display:flex;gap:30px;align-items:flex-end;justify-content:space-between}
   .col-firma{flex:0 0 235px;max-width:235px;text-align:center;display:flex;flex-direction:column;align-items:center}
-  /* Los datos ocupan lo que sobra y se alinean a la derecha, contra el margen */
-  .datos-cierre{flex:1 1 auto;min-width:0;text-align:right;font-size:9.5px;color:var(--muted);line-height:1.7}
-  .datos-cierre b{color:var(--marino);font-weight:800;font-size:10px}
+  /* Iguala el alto de la imagen de la firma (52px menos los 8 que la cruzan),
+     para que la línea del cliente quede a la misma altura que la otra aunque
+     de ese lado no haya nada dibujado. */
+  .firma-hueco{display:block;height:44px}
   /* La imagen se apoya sobre la línea, sin fondo blanco encima: multiply deja
      pasar el papel si la foto de la firma trae el suyo. */
   /* La firma se apoya CRUZANDO la línea, como una firma de verdad. El margen
@@ -4585,9 +4633,26 @@ function abrirPdfCotizacion(cotId){
   .firma .linea .r{font-size:10.5px;color:var(--muted);margin-top:1px}
   .firma .linea span{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1.1px;font-weight:700}
 
+  /* Pie de la hoja: los datos de la empresa en UNA línea, centrados. Antes
+     iban al costado de la firma, y ese lugar ahora es el del cliente. Se
+     permite cortar en dos renglones si el nombre y la dirección son largos:
+     antes que achicar la letra hasta que no se lea. */
+  .pie-empresa{margin-top:22px;padding-top:9px;border-top:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;
+    font-size:9px;line-height:1.6;color:var(--muted);text-align:center}
+  .pie-empresa b{color:var(--marino);font-weight:800}
+  .pie-empresa .sep{margin:0 5px;opacity:.55}
+  .pie-empresa .redes{display:inline-flex;align-items:center;gap:7px}
+  .pie-empresa .redes svg{display:block}
+
   /* El link se ve como link, no como texto suelto: si no, nadie lo toca. */
   .enlace{color:var(--marino);text-decoration:underline;text-underline-offset:2px}
-  .redes{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:7px}
+  /* OJO: nada de acentos graves en este bloque. Todo el CSS del PDF vive
+     dentro de un template literal de JS y un acento grave lo corta al medio,
+     rompiendo la app entera. Ya pasó dos veces.
+     Los iconos ahora viven en el pie; la regla suelta que alineaba a la
+     derecha era del bloque viejo del costado y ya no aplica. Queda solo lo de
+     cada enlace, que es lo que hace que los colores se impriman. */
   .redes a{display:inline-flex;text-decoration:none;
            -webkit-print-color-adjust:exact;print-color-adjust:exact}
 
@@ -4663,8 +4728,12 @@ function abrirPdfCotizacion(cotId){
   ${cot.notas ? `<div class="notas"><h4>${esc(t("cot_notas"))}</h4><p>${textoAHtml(cot.notas)}</p></div>` : ""}
 
   ${cfg.terminosHojaAparte ? "" : bloqueTerminos}
-  ${bloqueFirma}
+  ${cfg.terminosHojaAparte ? "" : bloqueAceptacion}
+  ${cfg.terminosHojaAparte ? "" : bloqueFirma}
   ${cfg.terminosHojaAparte ? bloqueTerminos : ""}
+  ${cfg.terminosHojaAparte ? bloqueAceptacion : ""}
+  ${cfg.terminosHojaAparte ? bloqueFirma : ""}
+  ${bloquePie}
 </div>
 </body>
 </html>`;
@@ -5279,6 +5348,7 @@ const CAMPOS_PDF = {
   pdf_empresa_licencia: "pdfEmpresaLicencia",
   pdf_intro: "pdfIntro",
   pdf_terminos: "pdfTerminos",
+  pdf_aceptacion: "pdfAceptacion",
   pdf_firma_nombre: "pdfFirmaNombre",
   pdf_firma_cargo: "pdfFirmaCargo",
   pdf_red_facebook: "pdfRedFacebook",
@@ -5297,6 +5367,7 @@ function cargarConfigPdf(){
   }
   document.getElementById("pdfTerminosHojaAparte").checked = DB.config.get("pdf_terminos_hoja_aparte", true) !== false;
   document.getElementById("pdfFirmaEmpresa").checked = DB.config.get("pdf_firma_empresa", true) !== false;
+  document.getElementById("pdfFirmaCliente").checked = DB.config.get("pdf_firma_cliente", true) !== false;
   aplicarFirmaEmpresa();
   document.getElementById("pdfMargen").value = DB.config.get("pdf_margen", 0.6);
   document.getElementById("pdfLogoTamano").value = DB.config.get("pdf_logo_tamano", 56);
@@ -5314,6 +5385,7 @@ document.getElementById("btnGuardarPdf").addEventListener("click", () => {
   }
   DB.config.set("pdf_terminos_hoja_aparte", document.getElementById("pdfTerminosHojaAparte").checked);
   DB.config.set("pdf_firma_empresa", document.getElementById("pdfFirmaEmpresa").checked);
+  DB.config.set("pdf_firma_cliente", document.getElementById("pdfFirmaCliente").checked);
   /* Se acotan a lo que la impresora acepta: un margen de 5 pulgadas dejaría
      la hoja sin espacio útil y no habría forma de darse cuenta. */
   const margen = Math.min(2, Math.max(0.25, parseFloat(document.getElementById("pdfMargen").value) || 0.6));

@@ -181,6 +181,17 @@ un bundler salvo que el proyecto lo pida de verdad.
    catálogo, no con el que se pagó de verdad. El arreglo correcto en ese caso
    es actualizar el producto en Catálogo, no abrir el campo.
 
+   3q. **El cierre de la hoja: aceptación, firmas y pie.** El texto de
+   **aceptación** vive aparte de los términos (`pdf_aceptacion`): los términos
+   son las condiciones del trabajo, la aceptación es la frase que el cliente
+   firma; separadas se cambia una sin tocar la otra y cada una lleva su
+   título. Debajo van las **dos firmas** —la de la empresa con su imagen
+   dibujada, la del cliente como línea en blanco con su nombre impreso
+   debajo—, cada una con su interruptor. Los **datos de la empresa** bajaron a
+   un pie de una sola línea: antes iban al costado de la firma y ese lugar es
+   ahora el del cliente. El pie sale **siempre**, aunque las dos firmas estén
+   apagadas: la dirección y la licencia no dependen de que alguien firme.
+
    3h. **El orden de los renglones lo manda la persona, no el código.** `orden`
    se guarda con la posición en que quedaron después de arrastrar, y es el
    orden en que salen en el PDF. Nunca reordenar por nombre ni por precio.
@@ -205,7 +216,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v62**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v63**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
@@ -213,6 +224,10 @@ un bundler salvo que el proyecto lo pida de verdad.
 10. **Escapar siempre** lo que venga del usuario al armar HTML: `esc(valor)`.
 11. **Hosting: Cloudflare.** Pages para el estático, Workers + D1 + R2 para los datos.
 12. **El PDF se arma con HTML + `window.print()`**, igual que DES. Sin librerías.
+    ⚠️ **Ni un acento grave dentro del CSS del PDF.** Todo ese bloque vive en un
+    template literal de JS y un acento grave lo corta al medio: la app entera
+    deja de cargar. Ya rompió dos veces, las dos por un comentario que citaba
+    un selector. El archivo lleva la advertencia escrita al lado de la regla.
     Lo fijo (empresa, presentación, términos, firma) vive en `DB.config` y se
     escribe una vez; lo variable sale de la cotización. Todo lo que venga del
     usuario pasa por `textoAHtml()`, que escapa y respeta los saltos de línea:
