@@ -141,18 +141,23 @@ un bundler salvo que el proyecto lo pida de verdad.
    ninguna: un reporte con fechas estimadas miente. La pantalla lo dice con
    todas las letras ("la ficha es anterior al registro").
 
-   3o. **Un combo apunta al catálogo; una cotización copia.** Es la excepción
-   deliberada a la regla 3b, y el motivo es que son cosas distintas: un combo
-   es una RECETA ("Sistema completo 3 toneladas" = condensadora + evaporadora
-   + línea + mano de obra) y tiene que valer lo que valen sus ingredientes
-   HOY; una cotización es un papel que el cliente recibió y tiene que quedar
-   congelado. Si el combo copiara precios, subir el costo de un equipo dejaría
-   todos los combos mintiendo hasta que alguien los tocara uno por uno. La
-   copia ocurre al llevarlo a la cotización (`filasParaCotizacion()`): ahí
-   entra como renglones sueltos, con el precio de ese día, y de ahí en
-   adelante se tocan como cualquier otro renglón. Un combo **no tiene precio
-   propio**: `totales()` lo calcula y no se guarda, por lo mismo que los
-   totales de la cotización (regla 3d).
+   3o. **Un renglón de combo ES un renglón de cotización.** Mismas columnas,
+   misma validación (`Validar.comboItem` llama a `cotizacionItem`), mismo HTML
+   (`filasComoHTML`), mismo editor, mismo ojo y mismo arrastre. No es ahorro de
+   líneas: es la única forma de que sigan siendo iguales dentro de seis meses.
+   El editor sabe sobre qué lista trabaja por `ctxRenglones` (`CTX_COTIZACION`
+   o `CTX_COMBO`), que se fija al tocar. `filas` es una **función** y no el
+   arreglo, porque los dos se reemplazan enteros al cargar y una referencia
+   guardada apuntaría al arreglo viejo.
+   El combo guarda su propio precio, no apunta al catálogo, y al jalarlo se
+   copia TODO tal cual quedó —nombre, descripción, unidad, cantidad, precio,
+   costo y el ojo del PDF—. Un combo **no tiene precio propio de paquete**:
+   `totales()` suma sus renglones y no se guarda (regla 3d).
+   ⚠️ **Consecuencia: el combo no se entera si cambia el precio en el
+   catálogo.** Es a propósito; refrescar solo pisaría un precio de paquete
+   puesto a mano. La pantalla avisa cuántos renglones difieren y ofrece
+   "Traer precios del catálogo", que **pide confirmación** porque pisa datos
+   sin vuelta atrás.
 
    3h. **El orden de los renglones lo manda la persona, no el código.** `orden`
    se guarda con la posición en que quedaron después de arrastrar, y es el
@@ -178,7 +183,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v60**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v61**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
@@ -207,17 +212,17 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Clientes** (alta/edición/borrado, categorías, filtros, búsqueda, Google Maps + autocompletado) | ✅ terminado |
 | **Trabajos** (calendario mensual, "por agendar", modal completo, precio/costo, asignar trabajadores) | ✅ terminado |
 | **Equipo** (alta de trabajadores, roles, usuario del dispositivo) | ✅ terminado, sin login real |
-| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v11) |
+| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v12) |
 | **Lector de mensajes** (captura/PDF → campos del cliente, con Claude) | ✅ programado; falta desplegar el Worker |
 | **Catálogo** (equipos/materiales/servicios, proveedores, filtros para reportes) | ✅ terminado (esquema v3) |
-| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v11) |
+| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v12) |
 | **Cotización impresa / PDF** (datos de empresa, presentación, términos, firma) | ✅ terminado · igual que DES: HTML + impresión del navegador |
 | **Worker en Cloudflare** | ✅ desplegado en la cuenta de Rene · hoy sirve el lector de mensajes |
-| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v11), pero todavía sin desplegar |
+| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v12), pero todavía sin desplegar |
 | **R2** | ⛔ la tabla `archivos` y `DB.archivos` ya existen; falta el bucket. Hoy solo lo usa el logo |
 | **Login / permisos reales** | ⛔ hoy los roles son solo etiquetas de interfaz |
-| **Conversiones** (historial de lead → cliente, para reportes) | ✅ se registra solo (esquema v11) · la pantalla de reportes lo usará |
-| **Combos** (recetas de productos que se cotizan juntos) | ✅ terminado (esquema v11) |
+| **Conversiones** (historial de lead → cliente, para reportes) | ✅ se registra solo (esquema v12) · la pantalla de reportes lo usará |
+| **Combos** (recetas de productos que se cotizan juntos) | ✅ terminado (esquema v12) |
 | **Reportes** (cuánto se ganó por cliente / por mes, conversiones) | ⛔ los datos ya están, falta la pantalla |
 
 **Dónde viven los datos hoy:** solo en el navegador de cada dispositivo

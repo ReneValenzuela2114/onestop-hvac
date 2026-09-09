@@ -149,15 +149,27 @@ CREATE TABLE IF NOT EXISTS combos (
 );
 CREATE INDEX IF NOT EXISTS idx_combos_vivos ON combos(eliminado);
 
--- A diferencia de los renglones de una cotizacion, aca NO se copia el precio:
--- se apunta al catalogo. Una cotizacion firmada tiene que quedar congelada;
--- una receta tiene que valer lo que valen sus ingredientes hoy. La copia
--- ocurre despues, al llevar el combo a una cotizacion.
+-- Un renglon de combo es EXACTAMENTE un renglon de cotizacion: mismas
+-- columnas, mismo significado. Guarda su propio nombre, precio y costo en vez
+-- de apuntar al catalogo, asi el combo se arma igual que una cotizacion (se
+-- puede cambiar un nombre, poner un precio de paquete, esconder el permiso) y
+-- al jalarlo se copia tal cual quedo.
+-- Consecuencia: el combo NO se entera si cambia el precio en el catalogo. Para
+-- eso esta el boton "actualizar precios", que corre solo cuando se lo pide.
 CREATE TABLE IF NOT EXISTS combo_items (
   id TEXT PRIMARY KEY,
   combo_id TEXT NOT NULL REFERENCES combos(id),
-  catalogo_id TEXT NOT NULL REFERENCES catalogo(id),
+  -- NULL = renglon escrito a mano, que no salio del catalogo. Cuando lo tiene
+  -- es solo para reportes y para el boton de actualizar precios.
+  catalogo_id TEXT REFERENCES catalogo(id),
+  nombre TEXT NOT NULL,
+  descripcion TEXT NOT NULL DEFAULT '',
+  unidad TEXT NOT NULL DEFAULT 'unidad',
   cantidad_centesimas INTEGER NOT NULL,   -- 12.5 unidades = 1250
+  precio_centavos INTEGER NOT NULL DEFAULT 0,
+  costo_centavos INTEGER NOT NULL DEFAULT 0,
+  -- 1 = sale listado en el PDF de la cotizacion, 0 = no (se sigue cobrando).
+  en_pdf INTEGER NOT NULL DEFAULT 1,
   orden INTEGER NOT NULL DEFAULT 0,
   creado INTEGER NOT NULL,
   creado_por TEXT REFERENCES usuarios(id),

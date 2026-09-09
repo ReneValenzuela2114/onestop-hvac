@@ -368,9 +368,6 @@
   .hist-resumen b{display:block;font-size:15px;color:var(--ink);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .aviso-ojo{margin:0 0 var(--sp-4);padding:10px 12px;border-radius:var(--radius-sm);
     background:var(--calor-soft);color:var(--calor-600);font-size:12px;line-height:1.45}
-  /* La fila del combo reusa .cot-fila y le mete un campo de cantidad donde la
-     cotizacion tiene el ojo. Ancho fijo para que todas las filas queden
-     alineadas por mas que el numero tenga una o cuatro cifras. */
   /* En telefono la tarjeta esconde el subtitulo por espacio, y en un producto
      no se pierde nada. En un combo si: "3 productos" es justo lo que lo
      distingue de otro combo. Aca la tarjeta pasa a dos lineas. */
@@ -383,8 +380,7 @@
   .ac-tag{margin-left:6px;padding:1px 6px;border-radius:999px;font-size:9.5px;
     font-weight:700;text-transform:uppercase;letter-spacing:.04em;
     background:var(--calor-soft);color:var(--calor-600);vertical-align:middle}
-  .combo-cant{width:62px;flex-shrink:0;text-align:center;padding:6px 4px;min-height:38px;
-    border:1px solid var(--line-campo);border-radius:8px;font-size:13px;background:var(--panel)}
+
   .hist-relacion{margin:0 0 var(--sp-3);font-size:12px}
   .hist-bloque + .hist-bloque{margin-top:var(--sp-5)}
   /* En el titulo va el nombre del cliente y puede ser largo: sin este respiro
@@ -1358,6 +1354,7 @@
         <input type="text" id="comboDescripcion" data-i18n-ph="combos_descripcion_ph" placeholder="e.g. Replacement with new ducting">
       </div>
 
+      <!-- ---- Renglones: exactamente los mismos que en una cotización ---- -->
       <div class="field">
         <label data-i18n="combos_productos">Productos del combo</label>
         <div class="cot-agregar">
@@ -1365,16 +1362,31 @@
             <input type="text" id="comboBuscarProducto" data-i18n-ph="cot_agregar_ph" placeholder="Search the catalog to add…" autocomplete="off">
             <div class="ac-menu" id="comboProductoMenu" style="display:none"></div>
           </div>
+          <button type="button" class="btn" id="btnRenglonManualCombo">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <span data-i18n="cot_manual_agregar">Escribir uno</span>
+          </button>
+        </div>
+        <div class="cot-cabecera" id="comboCabecera" style="display:none">
+          <span class="cot-col-hueco-izq"></span>
+          <span class="cot-nombre" data-i18n="cot_col_producto">Producto</span>
+          <span class="cot-col-total" data-i18n="cot_col_total">Total</span>
+          <span class="cot-col-hueco"></span>
         </div>
         <div class="cot-filas" id="comboFilas"></div>
         <p class="hint" id="comboSinFilas" data-i18n="cot_sin_renglones">Buscá un producto del catálogo para agregarlo.</p>
       </div>
 
+      <!-- Aparece solo si algún renglón salió del catálogo y allá cambió el
+           precio. No se corrige solo: pisaría un precio de paquete puesto a
+           mano. Lo decide la persona con el botón. -->
+      <p class="aviso-ojo" id="comboAvisoPrecios" hidden></p>
+
       <div class="cot-totales">
         <div><span data-i18n="combos_precio">Precio del combo</span><b id="comboPrecio">$0.00</b></div>
         <div class="cot-ganancia"><span data-i18n="cot_ganancia">Ganancia estimada</span><b id="comboGanancia">$0.00</b></div>
       </div>
-      <p class="hint" data-i18n="combos_precio_ayuda">El combo no tiene precio propio: vale lo que valen sus productos hoy. Si mañana subís el precio de un equipo, el combo sube solo.</p>
+      <p class="hint" data-i18n="combos_precio_ayuda">El combo guarda su propio precio, igual que una cotización. Al jalarlo se copia tal cual quedó acá, con el ojo del PDF incluido.</p>
 
       <label class="check-row">
         <input type="checkbox" id="comboActivo" checked>
@@ -1388,6 +1400,7 @@
     </div>
     <div class="modal-foot">
       <button class="btn danger ghost" id="btnEliminarCombo" style="display:none"><span data-i18n="eliminar">Eliminar</span></button>
+      <button class="btn ghost" id="btnActualizarPreciosCombo"><span data-i18n="combos_actualizar_precios">Traer precios del catálogo</span></button>
       <div class="spacer"></div>
       <button class="btn ghost" data-close-modal="modalCombo"><span data-i18n="cancelar">Cancelar</span></button>
       <button class="btn primary" id="btnGuardarCombo"><span data-i18n="guardar">Guardar</span></button>
@@ -2179,9 +2192,14 @@ document.getElementById("btnDescartarCambios").addEventListener("click", () => {
 /* Confirmación genérica: cualquier módulo la reutiliza.
    `btnKey` permite cambiar el texto del botón rojo (eliminar, restaurar, …). */
 let accionConfirmada = null;
-function pedirConfirmacion(tituloKey, textoKey, accion, btnKey = "confirmar_eliminar_btn"){
+/* `reemplazos` sirve para los avisos que llevan un número ("va a tocar 3
+   renglones"). Va acá y no armando el texto afuera porque el aviso tiene que
+   seguir saliendo del i18n: un texto armado a mano se escapa del idioma. */
+function pedirConfirmacion(tituloKey, textoKey, accion, btnKey = "confirmar_eliminar_btn", reemplazos = null){
   document.getElementById("confirmarTitulo").textContent = t(tituloKey);
-  document.getElementById("confirmarTexto").textContent = t(textoKey);
+  let texto = t(textoKey);
+  if (reemplazos) for (const [k, v] of Object.entries(reemplazos)) texto = texto.replace("{" + k + "}", v);
+  document.getElementById("confirmarTexto").textContent = texto;
   document.querySelector("#btnConfirmarEliminar span").textContent = t(btnKey);
   accionConfirmada = accion;
   abrirModal("modalConfirmar");
@@ -2198,7 +2216,6 @@ document.getElementById("btnConfirmarEliminar").addEventListener("click", () => 
    ========================================================================= */
 let clienteEditandoId = null;
 let mapaLatLngTemp = null; // {lat,lng,direccion}
-
 
 function renderFiltros(){
   const cats = DB.categoriasClientes.getAll();
@@ -3450,7 +3467,7 @@ function renderCombos(){
     const n = DB.combos.items(c.id).length;
     const extras = [textoNproductos(n)];
     if (c.activo === false) extras.push(t("catalogo_filtro_inactivos"));
-    if (tot.faltantes) extras.push(t("combos_faltantes").replace("{n}", tot.faltantes));
+    if (tot.desactualizados) extras.push(t("combos_faltantes").replace("{n}", tot.desactualizados));
     return `<button type="button" class="cat-card" onclick="abrirEdicionCombo('${c.id}')">
       <b>${esc(c.nombre)}</b>
       <span class="cat-sub">${esc(extras.join(" · "))}</span>
@@ -3480,7 +3497,10 @@ function abrirEdicionCombo(id){
   if (!c) return;
   comboEditandoId = id;
   comboFilas = DB.combos.items(id).map(i => ({
-    catalogo_id: i.catalogo_id, cantidad_centesimas: i.cantidad_centesimas,
+    catalogo_id: i.catalogo_id, nombre: i.nombre, descripcion: i.descripcion,
+    unidad: i.unidad, cantidad_centesimas: i.cantidad_centesimas,
+    precio_centavos: i.precio_centavos, costo_centavos: i.costo_centavos,
+    en_pdf: i.en_pdf,
   }));
   document.getElementById("comboId").value = id;
   document.getElementById("comboNombre").value = c.nombre;
@@ -3495,73 +3515,66 @@ function abrirEdicionCombo(id){
 }
 
 function renderFilasCombo(){
-  const cont = document.getElementById("comboFilas");
-  document.getElementById("comboSinFilas").hidden = comboFilas.length > 0;
-
-  /* Misma fila que en la cotización, para que se vea y se toque igual. Lo
-     único distinto es que acá se edita la cantidad ahí mismo: es lo único
-     que un combo guarda de cada producto —el precio sale del catálogo—, así
-     que abrir una ventana para un solo número sería de más. */
-  cont.innerHTML = comboFilas.map((f, i) => {
-    const p = DB.catalogo.get(f.catalogo_id);
-    /* Un producto borrado del catálogo después de armar el combo: se avisa en
-       vez de mostrar el renglón en blanco como si estuviera bien. */
-    if (!p) {
-      return `<div class="cot-fila oculta" data-i="${i}">
-        <span class="cot-nombre">
-          <span class="cot-titulo-fila">${esc(t("combos_producto_borrado"))}</span>
-        </span>
-        <button type="button" class="cot-quitar" data-quitar="${i}" aria-label="${esc(t("eliminar"))}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-        </button>
-      </div>`;
-    }
-    const sub = DB.cantidad.porPrecio(f.cantidad_centesimas, p.precio_centavos || 0);
-    return `<div class="cot-fila" data-i="${i}">
-      <span class="cot-nombre">
-        <span class="cot-titulo-fila">${esc(p.nombre)}</span>
-        <span class="cot-unidad">${esc(t("unidad_" + p.unidad))} · ${esc(DB.dinero.formato(p.precio_centavos, CFG_LANG))}</span>
-      </span>
-      <input type="text" inputmode="decimal" class="combo-cant" data-i="${i}"
-             value="${esc(DB.cantidad.aTexto(f.cantidad_centesimas))}"
-             aria-label="${esc(t("cot_col_cantidad"))}">
-      <span class="cot-sub">${esc(DB.dinero.formato(sub, CFG_LANG))}</span>
-      <button type="button" class="cot-quitar" data-quitar="${i}" aria-label="${esc(t("eliminar"))}">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-    </div>`;
-  }).join("");
-
-  cont.querySelectorAll(".combo-cant").forEach(inp => {
-    inp.addEventListener("change", () => {
-      const i = Number(inp.dataset.i);
-      const c = DB.cantidad.aCentesimas(inp.value);
-      /* Cantidad inválida o cero: se deja la que estaba. Un renglón en 0 no
-         significa nada en una receta y la validación lo rechazaría al guardar. */
-      if (!isFinite(c) || c <= 0) { renderFilasCombo(); return; }
-      comboFilas[i].cantidad_centesimas = c;
-      renderFilasCombo();
-    });
-  });
-  cont.querySelectorAll("[data-quitar]").forEach(b => {
-    b.addEventListener("click", () => quitarFilaCombo(Number(b.dataset.quitar)));
-  });
-
+  document.getElementById("comboSinFilas").style.display = comboFilas.length ? "none" : "";
+  document.getElementById("comboCabecera").style.display = comboFilas.length ? "" : "none";
+  /* Mismo HTML que la cotización, a propósito: se toca igual, se ve igual y
+     el día que se arregle algo de un renglón, se arregla en los dos lados. */
+  document.getElementById("comboFilas").innerHTML = filasComoHTML(comboFilas);
   refrescarTotalesCombo();
 }
 
-function quitarFilaCombo(i){ comboFilas.splice(i, 1); renderFilasCombo(); }
-
 function refrescarTotalesCombo(){
-  let precio = 0, costo = 0;
+  let precio = 0, costo = 0, viejos = 0;
   for (const f of comboFilas) {
+    precio += DB.cantidad.porPrecio(f.cantidad_centesimas, f.precio_centavos || 0);
+    costo += DB.cantidad.porPrecio(f.cantidad_centesimas, f.costo_centavos || 0);
+    if (!f.catalogo_id) continue;
     const p = DB.catalogo.get(f.catalogo_id);
-    if (!p) continue;
-    precio += DB.cantidad.porPrecio(f.cantidad_centesimas, p.precio_centavos || 0);
-    costo += DB.cantidad.porPrecio(f.cantidad_centesimas, p.costo_centavos || 0);
+    if (p && (p.precio_centavos !== f.precio_centavos || p.costo_centavos !== f.costo_centavos)) viejos++;
   }
   document.getElementById("comboPrecio").textContent = DB.dinero.formato(precio, CFG_LANG);
-  document.getElementById("comboGanancia").textContent = DB.dinero.formato(precio - costo, CFG_LANG);
+  const gan = document.getElementById("comboGanancia");
+  gan.textContent = DB.dinero.formato(precio - costo, CFG_LANG);
+  gan.classList.toggle("en-rojo", precio - costo < 0);
+
+  /* El combo guarda su propio precio y no se entera si el catálogo cambia.
+     Avisar es lo honesto: corregir solo pisaría un precio de paquete que la
+     persona puso a mano para este combo. */
+  const aviso = document.getElementById("comboAvisoPrecios");
+  aviso.hidden = viejos === 0;
+  if (viejos) aviso.textContent = viejos === 1
+    ? t("combos_precio_viejo_1")
+    : t("combos_precios_viejos").replace("{n}", viejos);
+}
+
+/* Pide confirmación porque PISA precios: si alguien puso un precio de paquete
+   a mano para este combo, traer el del catálogo se lo lleva puesto y no hay
+   forma de volver atrás. El aviso dice cuántos renglones va a tocar. */
+document.getElementById("btnActualizarPreciosCombo").addEventListener("click", () => {
+  const aTocar = comboFilas.filter(f => {
+    if (!f.catalogo_id) return false;
+    const p = DB.catalogo.get(f.catalogo_id);
+    return p && (p.precio_centavos !== f.precio_centavos || p.costo_centavos !== f.costo_centavos);
+  }).length;
+  if (!aTocar) { toast(t("combos_precios_al_dia")); return; }
+  pedirConfirmacion("combos_actualizar_titulo", "combos_actualizar_texto",
+    aplicarPreciosDelCatalogo, "combos_actualizar_btn", { n: aTocar });
+});
+
+function aplicarPreciosDelCatalogo(){
+  let cambiados = 0;
+  comboFilas = comboFilas.map(f => {
+    if (!f.catalogo_id) return f;
+    const p = DB.catalogo.get(f.catalogo_id);
+    if (!p) return f;
+    if (p.precio_centavos === f.precio_centavos && p.costo_centavos === f.costo_centavos) return f;
+    cambiados++;
+    /* Solo precio y costo. El nombre, la descripción, la cantidad y el ojo
+       son lo que la persona ajustó para este combo y no se tocan. */
+    return { ...f, precio_centavos: p.precio_centavos || 0, costo_centavos: p.costo_centavos || 0 };
+  });
+  renderFilasCombo();
+  toast(t("combos_precios_actualizados").replace("{n}", cambiados));
 }
 
 /* ---------- Buscador del catálogo dentro del combo ----------
@@ -3594,22 +3607,33 @@ function renderMenuProductosCombo(){
     e.preventDefault();
     const p = DB.catalogo.get(item.dataset.id);
     if (!p) return;
-    /* Si ya está, se le suma uno en vez de repetir el renglón: en una receta
-       "dos condensadoras" es una línea con cantidad 2, no dos líneas. */
-    const ya = comboFilas.find(f => f.catalogo_id === p.id);
-    if (ya) ya.cantidad_centesimas += 100;
-    else comboFilas.push({ catalogo_id: p.id, cantidad_centesimas: 100 });
     input.value = "";
     menu.style.display = "none";
-    /* Sin foco al buscador, igual que en la cotización: la lista de productos
-       tapaba justo el renglón recién agregado. */
     input.blur();
-    renderFilasCombo();
+    /* Igual que en la cotización: no se agrega de una, se abre la ventana del
+       renglón con el precio y el costo ya copiados del catálogo, para poner
+       la cantidad y ajustar lo que haga falta antes de confirmar. */
+    ctxRenglones = CTX_COMBO;
+    abrirEditorRenglon(-1, {
+      catalogo_id: p.id,
+      nombre: p.nombre,
+      descripcion: "",
+      unidad: p.unidad,
+      cantidad_centesimas: 100,
+      precio_centavos: p.precio_centavos || 0,
+      costo_centavos: p.costo_centavos || 0,
+      en_pdf: 1,
+    });
   });
   document.addEventListener("pointerdown", (e) => {
     if (!e.target.closest("#comboBuscarProducto, #comboProductoMenu")) menu.style.display = "none";
   });
 })();
+
+document.getElementById("btnRenglonManualCombo").addEventListener("click", () => {
+  ctxRenglones = CTX_COMBO;
+  abrirEditorRenglon(-1);
+});
 
 document.getElementById("btnGuardarCombo").addEventListener("click", () => {
   const nombre = document.getElementById("comboNombre").value.trim();
@@ -3739,7 +3763,16 @@ function renderFilasCot(){
   const cont = document.getElementById("cotFilas");
   document.getElementById("cotSinFilas").style.display = cotFilas.length ? "none" : "";
   document.getElementById("cotCabecera").style.display = cotFilas.length ? "" : "none";
-  cont.innerHTML = cotFilas.map((f, i) => {
+  cont.innerHTML = filasComoHTML(cotFilas);
+  refrescarTotalesCot();
+}
+
+/* El renglón de un combo y el de una cotización son la MISMA cosa, así que
+   los dibuja la misma función. No es ahorro de líneas: es la única forma de
+   que sigan siendo iguales dentro de seis meses, cuando alguien toque uno
+   solo de los dos. */
+function filasComoHTML(filas){
+  return filas.map((f, i) => {
     const sub = DB.cantidad.porPrecio(f.cantidad_centesimas, f.precio_centavos);
     const oculto = f.en_pdf === 0;
     const manual = !f.catalogo_id;
@@ -3764,7 +3797,6 @@ function renderFilasCot(){
       </button>
     </div>`;
   }).join("");
-  refrescarTotalesCot();
 }
 
 /* Ojo abierto = sale en el PDF. Ojo tachado = no sale (pero se sigue cobrando). */
@@ -3774,28 +3806,55 @@ function ICONO_OJO(oculto){
     : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-8 10-8 10 8 10 8-3 8-10 8-10-8-10-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 }
 
-document.getElementById("cotFilas").addEventListener("click", (e) => {
-  const fila = e.target.closest(".cot-fila");
-  if (!fila) return;
-  const i = parseInt(fila.dataset.i, 10);
-  if (e.target.closest(".cot-quitar")) { cotFilas.splice(i, 1); renderFilasCot(); return; }
-  if (e.target.closest(".cot-ojo")) {
-    cotFilas[i].en_pdf = cotFilas[i].en_pdf === 0 ? 1 : 0;
-    renderFilasCot();          // el total NO cambia: escondido se sigue cobrando
-    return;
-  }
-  if (e.target.closest(".cot-mover")) return;   // eso es para arrastrar
-  abrirEditorRenglon(i);
-});
+/* ---------- Sobre qué lista trabaja el editor ----------
+   Dos pantallas usan los mismos renglones: la cotización y el combo. En vez de
+   duplicar el editor, el ojo, el arrastre y la ventana de un renglón, se elige
+   el contexto al abrir. `filas` es una función y no el arreglo: los dos se
+   reemplazan enteros al cargar (`cotFilas = ...`), y una referencia guardada
+   apuntaría al arreglo viejo. */
+const CTX_COTIZACION = {
+  filas: () => cotFilas,
+  render: () => renderFilasCot(),
+  contenedor: "cotFilas",
+};
+const CTX_COMBO = {
+  filas: () => comboFilas,
+  render: () => renderFilasCombo(),
+  contenedor: "comboFilas",
+};
+let ctxRenglones = CTX_COTIZACION;
 
-/* Con el teclado, Enter o Espacio sobre el renglón abre el editor. */
-document.getElementById("cotFilas").addEventListener("keydown", (e) => {
-  if (e.key !== "Enter" && e.key !== " ") return;
-  const fila = e.target.closest(".cot-fila");
-  if (!fila || e.target !== fila) return;
-  e.preventDefault();
-  abrirEditorRenglon(parseInt(fila.dataset.i, 10));
-});
+function conectarFilas(ctx){
+  const cont = document.getElementById(ctx.contenedor);
+
+  cont.addEventListener("click", (e) => {
+    const fila = e.target.closest(".cot-fila");
+    if (!fila) return;
+    ctxRenglones = ctx;
+    const filas = ctx.filas();
+    const i = parseInt(fila.dataset.i, 10);
+    if (e.target.closest(".cot-quitar")) { filas.splice(i, 1); ctx.render(); return; }
+    if (e.target.closest(".cot-ojo")) {
+      filas[i].en_pdf = filas[i].en_pdf === 0 ? 1 : 0;
+      ctx.render();            // el total NO cambia: escondido se sigue cobrando
+      return;
+    }
+    if (e.target.closest(".cot-mover")) return;   // eso es para arrastrar
+    abrirEditorRenglon(i);
+  });
+
+  /* Con el teclado, Enter o Espacio sobre el renglón abre el editor. */
+  cont.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const fila = e.target.closest(".cot-fila");
+    if (!fila || e.target !== fila) return;
+    e.preventDefault();
+    ctxRenglones = ctx;
+    abrirEditorRenglon(parseInt(fila.dataset.i, 10));
+  });
+}
+conectarFilas(CTX_COTIZACION);
+conectarFilas(CTX_COMBO);
 
 /* ---------- Editor de un renglón ----------
    -1 significa "uno nuevo escrito a mano". */
@@ -3806,7 +3865,7 @@ let renglonBase = null;
 
 function abrirEditorRenglon(i, base = null){
   const nuevo = i === -1;
-  const f = nuevo ? (base || DB.cotizaciones.filaManual()) : cotFilas[i];
+  const f = nuevo ? (base || DB.cotizaciones.filaManual()) : ctxRenglones.filas()[i];
   if (!f) return;
   renglonEditandoIdx = i;
   renglonBase = f;
@@ -3851,7 +3910,10 @@ function refrescarResumenRenglon(){
 ["renglonCantidad", "renglonPrecio", "renglonCosto"].forEach(id =>
   document.getElementById(id).addEventListener("input", refrescarResumenRenglon));
 
-document.getElementById("btnRenglonManual").addEventListener("click", () => abrirEditorRenglon(-1));
+document.getElementById("btnRenglonManual").addEventListener("click", () => {
+  ctxRenglones = CTX_COTIZACION;
+  abrirEditorRenglon(-1);
+});
 
 /* Si se cierra sin confirmar, no queda nada a medio armar. */
 document.querySelectorAll('#modalRenglon [data-close-modal]').forEach(b =>
@@ -3881,17 +3943,19 @@ document.getElementById("btnGuardarRenglon").addEventListener("click", () => {
     en_pdf: document.getElementById("renglonEnPdf").checked ? 1 : 0,
   };
   const esNuevo = renglonEditandoIdx === -1;
-  if (esNuevo) cotFilas.push(fila); else cotFilas[renglonEditandoIdx] = fila;
+  const ctx = ctxRenglones;
+  const filas = ctx.filas();
+  if (esNuevo) filas.push(fila); else filas[renglonEditandoIdx] = fila;
   renglonEditandoIdx = null;
   renglonBase = null;
   cerrarModal("modalRenglon");
-  renderFilasCot();
+  ctx.render();
   if (esNuevo) {
     /* A propósito NO se enfoca el buscador: al enfocarlo se abría la lista de
        productos encima del renglón recién agregado y tapaba justo lo que uno
        quiere confirmar. Se deja el renglón a la vista y que la persona toque
        el buscador cuando quiera el siguiente. */
-    const ultima = document.querySelector("#cotFilas .cot-fila:last-child");
+    const ultima = document.querySelector(`#${ctx.contenedor} .cot-fila:last-child`);
     if (ultima) ultima.scrollIntoView({ block: "nearest" });
   }
 });
@@ -3900,8 +3964,8 @@ document.getElementById("btnGuardarRenglon").addEventListener("click", () => {
    Con eventos de puntero y no con el arrastre HTML de siempre: ese NO existe
    al tocar con el dedo, así que en el teléfono no se podría reordenar nada.
    Con pointer* funciona igual con dedo y con mouse. */
-(function arrastreDeRenglones(){
-  const cont = document.getElementById("cotFilas");
+function arrastreDeRenglones(ctx){
+  const cont = document.getElementById(ctx.contenedor);
   let origen = null, filaEl = null;
 
   cont.addEventListener("pointerdown", (e) => {
@@ -3935,15 +3999,18 @@ document.getElementById("btnGuardarRenglon").addEventListener("click", () => {
     cont.querySelectorAll(".cot-fila").forEach(x => x.classList.remove("destino", "arrastrando"));
     if (sobre && sobre !== filaEl) {
       const destino = parseInt(sobre.dataset.i, 10);
-      const movida = cotFilas.splice(origen, 1)[0];
-      cotFilas.splice(destino, 0, movida);
-      renderFilasCot();          // el orden que quede acá es el orden del PDF
+      const filas = ctx.filas();
+      const movida = filas.splice(origen, 1)[0];
+      filas.splice(destino, 0, movida);
+      ctx.render();              // el orden que quede acá es el orden del PDF
     }
     origen = null; filaEl = null;
   };
   cont.addEventListener("pointerup", soltar);
   cont.addEventListener("pointercancel", soltar);
-})();
+}
+arrastreDeRenglones(CTX_COTIZACION);
+arrastreDeRenglones(CTX_COMBO);
 
 document.getElementById("cotImpuesto").addEventListener("input", refrescarTotalesCot);
 

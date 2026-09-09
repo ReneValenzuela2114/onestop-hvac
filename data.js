@@ -27,7 +27,7 @@
    - IDs: crypto.randomUUID(). Fechas de auditoría: epoch ms (Date.now()).
    ========================================================================= */
 
-const ESQUEMA_VERSION = 11;
+const ESQUEMA_VERSION = 12;
 
 const CLAVES = {
   clientes: "os_clientes_v1",
@@ -323,12 +323,11 @@ const Validar = {
     if (!_texto(d.nombre)) e.push("error_nombre_requerido");
     return e;
   },
+  /* El renglón de un combo se valida EXACTAMENTE igual que el de una
+     cotización: son la misma cosa guardada en dos tablas. Si un día se
+     endurece una, hay que endurecer la otra. */
   comboItem(d) {
-    const e = [];
-    if (!d.catalogo_id) e.push("error_producto_requerido");
-    else if (!Catalogo.get(d.catalogo_id)) e.push("error_producto_inexistente");
-    if (!Cantidad.esValida(d.cantidad_centesimas) || d.cantidad_centesimas <= 0) e.push("error_cantidad_invalida");
-    return e;
+    return this.cotizacionItem(d);
   },
   proveedor(d) {
     const e = [];
@@ -478,14 +477,17 @@ const Clientes = {
    condensadora + evaporadora + línea + mano de obra. Sirve para no cargar los
    mismos ocho renglones a mano cada vez.
 
-   Por eso —y acá está la diferencia con la regla 3b— el combo apunta al
-   catálogo y NO copia el precio. Una cotización firmada tiene que quedar
-   congelada; una receta tiene que valer lo que valen sus ingredientes hoy. Si
-   el combo copiara precios, subir el costo de un equipo dejaría todos los
-   combos mintiendo hasta que alguien se acordara de tocarlos uno por uno.
+   Un renglón de combo es EXACTAMENTE un renglón de cotización: mismo nombre,
+   descripción, unidad, cantidad, precio, costo y ojo del PDF. Se guarda todo,
+   no se apunta al catálogo. Así el combo se arma igual que una cotización —se
+   puede cambiar un nombre, poner un precio de paquete, esconder el permiso— y
+   al jalarlo se copia tal cual quedó.
 
-   La copia sí ocurre, pero después: al llevar el combo a una cotización se
-   copian los precios de ese día en cada renglón, y ahí sí quedan congelados. */
+   Consecuencia que hay que tener presente: **el combo NO se entera si mañana
+   cambia el precio en el catálogo.** Es el precio del día que se armó. Para
+   eso está `actualizarPreciosDesdeCatalogo()`, que se dispara con un botón y
+   nunca sola: refrescar en silencio cambiaría un precio de paquete puesto a
+   mano sin que nadie lo pida. */
 const CAMPOS_COMBO = ["nombre", "descripcion", "notas", "activo"];
 
 const Combos = {
@@ -544,7 +546,17 @@ const Combos = {
         id: _uuid(),
         combo_id: comboId,
         catalogo_id: f.catalogo_id || null,
+        nombre: _texto(f.nombre),
+        descripcion: _texto(f.descripcion),
+        unidad: UNIDADES.includes(f.unidad) ? f.unidad : "unidad",
         cantidad_centesimas: Math.round(Number(f.cantidad_centesimas) || 0),
+        precio_centavos: Math.round(Number(f.precio_centavos) || 0),
+        costo_centavos: Math.round(Number(f.costo_centavos) || 0),
+        /* Mismo significado que en la cotización (regla 3g): 0 saca el renglón
+           de la lista impresa pero su plata sigue contando. Se copia al jalar
+           el combo, así el permiso que nunca se muestra queda escondido de una
+           vez y no hay que acordarse en cada cotización. */
+        en_pdf: f.en_pdf === 0 || f.en_pdf === false ? 0 : 1,
         orden: i,
         ..._sellosNuevo(),
       };
@@ -562,41 +574,64 @@ const Combos = {
     return limpias;
   },
 
-  /* Lo que vale hoy: la suma de sus productos a precio de catálogo actual.
-     No se guarda en ningún lado, por lo mismo que los totales de la
-     cotización (regla 3d): dos verdades terminan sin coincidir. */
-  totales(comboId) {
-    let precio = 0, costo = 0, faltantes = 0;
-    for (const i of this.items(comboId)) {
-      const p = Catalogo.get(i.catalogo_id);
-      if (!p) { faltantes++; continue; }
-      precio += Cantidad.porPrecio(i.cantidad_centesimas, p.precio_centavos || 0);
-      costo += Cantidad.porPrecio(i.cantidad_centesimas, p.costo_centavos || 0);
-    }
-    /* `faltantes` son productos que se borraron del catálogo después de armar
-       el combo. La pantalla lo avisa en vez de mostrar un precio incompleto
-       como si fuera correcto. */
-    return { precio_centavos: precio, costo_centavos: costo, faltantes };
+  /* Un renglón vacío para escribir a mano, igual que en la cotización. */
+  filaManual() {
+    return Cotizaciones.filaManual();
   },
 
-  /* Los renglones listos para meter en una cotización, con el precio del
-     catálogo YA COPIADO: de acá en adelante rige la regla 3b y la cotización
-     queda congelada aunque mañana cambie el catálogo. */
-  filasParaCotizacion(comboId) {
-    return this.items(comboId).map((i) => {
+  /* Lo que vale el combo. Suma sus propios renglones, no el catálogo. No se
+     guarda en ningún lado, por lo mismo que los totales de la cotización
+     (regla 3d): dos verdades terminan sin coincidir.
+
+     `desactualizados` cuenta los renglones que vinieron del catálogo y hoy
+     tienen otro precio allá. No se corrige solo —sería pisar un precio de
+     paquete puesto a mano—: la pantalla lo avisa y ofrece el botón. */
+  totales(comboId) {
+    let precio = 0, costo = 0, desactualizados = 0;
+    for (const i of this.items(comboId)) {
+      precio += Cantidad.porPrecio(i.cantidad_centesimas, i.precio_centavos || 0);
+      costo += Cantidad.porPrecio(i.cantidad_centesimas, i.costo_centavos || 0);
+      if (!i.catalogo_id) continue;
       const p = Catalogo.get(i.catalogo_id);
-      if (!p) return null;
-      return {
-        catalogo_id: p.id,
-        nombre: p.nombre,
-        descripcion: "",
-        unidad: p.unidad,
-        cantidad_centesimas: i.cantidad_centesimas,
-        precio_centavos: p.precio_centavos || 0,
-        costo_centavos: p.costo_centavos || 0,
-        en_pdf: 1,
-      };
-    }).filter(Boolean);
+      if (p && (p.precio_centavos !== i.precio_centavos || p.costo_centavos !== i.costo_centavos)) {
+        desactualizados++;
+      }
+    }
+    return { precio_centavos: precio, costo_centavos: costo, desactualizados };
+  },
+
+  /* Trae el precio y el costo de hoy del catálogo a los renglones que vinieron
+     de ahí. Lo dispara un botón, nunca corre sola: el nombre, la descripción,
+     la cantidad y el ojo NO se tocan, porque son lo que la persona ajustó a
+     mano para este combo. */
+  actualizarPreciosDesdeCatalogo(comboId) {
+    const antes = this.items(comboId);
+    const filas = antes.map((i) => {
+      const p = i.catalogo_id ? Catalogo.get(i.catalogo_id) : null;
+      if (!p) return i;
+      return { ...i, precio_centavos: p.precio_centavos || 0, costo_centavos: p.costo_centavos || 0 };
+    });
+    const cambiados = filas.filter((f, n) =>
+      f.precio_centavos !== antes[n].precio_centavos || f.costo_centavos !== antes[n].costo_centavos).length;
+    if (cambiados) this.guardarItems(comboId, filas);
+    return cambiados;
+  },
+
+  /* Los renglones listos para meter en una cotización: se copia TODO tal como
+     quedó el combo —nombre, descripción, unidad, cantidad, precio, costo y el
+     ojo del PDF—. De acá en adelante rige la regla 3b y la cotización queda
+     congelada aunque después se toque el combo. */
+  filasParaCotizacion(comboId) {
+    return this.items(comboId).map((i) => ({
+      catalogo_id: i.catalogo_id || null,
+      nombre: i.nombre,
+      descripcion: i.descripcion || "",
+      unidad: i.unidad,
+      cantidad_centesimas: i.cantidad_centesimas,
+      precio_centavos: i.precio_centavos || 0,
+      costo_centavos: i.costo_centavos || 0,
+      en_pdf: i.en_pdf === 0 ? 0 : 1,
+    }));
   },
 };
 
@@ -1480,6 +1515,25 @@ function _migrar() {
   if (desde < 11) {
     if (!Array.isArray(_estado.combos)) _estado.combos = [];
     if (!Array.isArray(_estado.comboItems)) _estado.comboItems = [];
+  }
+
+  /* --- v11 → v12: el renglón de un combo se vuelve igual al de una cotización ---
+     Los que ya existían solo guardaban el producto y la cantidad. Se completan
+     copiando del catálogo lo que hoy vale, que es exactamente lo que la
+     pantalla venía mostrando: la ficha no cambia de valor, solo deja de
+     depender del catálogo para saberlo. Si el producto ya no existe, el
+     renglón queda con lo que se pueda y nombre vacío: se ve en la pantalla y
+     se corrige a mano, en vez de desaparecer sin avisar. */
+  if (desde < 12) {
+    _estado.comboItems.forEach((i) => {
+      const p = i.catalogo_id ? _estado.catalogo.find((x) => x.id === i.catalogo_id && !x.eliminado) : null;
+      if (i.nombre === undefined) i.nombre = p ? p.nombre : "";
+      if (i.descripcion === undefined) i.descripcion = "";
+      if (i.unidad === undefined) i.unidad = p ? p.unidad : "unidad";
+      if (i.precio_centavos === undefined) i.precio_centavos = p ? (p.precio_centavos || 0) : 0;
+      if (i.costo_centavos === undefined) i.costo_centavos = p ? (p.costo_centavos || 0) : 0;
+      if (i.en_pdf === undefined || i.en_pdf === null) i.en_pdf = 1;
+    });
   }
 
   _estado.config.esquema_version = ESQUEMA_VERSION;
