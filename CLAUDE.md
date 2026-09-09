@@ -159,6 +159,22 @@ un bundler salvo que el proyecto lo pida de verdad.
    "Traer precios del catálogo", que **pide confirmación** porque pisa datos
    sin vuelta atrás.
 
+   3p. **Lo que manda el catálogo no se edita en el renglón.** Si el renglón
+   vino del catálogo (`catalogo_id`), el **precio de compra** y la **unidad**
+   se ven pero están cerrados: cambiarlos ahí dejaría la cotización diciendo
+   una cosa y el catálogo otra sin que nadie se entere. Se editan en Catálogo,
+   que es donde viven. El **precio de venta** sí queda abierto —un descuento
+   en un trabajo puntual es normal y no contradice al catálogo— igual que la
+   cantidad, el nombre, el detalle y el ojo. Un renglón **escrito a mano** no
+   tiene catálogo detrás: ahí se edita todo.
+   ⚠️ Cerrar el campo no alcanza: los botones − y + de `.num-paso` seguían
+   moviendo el número aunque el campo estuviera gris. El manejador ignora los
+   campos `readOnly`/`disabled`, y al guardar el valor sale de `renglonBase`,
+   no de lo que quedó en pantalla.
+   Los nombres son **precio de compra** y **precio de venta**, iguales en la
+   cotización, en el combo y en el catálogo: si en un lado se llaman distinto,
+   vuelve la confusión que esto vino a arreglar.
+
    3h. **El orden de los renglones lo manda la persona, no el código.** `orden`
    se guarda con la posición en que quedaron después de arrastrar, y es el
    orden en que salen en el PDF. Nunca reordenar por nombre ni por precio.
@@ -183,7 +199,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v61**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v62**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`

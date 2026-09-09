@@ -366,6 +366,15 @@
   .hist-resumen > div{background:var(--line-soft);border-radius:var(--radius-sm);padding:10px 12px;min-width:0}
   .hist-resumen span{display:block;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
   .hist-resumen b{display:block;font-size:15px;color:var(--ink);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Campo que se mira pero no se toca. Gris claro y sin borde de campo activo
+     para que se lea como dato y no como algo que quedo trabado por error. */
+  .field.cerrado input,.field.cerrado select{background:var(--line-soft);color:var(--muted);
+    border-color:var(--line);cursor:not-allowed}
+  .field.cerrado label{color:var(--muted)}
+  /* Los botones de paso de un campo cerrado: apagados y sin responder al
+     dedo, para que no inviten a tocarlos. */
+  .field.cerrado .num-paso{background:var(--line-soft);border-color:var(--line)}
+  .field.cerrado .num-menos,.field.cerrado .num-mas{opacity:.35;pointer-events:none}
   .aviso-ojo{margin:0 0 var(--sp-4);padding:10px 12px;border-radius:var(--radius-sm);
     background:var(--calor-soft);color:var(--calor-600);font-size:12px;line-height:1.45}
   /* En telefono la tarjeta esconde el subtitulo por espacio, y en un producto
@@ -1469,23 +1478,26 @@
           <label data-i18n="cot_col_cantidad">Cantidad</label>
           <input type="number" id="renglonCantidad" min="0" step="0.01" data-paso1>
         </div>
-        <div class="field">
-          <label data-i18n="catalogo_unidad">Unidad</label>
+        <div class="field" id="fieldRenglonUnidad">
+          <label data-i18n="catalogo_unidad">Se vende por</label>
           <select id="renglonUnidad"></select>
         </div>
       </div>
 
       <div class="field-row">
         <div class="field">
-          <label data-i18n="cot_renglon_precio">Precio por unidad</label>
+          <label data-i18n="cot_renglon_precio">Precio de venta</label>
           <input type="number" id="renglonPrecio" min="0" step="0.01" placeholder="0.00" data-paso1>
         </div>
-        <div class="field">
-          <label data-i18n="cot_renglon_costo">Costo por unidad</label>
+        <div class="field" id="fieldRenglonCosto">
+          <label data-i18n="cot_renglon_costo">Precio de compra</label>
           <input type="number" id="renglonCosto" min="0" step="0.01" placeholder="0.00" data-paso1>
           <p class="hint" data-i18n="cot_renglon_costo_ayuda">Interno: el cliente no lo ve.</p>
         </div>
       </div>
+      <!-- Sale solo cuando el renglón vino del catálogo: explica por qué esos
+           dos campos están cerrados, en vez de dejar al que mira adivinando. -->
+      <p class="hint" id="renglonDelCatalogo" hidden data-i18n="cot_renglon_del_catalogo">Viene del catálogo. El precio de compra y la unidad se cambian ahí.</p>
 
       <div class="renglon-resumen">
         <div><span data-i18n="cot_renglon_subtotal">Este renglón</span><b id="renglonSubtotal">$0.00</b></div>
@@ -1677,6 +1689,16 @@
     <div class="modal-body">
       <input type="hidden" id="clienteId">
 
+      <!-- Arriba de todo a pedido de Rene: lo primero que se decide de una
+           ficha nueva es si es un lead o alguien a quien ya se le vendió. -->
+      <div class="field">
+        <label data-i18n="form_relacion">Tipo</label>
+        <div class="estado-toggle" id="clienteRelacionToggle">
+          <button type="button" data-v="lead" data-i18n="clientes_lead">Lead</button>
+          <button type="button" data-v="cliente" data-i18n="clientes_cliente">Cliente</button>
+        </div>
+      </div>
+
       <!-- Lector de mensajes: llena el formulario desde una captura de pantalla.
            No guarda nada: deja los campos listos para revisar. -->
       <div class="ia-row">
@@ -1741,14 +1763,6 @@
       <div class="field">
         <label data-i18n="form_categoria">Categoría</label>
         <select id="clienteCategoria"></select>
-      </div>
-
-      <div class="field">
-        <label data-i18n="form_relacion">Tipo</label>
-        <div class="estado-toggle" id="clienteRelacionToggle">
-          <button type="button" data-v="lead" data-i18n="clientes_lead">Lead</button>
-          <button type="button" data-v="cliente" data-i18n="clientes_cliente">Cliente</button>
-        </div>
       </div>
 
       <div class="field">
@@ -2889,7 +2903,11 @@ document.addEventListener("click", (e) => {
   const b = e.target.closest(".num-menos, .num-mas");
   if (!b) return;
   const input = b.parentElement.querySelector("input[type=number]");
-  if (input) pasoDeUno(input, b.classList.contains("num-mas") ? 1 : -1);
+  /* Un campo cerrado no se toca ni por acá. Sin esta línea los botones − y +
+     cambiaban el precio de compra que el catálogo manda: el campo se veía
+     gris y el número igual se movía. */
+  if (!input || input.readOnly || input.disabled) return;
+  pasoDeUno(input, 1 * (b.classList.contains("num-mas") ? 1 : -1));
 });
 
 function hoyISO(){
@@ -3878,6 +3896,21 @@ function abrirEditorRenglon(i, base = null){
   document.getElementById("renglonPrecio").value = DB.dinero.aTexto(f.precio_centavos);
   document.getElementById("renglonCosto").value = DB.dinero.aTexto(f.costo_centavos);
   document.getElementById("renglonEnPdf").checked = f.en_pdf !== 0;
+  /* El precio de COMPRA y la unidad son del producto, no de este renglón: se
+     ven pero no se tocan. Cambiarlos acá dejaría la cotización diciendo una
+     cosa y el catálogo otra, sin que nadie se entere. Se editan en Catálogo,
+     que es donde viven.
+     El precio de VENTA sí queda abierto: un descuento en un trabajo puntual
+     es normal y no contradice al catálogo.
+     Un renglón escrito a mano no tiene catálogo detrás, así que ahí se edita
+     todo — si no, no habría forma de cobrarlo. */
+  const esDelCatalogo = !!f.catalogo_id;
+  document.getElementById("renglonCosto").readOnly = esDelCatalogo;
+  document.getElementById("renglonUnidad").disabled = esDelCatalogo;
+  document.getElementById("fieldRenglonCosto").classList.toggle("cerrado", esDelCatalogo);
+  document.getElementById("fieldRenglonUnidad").classList.toggle("cerrado", esDelCatalogo);
+  document.getElementById("renglonDelCatalogo").hidden = !esDelCatalogo;
+
   const delCatalogo = nuevo && !!f.catalogo_id;
   document.getElementById("modalRenglonTitulo").textContent =
     t(delCatalogo ? "cot_renglon_titulo_agregar" : nuevo ? "cot_renglon_titulo_nuevo" : "cot_renglon_titulo");
@@ -3932,14 +3965,20 @@ document.getElementById("btnGuardarRenglon").addEventListener("click", () => {
      el catalogo_id, que es lo que despues permite agrupar reportes por
      producto aunque el nombre o el precio se hayan cambiado a mano. */
   const base = renglonBase || DB.cotizaciones.filaManual();
+  const esCerrado = !!base.catalogo_id;
   const fila = {
     ...base,
     nombre,
     descripcion: document.getElementById("renglonDescripcion").value.trim(),
-    unidad: document.getElementById("renglonUnidad").value,
+    /* Un <select disabled> no manda su valor en un formulario; acá se lee a
+       mano, pero igual se toma el de `base` cuando está cerrado: así el dato
+       que vale es el del producto y no lo que quedó dibujado en pantalla. */
+    unidad: esCerrado ? base.unidad : document.getElementById("renglonUnidad").value,
     cantidad_centesimas: cant,
     precio_centavos: DB.dinero.aCentavos(document.getElementById("renglonPrecio").value) || 0,
-    costo_centavos: DB.dinero.aCentavos(document.getElementById("renglonCosto").value) || 0,
+    costo_centavos: esCerrado
+      ? (base.costo_centavos || 0)
+      : (DB.dinero.aCentavos(document.getElementById("renglonCosto").value) || 0),
     en_pdf: document.getElementById("renglonEnPdf").checked ? 1 : 0,
   };
   const esNuevo = renglonEditandoIdx === -1;
