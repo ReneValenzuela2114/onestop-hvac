@@ -181,6 +181,17 @@ un bundler salvo que el proyecto lo pida de verdad.
    catálogo, no con el que se pagó de verdad. El arreglo correcto en ese caso
    es actualizar el producto en Catálogo, no abrir el campo.
 
+   3r. **El gris del PDF NO es el de la pantalla.** El `--muted` del papel es
+   `#67737F` (4.84:1 contra blanco) y el de la app `#64748B`. Medido: el gris
+   de pantalla daba **3.67:1**, por debajo del 4.5:1 que hace falta, y en el
+   PDF golpea justo donde más duele —títulos de 8px, pie de 9px— con una
+   impresora que ahorra tinta. El PDF tiene su propio `:root`, así que se
+   cambia sin tocar la app.
+   También: `.aceptacion` y `.pie-empresa` llevan `break-inside:avoid`, y la
+   aceptación `break-after:avoid` **para que las firmas nunca se vayan a la
+   hoja siguiente**: si el salto cae entre las dos, el cliente firma en una
+   página donde no dice qué está firmando.
+
    3q. **El cierre de la hoja: aceptación, firmas y pie.** El texto de
    **aceptación** vive aparte de los términos (`pdf_aceptacion`): los términos
    son las condiciones del trabajo, la aceptación es la frase que el cliente
@@ -191,6 +202,8 @@ un bundler salvo que el proyecto lo pida de verdad.
    un pie de una sola línea: antes iban al costado de la firma y ese lugar es
    ahora el del cliente. El pie sale **siempre**, aunque las dos firmas estén
    apagadas: la dirección y la licencia no dependen de que alguien firme.
+   La línea marino va **abajo** de las firmas, pegada al pie: así el bloque de
+   firmas se lee como el final del documento y no como una sección más.
 
    3h. **El orden de los renglones lo manda la persona, no el código.** `orden`
    se guarda con la posición en que quedaron después de arrastrar, y es el
@@ -216,7 +229,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v63**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v64**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`

@@ -4481,7 +4481,13 @@ function abrirPdfCotizacion(cotId){
      La hoja se queda con el marino como estructura y el rojo como único
      acento. El color fuerte lo pone el logo; el papel lo acompaña. */
   :root{
-    --ink:#22303C; --muted:#7A8794; --line:#E1E7ED;
+    --ink:#22303C;
+    /* Gris de los textos secundarios. Medido: el #7A8794 que usa la pantalla
+       da 3.67:1 contra el papel blanco, por debajo del 4.5:1 que hace falta
+       para leer comodo. En pantalla se nota poco; en papel, a 8 y 9px y con
+       una impresora que ahorra tinta, es justo donde se pierde. Este llega a
+       4.83:1 y sigue siendo claramente un gris secundario. */
+    --muted:#67737F; --line:#E1E7ED;
     --marino:#104070;      /* el azul del logo */
     --rojo:#D02020;        /* el rojo de "STOP" */
     --azulsuave:#EDF3F9; --tinte:#F4F7FA; --linea-suave:#D7E1EB;
@@ -4614,7 +4620,10 @@ function abrirPdfCotizacion(cotId){
      la misma altura. Medidas tomadas de DES: la línea mide 235px, el nombre
      13 y el cargo 10.5. Si va una sola firma ocupa su lugar sin dejar un
      hueco raro al costado. */
-  .firma{margin-top:26px;padding-top:14px;border-top:2px solid var(--marino)}
+  /* Sin linea arriba: la firma se apoya en el aire y la linea marino cierra
+     todo abajo, ya pegada al pie. Asi el bloque de firmas se lee como el
+     final del documento y no como una seccion mas. */
+  .firma{margin-top:26px}
   .firmas{display:flex;gap:30px;align-items:flex-end;justify-content:space-between}
   .col-firma{flex:0 0 235px;max-width:235px;text-align:center;display:flex;flex-direction:column;align-items:center}
   /* Iguala el alto de la imagen de la firma (52px menos los 8 que la cruzan),
@@ -4637,7 +4646,7 @@ function abrirPdfCotizacion(cotId){
      iban al costado de la firma, y ese lugar ahora es el del cliente. Se
      permite cortar en dos renglones si el nombre y la dirección son largos:
      antes que achicar la letra hasta que no se lea. */
-  .pie-empresa{margin-top:22px;padding-top:9px;border-top:1px solid var(--line);
+  .pie-empresa{margin-top:20px;padding-top:10px;border-top:2px solid var(--marino);
     display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;
     font-size:9px;line-height:1.6;color:var(--muted);text-align:center}
   .pie-empresa b{color:var(--marino);font-weight:800}
@@ -4666,7 +4675,14 @@ function abrirPdfCotizacion(cotId){
        40% del tamaño. En papel siempre va 1:1. */
     .hoja{width:auto;min-height:auto;margin:0;padding:0;box-shadow:none;zoom:1 !important}
     /* Nada de esto se puede partir a la mitad entre dos hojas */
-    tbody tr,.totwrap,.notas,.firma,.paraquien,.cabecera,.titulo{break-inside:avoid}
+    tbody tr,.totwrap,.notas,.firma,.paraquien,.cabecera,.titulo,
+    .aceptacion,.pie-empresa{break-inside:avoid}
+    /* La aceptacion y las firmas van juntas SI O SI: si el salto cae entre
+       las dos, el cliente firma en una hoja donde no dice que esta firmando. */
+    .aceptacion{break-after:avoid}
+    /* Un titulo no puede quedar solo al pie de una hoja con su texto en la
+       siguiente. */
+    .terminos h2,.aceptacion h2{break-after:avoid}
     thead{display:table-header-group}
     .terminos.hoja-aparte{break-before:page;margin-top:0;padding-top:0;border-top:none}
   }
