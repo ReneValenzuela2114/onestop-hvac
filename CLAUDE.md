@@ -174,6 +174,12 @@ un bundler salvo que el proyecto lo pida de verdad.
    Los nombres son **precio de compra** y **precio de venta**, iguales en la
    cotización, en el combo y en el catálogo: si en un lado se llaman distinto,
    vuelve la confusión que esto vino a arreglar.
+   **Cerrado siempre, sin excepción para desbloquear.** Se le ofreció a Rene un
+   candadito para el caso de haber comprado más caro que lo que dice el
+   catálogo, y lo descartó (9 sep 2026). El costo de esa decisión, por si algún
+   día aparece el problema: la ganancia de ese trabajo sale con el costo del
+   catálogo, no con el que se pagó de verdad. El arreglo correcto en ese caso
+   es actualizar el producto en Catálogo, no abrir el campo.
 
    3h. **El orden de los renglones lo manda la persona, no el código.** `orden`
    se guarda con la posición en que quedaron después de arrastrar, y es el
