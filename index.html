@@ -905,6 +905,29 @@
   .cot-estado.aprobada{background:var(--success-soft);color:var(--success)}
   .cot-estado.rechazada{background:var(--danger-soft,#FDECEA);color:var(--danger)}
   .cot-estado.vencida{background:#FDF0E9;color:#B44A18}
+  /* La insignia que se toca para cambiar el estado desde la lista. Mismos
+     colores que la etiqueta fija de la ficha: un estado se lee igual en los
+     dos lados. */
+  .badge-sel.cot-estado-sel{flex-shrink:0;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  .badge-sel.cot-estado-sel.borrador{background:var(--line-soft);color:var(--muted)}
+  .badge-sel.cot-estado-sel.enviada{background:#EAF3FB;color:var(--frio-700)}
+  .badge-sel.cot-estado-sel.aprobada{background:var(--success-soft);color:var(--success)}
+  .badge-sel.cot-estado-sel.rechazada{background:var(--danger-soft,#FDECEA);color:var(--danger)}
+  .badge-sel.cot-estado-sel.vencida{background:#FDF0E9;color:#B44A18}
+  .cot-card{cursor:pointer}
+  @media (max-width: 560px){
+    /* En el telefono se toca con el dedo: 38px como las de Clientes. */
+    .badge-sel.cot-estado-sel{min-height:38px;padding:0 8px 0 11px}
+    /* Dos renglones: numero y cliente arriba, estado y monto abajo. En uno
+       solo, con la insignia de estado al lado, el nombre quedaba en 74px
+       ("Norma Ca...") y no se sabia de quien era la cotizacion. */
+    .cot-card{display:grid;grid-template-columns:auto 1fr;
+      grid-template-areas:"num nombre" "estado precio";row-gap:8px;column-gap:10px;align-items:center}
+    .cot-card .cot-num{grid-area:num}
+    .cot-card > b{grid-area:nombre;min-width:0}
+    .cot-card .badge-sel{grid-area:estado;justify-self:start}
+    .cot-card .cat-precio{grid-area:precio;justify-self:end;margin-left:0}
+  }
   .cot-num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--muted);flex-shrink:0}
   /* En el teléfono el renglón pasa a dos líneas: el nombre arriba, y abajo
      cantidad × precio = subtotal. En una sola línea el nombre quedaba en ocho
@@ -2569,8 +2592,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=78"></script>
-<script src="data.js?v=78"></script>
+<script src="i18n.js?v=79"></script>
+<script src="data.js?v=79"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -3904,15 +3927,62 @@ function renderCotizaciones(){
   cont.innerHTML = lista.map(c => {
     const cliente = DB.clientes.get(c.cliente_id);
     const tot = DB.cotizaciones.totales(c);
-    return `<button type="button" class="cat-card" onclick="fichaCotizacion('${c.id}')">
+    /* Un <div> y no un <button>: adentro va un <select> para cambiar el
+       estado, y un select dentro de un botón no es HTML válido —el clic se lo
+       come el botón y el menú no abre—. */
+    return `<div class="cat-card cot-card" role="button" tabindex="0" data-cot="${c.id}">
       <span class="cot-num">${esc(numeroCot(c))}</span>
       <b>${esc(cliente ? cliente.nombre : t("auditoria_desconocido"))}</b>
       <span class="cat-sub">${esc(c.titulo)}</span>
-      <span class="cot-estado ${c.estado}">${esc(t("cot_estado_" + c.estado))}</span>
+      ${selEstadoCot(c)}
       <span class="cat-precio"><b>${esc(DB.dinero.formato(tot.total_centavos, CFG_LANG))}</b></span>
-    </button>`;
+    </div>`;
   }).join("");
 }
+
+/* El estado de la cotización se cambia desde la lista, igual que la
+   categoría y el estado en Clientes: la misma insignia, que se toca y abre la
+   lista del sistema. Los colores son los de la etiqueta fija de la ficha,
+   para que un estado se lea igual en los dos lados. */
+function selEstadoCot(c){
+  const ops = DB.estadosCotizacion.map(e =>
+    `<option value="${e}"${e === c.estado ? " selected" : ""}>${esc(t("cot_estado_" + e))}</option>`).join("");
+  return `<span class="badge-sel cot-estado-sel ${esc(c.estado)}">
+    <span class="badge-sel-txt">${esc(t("cot_estado_" + c.estado))}</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    <select data-estado-cot="${c.id}" aria-label="${esc(t("cot_estado"))}">${ops}</select>
+  </span>`;
+}
+
+(() => {
+  const lista = document.getElementById("cotizacionesLista");
+  /* Tocar la tarjeta abre la ficha; tocar el estado lo cambia. Sin esta
+     guarda, abrir el menú de estado abría también la ficha. */
+  lista.addEventListener("click", (e) => {
+    if (e.target.closest("select, .badge-sel")) return;
+    const card = e.target.closest("[data-cot]");
+    if (card) fichaCotizacion(card.dataset.cot);
+  });
+  lista.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const card = e.target.closest("[data-cot]");
+    if (!card || e.target !== card) return;
+    e.preventDefault();
+    fichaCotizacion(card.dataset.cot);
+  });
+  /* `change` y no `input`: en un select, `input` salta con cada tecla al
+     recorrerlo con el teclado. */
+  lista.addEventListener("change", (e) => {
+    const sel = e.target.closest("[data-estado-cot]");
+    if (!sel) return;
+    const ok = conAviso(() => DB.cotizaciones.update(sel.dataset.estadoCot, { estado: sel.value }));
+    /* Se repinta pase lo que pase: si falló, la insignia vuelve a decir lo
+       que quedó guardado de verdad y no lo que se eligió. */
+    renderFiltrosCotizaciones();
+    renderCotizaciones();
+    if (ok) toast(t("toast_cot_actualizada"));
+  });
+})();
 
 function numeroCot(c){ return "COT-" + String(c.numero).padStart(3, "0"); }
 
@@ -5804,18 +5874,10 @@ function fichaCotizacion(id){
     codigo: numeroCot(c),
     titulo: c.titulo,
     sub: cli ? cli.nombre : "",
-    estado: {
-      etiqueta: t("cot_estado"), valor: c.estado,
-      opciones: DB.estadosCotizacion.map(e => ({ v: e, txt: t("cot_estado_" + e) })),
-      alCambiar: (v) => {
-        if (conAviso(() => DB.cotizaciones.update(id, { estado: v }))) {
-          renderFiltrosCotizaciones(); renderCotizaciones();
-          toast(t("toast_cot_actualizada"));
-        }
-        fichaCotizacion(id);
-      },
-    },
+    /* El estado se MUESTRA con su etiqueta de color: la ficha es para mirar.
+       Se cambia editando la cotización o desde la lista, como en Clientes. */
     pares: [
+      [t("cot_estado"), `<span class="cot-estado ${esc(c.estado)}">${esc(t("cot_estado_" + c.estado))}</span>`],
       [t("form_trabajo_cliente"), cli ? esc(cli.nombre) : ""],
       [t("pdf_fecha"), c.fecha ? esc(fechaLargaISO(c.fecha)) : ""],
       [t("cot_valida_hasta"), c.valida_hasta ? esc(fechaLargaISO(c.valida_hasta)) : ""],
