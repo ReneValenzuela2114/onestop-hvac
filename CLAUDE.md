@@ -301,7 +301,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    `ErrorDatos` con una clave de i18n. En la UI se envuelven con `conAviso(...)`,
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
-8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v79**:
+8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v80**:
    1. `const CACHE = 'onestop-shell-vNN'` en `service-worker.js`
    2. el `?v=` de `data.js` e `i18n.js` dentro del `SHELL` del service worker
    3. el `?v=` de los `<script src>` en `index.html`

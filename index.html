@@ -467,12 +467,22 @@
   .proy-cajas > div.rojo b{color:var(--danger)}
   .proy-cabecera .proy-cajas > div.verde{background:var(--success-soft)}
   .proy-cabecera .proy-cajas > div.rojo{background:var(--danger-soft)}
-  .proy-ajuste{display:flex;align-items:center;gap:6px;margin-top:2px;cursor:pointer}
+  /* Si el tachado y el acordado no entran al lado del titulo (tablet, montos
+     de seis cifras) bajan de renglon en vez de salirse de la caja. */
+  .proy-cajas > div.con-check{flex-wrap:wrap;row-gap:2px;align-items:center}
+  .proy-ajuste{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:2px 6px;
+    margin-left:auto;min-width:0;cursor:pointer}
   .proy-ajuste input{width:16px;height:16px;flex-shrink:0}
-  .proy-ajuste s{font-size:11.5px;color:var(--muted)}
+  .proy-ajuste s{font-size:11.5px;color:var(--muted);white-space:nowrap}
   .proy-ajuste b{margin:0}
-  .proy-ajuste-campo{margin-top:5px;width:100%;padding:5px 8px;border:1.5px solid var(--line-campo);
-    border-radius:8px;font-size:13px;min-height:38px}
+  /* El campo del acordado vive en la fila del trato, con Entrega y Garantia.
+     Adentro de la caja quedaba aplastado en 18px y no se veia lo escrito. */
+  .proy-trato input.proy-ajuste-campo[type=number]{width:130px;font-weight:700;
+    font-variant-numeric:tabular-nums;-moz-appearance:textfield;appearance:textfield}
+  /* Sin las flechitas del navegador: en un monto suben de a un centavo, no
+     sirven, y le comen lugar al numero. */
+  .proy-ajuste-campo::-webkit-outer-spin-button,
+  .proy-ajuste-campo::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 
   /* Entrega y garantia: el trato, no la agenda. */
   .proy-trato{display:flex;align-items:center;gap:var(--sp-4);flex-wrap:wrap;margin-top:11px;
@@ -497,6 +507,11 @@
     .proy-cajas > div{padding:6px 9px;gap:5px}
     .proy-cajas span{font-size:8.5px;letter-spacing:.03em}
     .proy-cajas b{font-size:13px}
+    /* Dentro del proyecto el cotizado lleva el tachado al lado del acordado:
+       en media caja (143px) no entran y el monto se cortaba. Va a todo lo
+       ancho, y el saldo tambien para no dejar un hueco al lado. */
+    .proy-cabecera .proy-cajas > div.con-check,
+    .proy-cabecera .proy-cajas > div:last-child{grid-column:1 / -1}
   }
 
   /* Titulo y herramientas en una fila, como DES. */
@@ -2592,8 +2607,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=79"></script>
-<script src="data.js?v=79"></script>
+<script src="i18n.js?v=80"></script>
+<script src="data.js?v=80"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -5686,8 +5701,6 @@ function renderProyectoDetalle(trabajoId){
             ${ajustado ? `<s>${esc(DB.dinero.formato(tj.precio_centavos || 0, CFG_LANG))}</s>` : ""}
             <b>${esc(DB.dinero.formato(DB.trabajos.aCobrar(tj), CFG_LANG))}</b>
           </label>
-          ${ajustado ? `<input type="number" id="proyCobrar" class="proy-ajuste-campo" min="0" step="0.01"
-             value="${esc(DB.dinero.aTexto(DB.trabajos.aCobrar(tj)))}" aria-label="${esc(t("proy_cobrar"))}">` : ""}
         </div>
         <div class="verde"><span>${esc(t("proy_cobrado"))}</span><b>${esc(DB.dinero.formato(tot.entradas_centavos, CFG_LANG))}</b></div>
         <div class="rojo"><span>${esc(t("proy_gastado"))}</span><b>${esc(DB.dinero.formato(tot.salidas_centavos, CFG_LANG))}</b></div>
@@ -5695,6 +5708,13 @@ function renderProyectoDetalle(trabajoId){
       </div>
 
       <div class="proy-trato">
+        <!-- El acordado se escribe acá, con los otros datos del trato. Adentro
+             de la caja del cotizado quedaba aplastado en 18px. -->
+        ${ajustado ? `<label>
+          <span>${esc(t("proy_cobrar"))}</span>
+          <input type="number" id="proyCobrar" class="proy-ajuste-campo" min="0" step="0.01"
+             inputmode="decimal" placeholder="0.00" value="${esc(DB.dinero.aTexto(DB.trabajos.aCobrar(tj)))}">
+        </label>` : ""}
         <label>
           <span>${esc(t("proy_entrega"))}</span>
           <input type="date" id="proyEntrega" value="${esc(tj.fecha_entrega || "")}">
