@@ -245,9 +245,16 @@ un bundler salvo que el proyecto lo pida de verdad.
    `ErrorDatos` con una clave de i18n. En la UI se envuelven con `conAviso(...)`,
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
-8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v66**. Si no se sube, hay
-   usuarios que se quedan pegados en la versión vieja.
+8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v67**:
+   1. `const CACHE = 'onestop-shell-vNN'` en `service-worker.js`
+   2. el `?v=` de `data.js` e `i18n.js` dentro del `SHELL` del service worker
+   3. el `?v=` de los `<script src>` en `index.html`
+   ⚠️ **Los tres archivos cambian juntos y se necesitan entre ellos.** Si el
+   navegador sirve el index nuevo con el data.js viejo, la app arranca a
+   medias y **no se ve ningún error**: pasó al publicar Finanzas y a Rene le
+   desaparecieron pestañas. El service worker ya iba red-primero, pero la
+   caché del navegador es otra capa y esa solo se corta cambiando la
+   dirección del archivo.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
    en `fecha`, `HH:MM` 24h en `hora_inicio`/`hora_fin`.

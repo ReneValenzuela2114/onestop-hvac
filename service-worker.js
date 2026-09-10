@@ -13,9 +13,14 @@
  *
  * La API nunca se cachea (ver API_PREFIX).
  *
- * Al publicar: subir CACHE de vNN a vNN+1.
+ * Al publicar hay que subir TRES numeros al mismo valor:
+ *   1. CACHE, aca abajo
+ *   2. el ?v= de data.js e i18n.js en el SHELL
+ *   3. el ?v= de los <script src> en index.html
+ * Los tres archivos cambian juntos; si el navegador sirve el index nuevo con
+ * el data.js viejo, la app arranca a medias y no se ve ningun error.
  */
-const CACHE = 'onestop-shell-v66';
+const CACHE = 'onestop-shell-v67';
 const API_PREFIX = '/api';
 
 /* Los tres archivos que forman la app y tienen que coincidir entre sí */
@@ -24,8 +29,8 @@ const CODIGO_DE_LA_APP = ['/', '/index.html', '/data.js', '/i18n.js'];
 const SHELL = [
   './',
   './index.html',
-  './data.js',
-  './i18n.js',
+  './data.js?v=67',
+  './i18n.js?v=67',
   './datos-ejemplo.json',
   './manifest.webmanifest',
   './assets/apple-touch-icon.png',

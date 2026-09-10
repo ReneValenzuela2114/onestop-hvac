@@ -777,10 +777,10 @@
       <button class="navitem" data-tab="catalogo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"/><circle cx="7" cy="7" r="1.4" fill="currentColor" stroke="none"/></svg><span data-i18n="nav_catalogo">Catálogo</span></button>
       <button class="navitem" data-tab="cotizaciones"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h3"/></svg><span data-i18n="nav_cotizaciones">Cotizaciones</span></button>
       <button class="navitem" data-tab="proyectos"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.7 6.3-1.4-1.4a2 2 0 0 0-2.83 0l-.71.71 4.24 4.24.71-.71a2 2 0 0 0 0-2.83Z"/><path d="m2 22 5-1.5L20.5 7 17 3.5 3.5 17 2 22Z"/></svg><span data-i18n="nav_proyectos">Proyectos</span></button>
+      <button class="navitem" data-tab="finanzas"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span data-i18n="nav_finanzas">Finanzas</span></button>
     </nav>
     <div class="sidebar-foot">
       <button class="navitem" id="langBtnDesktop"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20Z"/></svg><span id="langBtnLabelDesktop">English</span></button>
-      <button class="navitem" data-tab="finanzas"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span data-i18n="nav_finanzas">Finanzas</span></button>
       <button class="navitem" data-tab="config"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg><span data-i18n="nav_config">Configuración</span></button>
     </div>
   </aside>
@@ -2246,8 +2246,13 @@
 
 <div id="toasts"></div>
 
-<script src="i18n.js"></script>
-<script src="data.js"></script>
+<!-- El ?v= NO es adorno y va con el mismo numero que el cache del service
+     worker. Los tres archivos cambian juntos y se necesitan entre ellos: si el
+     navegador sirve el index nuevo con el data.js viejo, la app arranca a
+     medias y no se ve ningun error. Con la version en la direccion, el
+     navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
+<script src="i18n.js?v=67"></script>
+<script src="data.js?v=67"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -2268,12 +2273,25 @@ function setLang(lang){
   // alcanza al HTML fijo, no al contenido generado (calendario, tarjetas de
   // trabajo, lista de equipo). Si falta alguno, queda en el idioma anterior
   // hasta cambiar de pestaña.
-  renderFiltros(); renderClientes(); renderCategoriasChips(); renderUsuarios(); renderTrabajos();
-  renderFiltrosCatalogo(); renderCatalogo(); renderProveedores(); renderCombos();
-  renderFiltrosCotizaciones(); renderCotizaciones();
-  renderFinanzas();   // sus menús se arman con t(), no con data-i18n
-  document.getElementById("btnNuevoItemCatalogoLabel").textContent =
-    t((VISTAS_CATALOGO[catalogoVista] || VISTAS_CATALOGO.productos).boton);
+  /* Cada pantalla se repinta por su cuenta y un fallo en una NO se lleva a las
+     demás. Sin esto, un error en Finanzas cortaba `setLang()` a la mitad y la
+     app entera quedaba sin dibujar: se veía una pestaña y ninguna más. Pasó al
+     publicar Finanzas, con un navegador que tenía el index nuevo y el data.js
+     viejo. El error NO se esconde: sale por consola con el nombre de la
+     pantalla, que es lo que hace falta para encontrarlo. */
+  const repintar = (nombre, fn) => {
+    try { fn(); } catch (err) { console.error("No se pudo repintar " + nombre, err); }
+  };
+  repintar("clientes", () => { renderFiltros(); renderClientes(); renderCategoriasChips(); });
+  repintar("equipo", renderUsuarios);
+  repintar("trabajos", renderTrabajos);
+  repintar("catálogo", () => { renderFiltrosCatalogo(); renderCatalogo(); renderProveedores(); renderCombos(); });
+  repintar("cotizaciones", () => { renderFiltrosCotizaciones(); renderCotizaciones(); });
+  repintar("finanzas", renderFinanzas);   // sus menús se arman con t(), no con data-i18n
+  repintar("botón del catálogo", () => {
+    document.getElementById("btnNuevoItemCatalogoLabel").textContent =
+      t((VISTAS_CATALOGO[catalogoVista] || VISTAS_CATALOGO.productos).boton);
+  });
 }
 document.querySelectorAll("#langSwitch button[data-lang]").forEach(b=>{
   b.addEventListener("click", ()=> setLang(b.dataset.lang));
