@@ -27,7 +27,7 @@
    - IDs: crypto.randomUUID(). Fechas de auditoría: epoch ms (Date.now()).
    ========================================================================= */
 
-const ESQUEMA_VERSION = 13;
+const ESQUEMA_VERSION = 14;
 
 const CLAVES = {
   clientes: "os_clientes_v1",
@@ -1427,6 +1427,14 @@ const Usuarios = {
 const CAMPOS_TRABAJO = [
   "cliente_id", "titulo", "descripcion", "estado", "fecha", "hora_inicio", "hora_fin",
   "trabajador_ids", "direccion", "direccion_2", "lat", "lng", "precio_centavos", "costo_centavos",
+  /* Los tres de la pantalla de Proyectos, tomados de DES:
+       · `cobrar_centavos` en null = se cobra lo cotizado. Con valor = se acordó
+         otro número con el cliente y ESE manda. No se pisa `precio_centavos`
+         porque perderíamos de vista cuánto se había cotizado, que es justo lo
+         que sirve para saber cuánto se cedió.
+       · entrega y garantía son del trato, no de la agenda: `fecha` es el día
+         que se va a trabajar, `fecha_entrega` el día que se prometió entregar. */
+  "cobrar_centavos", "fecha_entrega", "garantia_meses",
 ];
 
 const Trabajos = {
@@ -1444,6 +1452,15 @@ const Trabajos = {
   },
   ganancia(tj) {
     return (tj.precio_centavos || 0) - (tj.costo_centavos || 0);
+  },
+  /* Lo que se le va a cobrar al cliente: lo acordado si se acordó otra cosa, y
+     si no lo cotizado. UNA función, para que la pantalla, los totales y el día
+     de mañana los reportes digan todos lo mismo. */
+  aCobrar(tj) {
+    if (!tj) return 0;
+    return tj.cobrar_centavos === null || tj.cobrar_centavos === undefined
+      ? (tj.precio_centavos || 0)
+      : tj.cobrar_centavos;
   },
   /* Número consecutivo y legible: "Trabajo #1042". El contador nunca
      retrocede, ni siquiera si se borra un trabajo — un número no se reusa. */
@@ -1471,6 +1488,10 @@ const Trabajos = {
       lng: _numeroONulo(datos.lng),
       precio_centavos: datos.precio_centavos || 0,
       costo_centavos: datos.costo_centavos || 0,
+      /* null = se cobra lo cotizado; un número = se acordó otra cosa. */
+      cobrar_centavos: _numeroONulo(datos.cobrar_centavos),
+      fecha_entrega: _texto(datos.fecha_entrega),
+      garantia_meses: Math.round(Number(datos.garantia_meses) || 12),
       ..._sellosNuevo(),
     };
     _estado.trabajos.push(item);
@@ -1753,6 +1774,18 @@ function _migrar() {
   if (desde < 13) {
     if (!Array.isArray(_estado.movimientos)) _estado.movimientos = [];
     if (!Array.isArray(_estado.cuentas)) _estado.cuentas = [];
+  }
+
+  /* --- v13 → v14: Proyectos gana lo que tiene la pantalla de DES ---
+     Los trabajos que ya existían cobran lo cotizado (`cobrar_centavos` en
+     null), sin fecha de entrega y con 12 meses de garantía, que es lo que trae
+     DES por defecto. Nada cambia de valor: solo dejan de faltar campos. */
+  if (desde < 14) {
+    _estado.trabajos.forEach((tj) => {
+      if (tj.cobrar_centavos === undefined) tj.cobrar_centavos = null;
+      if (tj.fecha_entrega === undefined) tj.fecha_entrega = "";
+      if (tj.garantia_meses === undefined) tj.garantia_meses = 12;
+    });
   }
 
   _estado.config.esquema_version = ESQUEMA_VERSION;

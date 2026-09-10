@@ -259,6 +259,14 @@ CREATE TABLE IF NOT EXISTS trabajos (
   lat REAL,
   lng REAL,
   precio_centavos INTEGER NOT NULL DEFAULT 0 CHECK (precio_centavos >= 0), -- lo que se cobra al cliente
+  -- NULL = se cobra lo cotizado (precio_centavos). Con valor = se acordo otro
+  -- numero con el cliente y ESE manda. No se pisa el cotizado: perder ese dato
+  -- seria perder de vista cuanto se cedio.
+  cobrar_centavos INTEGER,
+  -- El dia que se prometio entregar. Distinto de `fecha`, que es el dia que se
+  -- va a trabajar: uno es el trato y el otro la agenda.
+  fecha_entrega TEXT NOT NULL DEFAULT '',
+  garantia_meses INTEGER NOT NULL DEFAULT 12,
   costo_centavos  INTEGER NOT NULL DEFAULT 0 CHECK (costo_centavos  >= 0), -- materiales + mano de obra
   -- ganancia = precio_centavos - costo_centavos (no se guarda: se calcula,
   -- así nunca queda desactualizada respecto de sus dos fuentes)

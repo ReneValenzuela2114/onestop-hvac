@@ -386,14 +386,49 @@
   .proy-card-top b{font-size:14px;font-weight:700;color:var(--ink);min-width:0}
   .proy-card-titulo{display:block;font-size:12.5px;color:var(--muted);margin-top:3px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .proy-card-plata{display:flex;gap:var(--sp-5);flex-wrap:wrap;margin-top:10px;
-    padding-top:9px;border-top:1px solid var(--line-soft)}
-  .proy-card-plata span{display:flex;flex-direction:column;gap:1px;min-width:0}
-  .proy-card-plata i{font-style:normal;font-size:9.5px;font-weight:800;color:var(--muted);
+  .proy-card-quien{min-width:0;flex:1 1 auto}
+  .proy-card-quien b{display:block;font-size:15px;font-weight:800;color:var(--ink)}
+  .proy-card-obra{display:block;font-size:12.5px;font-weight:700;color:var(--frio-600);margin-top:1px}
+  .proy-card-num{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+  /* El estado se cambia sin entrar al proyecto, como en DES. */
+  .proy-estado-sel{flex-shrink:0;min-height:38px;padding:6px 10px;border:1.5px solid var(--line-campo);
+    border-radius:var(--radius-sm);background:var(--panel);font-size:12.5px;font-weight:600;color:var(--ink)}
+
+  /* Las cuatro cajas: cotizado, cobrado, gastado y saldo. Los colores dicen
+     de que se trata sin leer: verde lo que entra, rojo lo que sale. */
+  .proy-cajas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-2);margin-top:11px}
+  .proy-cajas > div{background:var(--line-soft);border-radius:var(--radius-sm);padding:8px 12px;min-width:0}
+  .proy-cajas > div.verde{background:var(--success-soft)}
+  .proy-cajas > div.rojo{background:var(--danger-soft)}
+  .proy-cajas span{display:block;font-size:9.5px;font-weight:800;color:var(--muted);
     text-transform:uppercase;letter-spacing:.05em}
-  .proy-card-plata b{font-size:14px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
-  .proy-card-plata b.entra{color:var(--success)}
-  .proy-card-plata b.sale{color:var(--danger)}
+  .proy-cajas b{display:block;font-size:15px;font-weight:800;color:var(--ink);margin-top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+  .proy-cajas > div.verde b{color:var(--success)}
+  .proy-cajas > div.rojo b{color:var(--danger)}
+  .proy-ajuste{display:flex;align-items:center;gap:6px;margin-top:2px;cursor:pointer}
+  .proy-ajuste input{width:16px;height:16px;flex-shrink:0}
+  .proy-ajuste s{font-size:11.5px;color:var(--muted)}
+  .proy-ajuste b{margin:0}
+  .proy-ajuste-campo{margin-top:5px;width:100%;padding:5px 8px;border:1.5px solid var(--line-campo);
+    border-radius:8px;font-size:13px;min-height:38px}
+
+  /* Entrega y garantia: el trato, no la agenda. */
+  .proy-trato{display:flex;align-items:center;gap:var(--sp-4);flex-wrap:wrap;margin-top:11px;
+    padding-top:10px;border-top:1px solid var(--line-soft)}
+  .proy-trato label{display:flex;align-items:center;gap:7px;font-size:11px}
+  .proy-trato label > span{font-size:9.5px;font-weight:800;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+  .proy-trato input{min-height:38px;padding:5px 9px;border:1.5px solid var(--line-campo);
+    border-radius:8px;font-size:12.5px;background:var(--panel)}
+  .proy-trato input[type=number]{width:74px}
+  .proy-trato i{font-style:normal;font-size:11.5px;color:var(--muted)}
+  .proy-trato em{font-style:italic;font-size:11.5px;color:var(--muted)}
+  .proy-cabecera{padding:var(--sp-4) var(--sp-5)}
+
+  @media (max-width: 700px){
+    .proy-cajas{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
 
   /* El menu de estados con casillas, como el de DES. */
   .proy-filtro{position:relative}
@@ -537,6 +572,8 @@
   .fin-cat-head .saldo.rojo{color:var(--danger)}
 
   /* Los acuerdos por cuotas */
+  .fin-cuentas-titulo{margin:var(--sp-4) 0 8px;font-size:10px;font-weight:800;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.05em}
   .fin-cuenta{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);
     flex-wrap:wrap;padding:8px 11px;border-radius:var(--radius-sm);margin-bottom:6px;background:var(--line-soft)}
   .fin-cuenta.saldada{background:var(--success-soft)}
@@ -1159,7 +1196,12 @@
             <div class="card fin-form" id="finFormCaja">
               <div class="fin-form-head">
                 <h3 id="finFormTitulo" data-i18n="fin_nuevo">Nuevo movimiento</h3>
-                <button type="button" class="btn ghost sm" id="btnFinCancelar" style="display:none"><span data-i18n="cancelar">Cancelar</span></button>
+                <div style="display:flex;gap:var(--sp-2);align-items:center">
+                  <button type="button" class="btn ghost sm" id="btnFinCancelar" style="display:none"><span data-i18n="cancelar">Cancelar</span></button>
+                  <button type="button" class="btn icon ghost sm" data-plegar-form="1" id="btnFinPlegar" title="Ocultar" aria-label="Ocultar">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                  </button>
+                </div>
               </div>
 
               <!-- Cuotas pendientes: se toca una y el formulario queda listo
@@ -2424,8 +2466,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=71"></script>
-<script src="data.js?v=71"></script>
+<script src="i18n.js?v=73"></script>
+<script src="data.js?v=73"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -4730,11 +4772,11 @@ function finTablaHTML(lista){
       <td class="col-fecha" data-col="${esc(t("fin_fecha"))}">${esc(fechaLargaISO(m.fecha))}</td>
       <td class="col-desc" data-col="${esc(t("fin_descripcion"))}">
         ${esc(m.descripcion)}
-        ${cta ? `<span class="mini-tag">${esc(cta.descripcion)}</span>` : ""}
+        ${cta ? `<span class="mini-tag">⚡ ${esc(cta.descripcion)}</span>` : ""}
         ${tj && !finTrabajoId ? `<span class="mini-tag">#${tj.numero}</span>` : ""}
       </td>
-      <td class="col-num entra" data-col="${esc(t("proy_entro"))}">${entra ? esc(DB.dinero.formato(m.entrada_centavos, CFG_LANG)) : ""}</td>
-      <td class="col-num sale" data-col="${esc(t("proy_salio"))}">${!entra ? esc(DB.dinero.formato(m.salida_centavos, CFG_LANG)) : ""}</td>
+      <td class="col-num entra" data-col="${esc(t("fin_col_entrada"))}">${entra ? esc(DB.dinero.formato(m.entrada_centavos, CFG_LANG)) : ""}</td>
+      <td class="col-num sale" data-col="${esc(t("fin_col_salida"))}">${!entra ? esc(DB.dinero.formato(m.salida_centavos, CFG_LANG)) : ""}</td>
       <td class="col-num saldo${corrido < 0 ? " sale" : ""}" data-col="${esc(t("proy_saldo"))}">${m.estado === "listo" ? esc(DB.dinero.formato(corrido, CFG_LANG)) : "—"}</td>
       <td class="col-acciones">
         <button type="button" class="fin-chip-estado ${pend ? "pendiente" : "listo"}" data-estado="${m.id}"
@@ -4751,8 +4793,8 @@ function finTablaHTML(lista){
       <th class="col-n">#</th>
       <th class="col-fecha">${esc(t("fin_fecha"))}</th>
       <th class="col-desc">${esc(t("fin_descripcion"))}</th>
-      <th class="col-num">${esc(t("proy_entro"))}</th>
-      <th class="col-num">${esc(t("proy_salio"))}</th>
+      <th class="col-num">${esc(t("fin_col_entrada"))}</th>
+      <th class="col-num">${esc(t("fin_col_salida"))}</th>
       <th class="col-num">${esc(t("proy_saldo"))}</th>
       <th class="col-acciones"></th>
     </tr></thead>
@@ -4859,6 +4901,7 @@ function renderFinanzas(){
    dentro de un proyecto de la vez anterior. */
 function abrirFinanzas(){
   finMontarFormularioEn("finFormAncla", null);
+  finPlegarFormulario(false);
   renderFinanzas();
 }
 
@@ -4866,7 +4909,10 @@ function abrirFinanzas(){
 function renderCuentasEmpresa(cajaId, chipsId){
   const cuentas = finTrabajoId ? DB.cuentas.deTrabajo(finTrabajoId) : DB.cuentas.deEmpresa();
   const caja = document.getElementById(cajaId || "finCuentas");
-  caja.innerHTML = cuentas.map(c => {
+  /* El titulo va con las cuentas y no en el HTML fijo: si no hay ninguna, no
+     tiene que quedar un encabezado suelto sobre la nada. */
+  caja.innerHTML = (cuentas.length ? `<h4 class="fin-cuentas-titulo">${esc(t("proy_cuotas_titulo"))}</h4>` : "") +
+    cuentas.map(c => {
     const e = DB.cuentas.estado(c.id);
     return `<div class="fin-cuenta${e.saldada ? " saldada" : ""}">
       <div class="fin-cuenta-txt">
@@ -4877,7 +4923,7 @@ function renderCuentasEmpresa(cajaId, chipsId){
       </div>
       <button type="button" class="btn icon ghost sm" data-borrar-cuenta="${c.id}" aria-label="${esc(t("eliminar"))}">${iconTrash()}</button>
     </div>`;
-  }).join("");
+    }).join("");
 
   /* Chips de lo que falta pagar: se toca uno y el formulario queda listo. */
   const pendientes = cuentas.filter(c => !DB.cuentas.estado(c.id).saldada);
@@ -4928,6 +4974,13 @@ function finGuardarFormulario(){
   const form = document.getElementById("finFormCaja");
   const casa = document.getElementById("finFormAncla");
   if (form && casa && form.parentElement !== casa) casa.appendChild(form);
+}
+
+/* Plegado, como en DES: en el detalle de un proyecto lo que se viene a mirar
+   es el libro. Se abre con "+ Agregar" y se cierra con la flechita. */
+function finPlegarFormulario(plegar){
+  const caja = document.getElementById("finFormCaja");
+  if (caja) caja.hidden = !!plegar;
 }
 
 /* Muda el formulario al panel que lo pide y lo deja apuntando a ese libro. */
@@ -5051,6 +5104,15 @@ function finConectarLista(id){
       });
       return;
     }
+    const bAbrir = e.target.closest("[data-abrir-form]");
+    if (bAbrir) {
+      finPlegarFormulario(false);
+      document.getElementById("finFormCaja").scrollIntoView({ block: "center", behavior: "smooth" });
+      setTimeout(() => document.getElementById("finDesc").focus(), 220);
+      return;
+    }
+    const bPlegar = e.target.closest("[data-plegar-form]");
+    if (bPlegar) { finPlegarFormulario(true); return; }
     const bNuevaCta = e.target.closest("[data-nueva-cuenta]");
     if (bNuevaCta) { abrirModalCuenta(finTrabajoId); return; }
     const bCuenta = e.target.closest("[data-cuenta]");
@@ -5334,29 +5396,65 @@ function renderProyectos(){
     return;
   }
 
-  cont.innerHTML = lista.map(tj => {
-    const cli = DB.clientes.get(tj.cliente_id);
-    const tot = DB.movimientos.totales(DB.movimientos.deTrabajo(tj.id));
-    const saldo = tot.saldo_centavos;
-    return `<button type="button" class="proy-card" data-proy="${tj.id}">
-      <div class="proy-card-top">
-        <span class="cot-num">#${tj.numero}</span>
+  cont.innerHTML = lista.map(tj => proyTarjetaHTML(tj)).join("");
+}
+
+/* La tarjeta de un proyecto, con el mismo reparto que DES: arriba el cliente
+   y el título, a la derecha el estado como menú —se cambia sin entrar—, y
+   abajo las cuatro cajas de plata. */
+function proyTarjetaHTML(tj){
+  const cli = DB.clientes.get(tj.cliente_id);
+  const tot = DB.movimientos.totales(DB.movimientos.deTrabajo(tj.id));
+  return `<div class="proy-card" data-proy="${tj.id}" role="button" tabindex="0">
+    <div class="proy-card-top">
+      <div class="proy-card-quien">
         <b>${esc(cli ? cli.nombre : t("auditoria_desconocido"))}</b>
-        <span class="cot-estado ${tj.estado === "terminado" ? "aprobada" : tj.estado === "cancelado" ? "rechazada" : "enviada"}">${esc(t("estado_" + tj.estado))}</span>
+        <span class="proy-card-obra">${esc(tj.titulo)}</span>
+        <span class="proy-card-num">#${tj.numero}${tj.fecha ? " · " + esc(fechaLargaISO(tj.fecha)) : ""}</span>
       </div>
-      <span class="proy-card-titulo">${esc(tj.titulo)}</span>
-      <div class="proy-card-plata">
-        <span><i data-i18n-skip>${esc(t("proy_entro"))}</i><b class="entra">${esc(DB.dinero.formato(tot.entradas_centavos, CFG_LANG))}</b></span>
-        <span><i>${esc(t("proy_salio"))}</i><b class="sale">${esc(DB.dinero.formato(tot.salidas_centavos, CFG_LANG))}</b></span>
-        <span><i>${esc(t("proy_saldo"))}</i><b class="${saldo < 0 ? "sale" : ""}">${esc(DB.dinero.formato(saldo, CFG_LANG))}</b></span>
-      </div>
-    </button>`;
-  }).join("");
+      <select class="proy-estado-sel" data-estado-trabajo="${tj.id}" aria-label="${esc(t("fin_estado"))}">
+        ${DB.estadosTrabajo.map(e => `<option value="${e}"${e === tj.estado ? " selected" : ""}>${esc(t("estado_" + e))}</option>`).join("")}
+      </select>
+    </div>
+    ${proyCajasHTML(tj, tot)}
+  </div>`;
+}
+
+/* Las cuatro cajas: cuánto se cotizó, cuánto se cobró, cuánto se gastó y qué
+   queda. Mismos nombres y mismos colores que DES. */
+function proyCajasHTML(tj, tot){
+  return `<div class="proy-cajas">
+    <div><span>${esc(t("proy_cotizado"))}</span><b>${esc(DB.dinero.formato(tj.precio_centavos || 0, CFG_LANG))}</b></div>
+    <div class="verde"><span>${esc(t("proy_cobrado"))}</span><b>${esc(DB.dinero.formato(tot.entradas_centavos, CFG_LANG))}</b></div>
+    <div class="rojo"><span>${esc(t("proy_gastado"))}</span><b>${esc(DB.dinero.formato(tot.salidas_centavos, CFG_LANG))}</b></div>
+    <div class="${tot.saldo_centavos < 0 ? "rojo" : "verde"}"><span>${esc(t("proy_saldo"))}</span><b>${esc(DB.dinero.formato(tot.saldo_centavos, CFG_LANG))}</b></div>
+  </div>`;
 }
 
 document.getElementById("proyLista").addEventListener("click", (e) => {
+  /* Tocar el menú de estado NO entra al proyecto: se cambia el estado y se
+     sigue viendo la lista, que es para lo que está ahí. */
+  if (e.target.closest("[data-estado-trabajo]")) return;
   const b = e.target.closest("[data-proy]");
   if (b) abrirProyecto(b.dataset.proy);
+});
+document.getElementById("proyLista").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const b = e.target.closest("[data-proy]");
+  if (!b || e.target !== b) return;
+  e.preventDefault();
+  abrirProyecto(b.dataset.proy);
+});
+/* El estado se cambia desde la lista, sin entrar. `change` y no `input`: en
+   un select `input` salta con cada tecla al navegarlo con el teclado. */
+document.getElementById("proyLista").addEventListener("change", (e) => {
+  const sel = e.target.closest("[data-estado-trabajo]");
+  if (!sel) return;
+  if (conAviso(() => DB.trabajos.update(sel.dataset.estadoTrabajo, { estado: sel.value }))) {
+    renderProyectos();
+    renderTrabajos();
+    toast(t("toast_trabajo_actualizado"));
+  }
 });
 
 /* ---------- El libro de un proyecto ---------- */
@@ -5373,36 +5471,62 @@ function renderProyectoDetalle(trabajoId){
   if (!tj) { proyCerrarDetalle(); renderProyectos(); return; }
   /* PRIMERO se pone a salvo el formulario. Abajo se reescribe el innerHTML de
      `#proyDetalle`, y si el formulario está adentro se DESTRUYE: deja de
-     existir en todo el DOM y la próxima vez que se lo busca es null. Pasó de
-     verdad al volver a Finanzas después de abrir un proyecto. */
+     existir en todo el DOM y la próxima vez que se lo busca es null. */
   finGuardarFormulario();
+  /* Se fija ANTES de armar la tabla: `finTablaHTML` lo consulta para no
+     repetir el número del trabajo en cada fila —adentro del proyecto ya se
+     sabe de cuál es—. Si se fijara después, la tabla ya estaría armada. */
+  finTrabajoId = trabajoId;
+
   const cli = DB.clientes.get(tj.cliente_id);
   const movs = DB.movimientos.deTrabajo(trabajoId);
   const tot = DB.movimientos.totales(movs);
+  const ajustado = tj.cobrar_centavos !== null && tj.cobrar_centavos !== undefined;
 
-  /* La cabecera compara lo PRESUPUESTADO con lo que pasó de verdad. Es la
-     pregunta que el libro viene a contestar: ¿salió como se pensaba? */
-  const ganPrevista = (tj.precio_centavos || 0) - (tj.costo_centavos || 0);
   document.getElementById("proyDetalle").innerHTML = `
-    <div class="page-head">
-      <div>
-        <h1>#${tj.numero} · ${esc(cli ? cli.nombre : t("auditoria_desconocido"))}</h1>
-        <p>${esc(tj.titulo)}</p>
+    <div class="card proy-cabecera">
+      <div class="proy-card-top">
+        <div class="proy-card-quien">
+          <b>${esc(cli ? cli.nombre : t("auditoria_desconocido"))}</b>
+          <span class="proy-card-obra">${esc(tj.titulo)}</span>
+          <span class="proy-card-num">#${tj.numero}${tj.fecha ? " · " + esc(fechaLargaISO(tj.fecha)) : ""}</span>
+        </div>
+        <select class="proy-estado-sel" data-estado-trabajo="${tj.id}" aria-label="${esc(t("fin_estado"))}">
+          ${DB.estadosTrabajo.map(e => `<option value="${e}"${e === tj.estado ? " selected" : ""}>${esc(t("estado_" + e))}</option>`).join("")}
+        </select>
       </div>
-      <div class="fin-banco">
-        <span data-i18n="proy_saldo">Saldo</span>
-        <b>${esc(DB.dinero.formato(tot.saldo_centavos, CFG_LANG))}</b>
-        <span>${tot.entradas_pendientes_centavos - tot.salidas_pendientes_centavos
-          ? esc(t("fin_mas_pendiente").replace("{m}", DB.dinero.formato(tot.entradas_pendientes_centavos - tot.salidas_pendientes_centavos, CFG_LANG)))
-          : ""}</span>
-      </div>
-    </div>
 
-    <div class="proy-resumen">
-      <div><span>${esc(t("proy_presupuestado"))}</span><b>${esc(DB.dinero.formato(tj.precio_centavos || 0, CFG_LANG))}</b></div>
-      <div><span>${esc(t("proy_entro"))}</span><b class="entra">${esc(DB.dinero.formato(tot.entradas_centavos, CFG_LANG))}</b></div>
-      <div><span>${esc(t("proy_salio"))}</span><b class="sale">${esc(DB.dinero.formato(tot.salidas_centavos, CFG_LANG))}</b></div>
-      <div><span>${esc(t("proy_ganancia_prevista"))}</span><b>${esc(DB.dinero.formato(ganPrevista, CFG_LANG))}</b></div>
+      <!-- La casilla del cotizado abre el monto acordado: sirve cuando se
+           cerró por otro número. El cotizado NO se pisa —queda tachado al
+           lado— porque saber cuánto se cedió es justo el dato que importa. -->
+      <div class="proy-cajas">
+        <div class="con-check">
+          <span>${esc(t("proy_cotizado"))}</span>
+          <label class="proy-ajuste">
+            <input type="checkbox" id="proyAjustar"${ajustado ? " checked" : ""}>
+            ${ajustado ? `<s>${esc(DB.dinero.formato(tj.precio_centavos || 0, CFG_LANG))}</s>` : ""}
+            <b>${esc(DB.dinero.formato(DB.trabajos.aCobrar(tj), CFG_LANG))}</b>
+          </label>
+          ${ajustado ? `<input type="number" id="proyCobrar" class="proy-ajuste-campo" min="0" step="0.01"
+             value="${esc(DB.dinero.aTexto(DB.trabajos.aCobrar(tj)))}" aria-label="${esc(t("proy_cobrar"))}">` : ""}
+        </div>
+        <div class="verde"><span>${esc(t("proy_cobrado"))}</span><b>${esc(DB.dinero.formato(tot.entradas_centavos, CFG_LANG))}</b></div>
+        <div class="rojo"><span>${esc(t("proy_gastado"))}</span><b>${esc(DB.dinero.formato(tot.salidas_centavos, CFG_LANG))}</b></div>
+        <div class="${tot.saldo_centavos < 0 ? "rojo" : "verde"}"><span>${esc(t("proy_saldo"))}</span><b>${esc(DB.dinero.formato(tot.saldo_centavos, CFG_LANG))}</b></div>
+      </div>
+
+      <div class="proy-trato">
+        <label>
+          <span>${esc(t("proy_entrega"))}</span>
+          <input type="date" id="proyEntrega" value="${esc(tj.fecha_entrega || "")}">
+        </label>
+        <label>
+          <span>${esc(t("proy_garantia"))}</span>
+          <input type="number" id="proyGarantia" min="0" max="240" step="1" value="${tj.garantia_meses ?? 12}">
+          <i>${esc(t("proy_meses"))}</i>
+        </label>
+        <em>${tj.fecha_entrega ? esc(fechaLargaISO(tj.fecha_entrega)) : esc(t("proy_sin_entrega"))}</em>
+      </div>
     </div>
 
     <div id="proyFormAncla"></div>
@@ -5410,19 +5534,52 @@ function renderProyectoDetalle(trabajoId){
     <div class="card fin-libro" style="margin-top:var(--sp-4)">
       <div class="fin-form-head">
         <h3>${esc(t("fin_movimientos"))}</h3>
-        <button type="button" class="btn ghost sm" data-nueva-cuenta="1"><span>${esc(t("fin_nueva_cuenta"))}</span></button>
+        <button type="button" class="btn primary sm" data-abrir-form="1">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <span>${esc(t("proy_agregar"))}</span>
+        </button>
       </div>
-      <div id="proyCuentas"></div>
       <div id="proyLibro">${finTablaHTML(movs)}</div>
+      <div id="proyCuentas"></div>
     </div>`;
 
-  /* El formulario se muda acá adentro. Al montarlo se limpia y queda
-     apuntando a este trabajo. */
   finMontarFormularioEn("proyFormAncla", trabajoId);
+  /* El formulario arranca plegado, como en DES: lo que se viene a mirar es el
+     libro, y cargar un movimiento es lo que se hace de a ratos. */
+  finPlegarFormulario(true);
   renderCuentasEmpresa("proyCuentas", "finChipsCuentas");
   finConectarLista("proyLibro");
   finConectarLista("proyCuentas");
   finConectarLista("proyDetalle");
+  proyConectarTrato(trabajoId);
+}
+
+/* Los campos del trato se guardan al salir del campo, no con un botón: son
+   tres datos sueltos y un botón "guardar" para cada uno sobraría. */
+function proyConectarTrato(trabajoId){
+  const guardar = (cambios) => {
+    if (conAviso(() => DB.trabajos.update(trabajoId, cambios))) {
+      renderProyectoDetalle(trabajoId);
+      renderTrabajos();
+    }
+  };
+  const entrega = document.getElementById("proyEntrega");
+  if (entrega) entrega.addEventListener("change", () => guardar({ fecha_entrega: entrega.value }));
+
+  const gar = document.getElementById("proyGarantia");
+  if (gar) gar.addEventListener("change", () => guardar({ garantia_meses: parseInt(gar.value, 10) || 0 }));
+
+  const check = document.getElementById("proyAjustar");
+  if (check) check.addEventListener("change", () => {
+    const tj = DB.trabajos.get(trabajoId);
+    /* Al prender la casilla arranca con lo cotizado: casi siempre se ajusta
+       hacia abajo desde ahí, y así no hay que escribir el número entero. */
+    guardar({ cobrar_centavos: check.checked ? (tj.precio_centavos || 0) : null });
+  });
+
+  const cobrar = document.getElementById("proyCobrar");
+  if (cobrar) cobrar.addEventListener("change", () =>
+    guardar({ cobrar_centavos: DB.dinero.aCentavos(cobrar.value) || 0 }));
 }
 
 /* =========================================================================

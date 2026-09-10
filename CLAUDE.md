@@ -245,6 +245,16 @@ un bundler salvo que el proyecto lo pida de verdad.
    vez que se lo busca es `null`. Pasó de verdad al volver a Finanzas después
    de abrir un proyecto.
 
+   3u. **Lo cotizado y lo acordado son dos números.** `cobrar_centavos` en
+   null = se cobra lo cotizado (`precio_centavos`); con valor = se cerró por
+   otro número y ESE manda. **No se pisa el cotizado**: perder ese dato sería
+   perder de vista cuánto se cedió, que es justo lo que sirve para saberlo. La
+   pantalla muestra el cotizado tachado al lado del acordado, como DES.
+   `DB.trabajos.aCobrar(tj)` es la única función que resuelve cuál de los dos
+   vale, para que la pantalla, los totales y los reportes digan lo mismo.
+   `fecha_entrega` es del trato y `fecha` es de la agenda: uno es el día que
+   se prometió entregar y el otro el día que se va a trabajar.
+
    3h. **El orden de los renglones lo manda la persona, no el código.** `orden`
    se guarda con la posición en que quedaron después de arrastrar, y es el
    orden en que salen en el PDF. Nunca reordenar por nombre ni por precio.
@@ -268,7 +278,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    `ErrorDatos` con una clave de i18n. En la UI se envuelven con `conAviso(...)`,
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
-8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v71**:
+8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v73**:
    1. `const CACHE = 'onestop-shell-vNN'` en `service-worker.js`
    2. el `?v=` de `data.js` e `i18n.js` dentro del `SHELL` del service worker
    3. el `?v=` de los `<script src>` en `index.html`
@@ -309,19 +319,19 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Clientes** (alta/edición/borrado, categorías, filtros, búsqueda, Google Maps + autocompletado) | ✅ terminado |
 | **Trabajos** (calendario mensual, "por agendar", modal completo, precio/costo, asignar trabajadores) | ✅ terminado |
 | **Equipo** (alta de trabajadores, roles, usuario del dispositivo) | ✅ terminado, sin login real |
-| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v13) |
+| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v14) |
 | **Lector de mensajes** (captura/PDF → campos del cliente, con Claude) | ✅ programado; falta desplegar el Worker |
 | **Catálogo** (equipos/materiales/servicios, proveedores, filtros para reportes) | ✅ terminado (esquema v3) |
-| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v13) |
+| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v14) |
 | **Cotización impresa / PDF** (datos de empresa, presentación, términos, firma) | ✅ terminado · igual que DES: HTML + impresión del navegador |
 | **Worker en Cloudflare** | ✅ desplegado en la cuenta de Rene · hoy sirve el lector de mensajes |
-| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v13), pero todavía sin desplegar |
+| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v14), pero todavía sin desplegar |
 | **R2** | ⛔ la tabla `archivos` y `DB.archivos` ya existen; falta el bucket. Hoy solo lo usa el logo |
 | **Login / permisos reales** | ⛔ hoy los roles son solo etiquetas de interfaz |
-| **Conversiones** (historial de lead → cliente, para reportes) | ✅ se registra solo (esquema v13) · la pantalla de reportes lo usará |
-| **Combos** (recetas de productos que se cotizan juntos) | ✅ terminado (esquema v13) |
-| **Finanzas** (entradas y salidas de la empresa, categorías, cuotas, baucher con IA) | ✅ terminado (esquema v13) |
-| **Proyectos** (la plata de cada trabajo: lista con filtro por estados y su libro) | ✅ terminado (esquema v13) |
+| **Conversiones** (historial de lead → cliente, para reportes) | ✅ se registra solo (esquema v14) · la pantalla de reportes lo usará |
+| **Combos** (recetas de productos que se cotizan juntos) | ✅ terminado (esquema v14) |
+| **Finanzas** (entradas y salidas de la empresa, categorías, cuotas, baucher con IA) | ✅ terminado (esquema v14) |
+| **Proyectos** (la plata de cada trabajo: lista con filtro por estados y su libro) | ✅ terminado (esquema v14) |
 | **Reportes** (cuánto se ganó por cliente / por mes, conversiones) | ⛔ los datos ya están, falta la pantalla |
 
 **Dónde viven los datos hoy:** solo en el navegador de cada dispositivo
