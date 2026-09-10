@@ -379,6 +379,56 @@
      dedo, para que no inviten a tocarlos. */
   .field.cerrado .num-paso{background:var(--line-soft);border-color:var(--line)}
   .field.cerrado .num-menos,.field.cerrado .num-mas{opacity:.35;pointer-events:none}
+  /* ---------- Ficha: ver antes de editar ----------
+     Etiqueta a la izquierda y valor a la derecha, como la ficha de DES. En
+     telefono la etiqueta sube arriba del valor: 150px de etiqueta en 375 le
+     dejan al dato menos de lo que necesita. */
+  .modal.ficha{max-width:580px}
+  .ficha-titulos{min-width:0;padding-right:8px}
+  .ficha-titulos h3{margin:1px 0 0;line-height:1.25}
+  .ficha-codigo{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;
+    font-weight:700;color:var(--frio-600)}
+  .ficha-sub{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+  .ficha-kv{display:grid;grid-template-columns:150px 1fr;gap:10px 14px;font-size:13.5px}
+  .ficha-kv .k{color:var(--muted);font-size:12px;font-weight:600;padding-top:1px}
+  .ficha-kv .v{color:var(--ink);min-width:0;overflow-wrap:anywhere}
+  .ficha-kv .v a{color:var(--frio-600);text-decoration:none}
+  .ficha-kv .v a:hover{text-decoration:underline}
+  .ficha-kv select{min-height:38px;padding:6px 10px;border:1.5px solid var(--line-campo);
+    border-radius:var(--radius-sm);background:var(--panel);font-size:13px;color:var(--ink);max-width:100%}
+  .ficha-nota{color:var(--muted);font-size:12px}
+  /* Lista de lo que tiene adentro (renglones de un combo). */
+  .ficha-lista{margin-top:var(--sp-4);border-top:1px solid var(--line);padding-top:var(--sp-3)}
+  .ficha-lista h4{margin:0 0 8px;font-size:10px;font-weight:800;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.05em}
+  .ficha-lista-fila{display:flex;align-items:baseline;gap:10px;padding:6px 0;
+    border-bottom:1px solid var(--line-soft);font-size:13px}
+  .ficha-lista-fila:last-child{border-bottom:none}
+  .ficha-lista-fila .cant{flex-shrink:0;color:var(--muted);font-size:12px;min-width:64px}
+  .ficha-lista-fila .nom{flex:1 1 auto;min-width:0}
+  .ficha-lista-fila .mon{flex-shrink:0;font-weight:700;font-variant-numeric:tabular-nums}
+  .ficha-lista-fila.oculto .nom{color:var(--muted);text-decoration:line-through}
+  #fichaAcciones .spacer{flex:1}
+  .ficha-atajos{display:flex;flex-wrap:wrap;gap:8px;margin-top:var(--sp-5);
+    padding-top:var(--sp-4);border-top:1px solid var(--line)}
+  /* Iguala el <a> (llamar, mapa) con el <button>: el link venia 4px mas alto
+     y subrayado, y en la misma fila se notaba. */
+  .ficha-atajos .btn,#fichaAcciones .btn{display:inline-flex;align-items:center;justify-content:center;
+    min-height:40px;line-height:1.2;padding-top:6px;padding-bottom:6px;text-decoration:none;text-align:center}
+  .fila-tocable{cursor:pointer}
+  #clientesTbody tr.fila-tocable:hover td{background:var(--line-soft)}
+  @media (max-width: 560px){
+    .ficha-kv{grid-template-columns:1fr;gap:1px}
+    .ficha-kv .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
+    .ficha-kv .v{margin-bottom:9px}
+    /* Grilla de a dos: cada fila toma la altura del boton mas alto, asi
+       "Ver cotizaciones y trabajos" en dos renglones no deja a su vecino
+       mas bajo. */
+    .ficha-atajos{display:grid;grid-template-columns:1fr 1fr}
+    #fichaAcciones .btn{flex:1 1 0}
+    #fichaAcciones .spacer{display:none}
+  }
+
   /* ---------- Proyectos ---------- */
   /* La tarjeta de un proyecto: arriba quien y en que estado, abajo la plata.
      Se toca entera para entrar a su libro. */
@@ -1903,6 +1953,32 @@
   </div>
 </div>
 
+<!-- ============ Modal: Ficha ============
+     Tocar algo en una lista MUESTRA; editar es un botón. Es el patrón de DES
+     y vale para toda la app. Una sola ficha que cada pantalla llena con lo
+     suyo, así se ven y se comportan igual en todos lados. -->
+<div class="modal-backdrop" id="modalFicha">
+  <div class="modal ficha">
+    <div class="modal-head">
+      <div class="ficha-titulos">
+        <span class="ficha-codigo" id="fichaCodigo"></span>
+        <h3 id="fichaTitulo"></h3>
+        <span class="ficha-sub" id="fichaSub"></span>
+      </div>
+      <button class="btn icon ghost" data-close-modal="modalFicha" aria-label="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="ficha-kv" id="fichaKv"></div>
+      <div id="fichaExtra"></div>
+      <!-- Los atajos (llamar, mapa, PDF…) van aparte del pie: con cinco o seis
+           botones el pie se partía en dos filas desparejas. El pie queda con
+           Eliminar y Editar, igual que todos los formularios de la app. -->
+      <div class="ficha-atajos" id="fichaAtajos" hidden></div>
+    </div>
+    <div class="modal-foot" id="fichaAcciones"></div>
+  </div>
+</div>
+
 <!-- ============ Modal: Historial de un cliente ============
      Antes esto vivía dentro del formulario de edición del cliente, mezclado con
      sus datos. Son dos cosas distintas: una es corregir un teléfono y otra es
@@ -2493,8 +2569,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=76"></script>
-<script src="data.js?v=76"></script>
+<script src="i18n.js?v=78"></script>
+<script src="data.js?v=78"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -2803,7 +2879,7 @@ function renderClientes(){
   cards.style.display = lista.length ? "" : "none";
 
   tbody.innerHTML = lista.map(c => {
-    return `<tr>
+    return `<tr class="fila-tocable" onclick="tocarFila(event, 'cliente', '${c.id}')">
       <td class="cell-nombre"><b>${esc(c.nombre)}</b>${c.empresa ? `<span>${esc(c.empresa)}</span>` : ""}</td>
       <td class="cell-contacto">
         ${c.telefono ? `<a href="tel:${esc(c.telefono)}">${iconTel()}${esc(c.telefono)}</a>` : `<span class="cell-muted">${t("clientes_sin_telefono")}</span>`}
@@ -2822,7 +2898,7 @@ function renderClientes(){
   }).join("");
 
   cards.innerHTML = lista.map(c => {
-    return `<div class="client-card">
+    return `<div class="client-card fila-tocable" onclick="tocarFila(event, 'cliente', '${c.id}')">
       <div class="client-card-top">
         <div><b>${esc(c.nombre)}</b>${c.empresa ? `<span>${esc(c.empresa)}</span>` : ""}</div>
       </div>
@@ -3480,7 +3556,7 @@ function tarjetaTrabajo(tj){
     return u ? `<span class="user-avatar mini" title="${esc(u.nombre)}">${iniciales(u.nombre)}</span>` : "";
   }).join("");
   const horas = tj.hora_inicio ? formatHora(tj.hora_inicio) + (tj.hora_fin ? " – " + formatHora(tj.hora_fin) : "") : "";
-  return `<div class="trabajo-card" onclick="abrirEdicionTrabajo('${tj.id}')">
+  return `<div class="trabajo-card" onclick="fichaTrabajo('${tj.id}')">
     <div class="tc-info">
       <b><span class="tc-num">#${tj.numero}</span>${esc(tj.titulo)}</b>
       <span>${c ? esc(c.nombre) : "—"}${tj.direccion ? " · " + esc(tj.direccion) : ""}</span>
@@ -3755,17 +3831,20 @@ document.getElementById("btnGuardarTrabajo").addEventListener("click", () => {
   renderTrabajos();
 });
 
-document.getElementById("btnEliminarTrabajo").addEventListener("click", () => {
-  if (!trabajoEditandoId) return;
+/* Borrar es UNA función que recibe el id: la usan el formulario y la ficha.
+   Antes vivía atada al formulario abierto y la ficha no tenía cómo llamarla. */
+function eliminarTrabajo(id){
+  if (!id) return;
   pedirConfirmacion("confirmar_eliminar_trabajo_titulo", "confirmar_eliminar_trabajo_texto", () => {
     conAviso(() => {
-      DB.trabajos.remove(trabajoEditandoId);
+      DB.trabajos.remove(id);
       toast(t("toast_trabajo_eliminado"));
       cerrarModal("modalTrabajo");
       renderTrabajos();
     });
   });
-});
+}
+document.getElementById("btnEliminarTrabajo").addEventListener("click", () => eliminarTrabajo(trabajoEditandoId));
 
 /* =========================================================================
    COTIZACIONES
@@ -3825,7 +3904,7 @@ function renderCotizaciones(){
   cont.innerHTML = lista.map(c => {
     const cliente = DB.clientes.get(c.cliente_id);
     const tot = DB.cotizaciones.totales(c);
-    return `<button type="button" class="cat-card" onclick="abrirEdicionCotizacion('${c.id}')">
+    return `<button type="button" class="cat-card" onclick="fichaCotizacion('${c.id}')">
       <span class="cot-num">${esc(numeroCot(c))}</span>
       <b>${esc(cliente ? cliente.nombre : t("auditoria_desconocido"))}</b>
       <span class="cat-sub">${esc(c.titulo)}</span>
@@ -3947,7 +4026,7 @@ function abrirHistorialCliente(clienteId){
 
   document.getElementById("histCotizaciones").innerHTML = cots.length ? cots.map(c => {
     const tot = DB.cotizaciones.totales(c);
-    return `<button type="button" class="cat-card" onclick="cerrarModal('modalHistorial');abrirEdicionCotizacion('${c.id}')">
+    return `<button type="button" class="cat-card" onclick="cerrarModal('modalHistorial');fichaCotizacion('${c.id}')">
       <span class="cot-num">${esc(numeroCot(c))}</span>
       <b>${esc(c.titulo)}</b>
       <span class="cot-estado ${c.estado}">${esc(t("cot_estado_" + c.estado))}</span>
@@ -3956,7 +4035,7 @@ function abrirHistorialCliente(clienteId){
   }).join("") : vacio("hist_sin_cotizaciones");
 
   document.getElementById("histTrabajos").innerHTML = trabajos.length ? trabajos.map(tj =>
-    `<button type="button" class="cat-card" onclick="cerrarModal('modalHistorial');abrirEdicionTrabajo('${tj.id}')">
+    `<button type="button" class="cat-card" onclick="cerrarModal('modalHistorial');fichaTrabajo('${tj.id}')">
       <span class="cot-num">#${tj.numero}</span>
       <b>${esc(tj.titulo)}</b>
       <span class="cot-estado ${tj.estado === "terminado" ? "aprobada" : tj.estado === "cancelado" ? "rechazada" : "enviada"}">${esc(t("estado_" + tj.estado))}</span>
@@ -4006,7 +4085,7 @@ function renderCombos(){
     const extras = [textoNproductos(n)];
     if (c.activo === false) extras.push(t("catalogo_filtro_inactivos"));
     if (tot.desactualizados) extras.push(t("combos_faltantes").replace("{n}", tot.desactualizados));
-    return `<button type="button" class="cat-card" onclick="abrirEdicionCombo('${c.id}')">
+    return `<button type="button" class="cat-card" onclick="fichaCombo('${c.id}')">
       <b>${esc(c.nombre)}</b>
       <span class="cat-sub">${esc(extras.join(" · "))}</span>
       <span class="cat-precio"><b>${esc(DB.dinero.formato(tot.precio_centavos, CFG_LANG))}</b></span>
@@ -4199,17 +4278,17 @@ document.getElementById("btnGuardarCombo").addEventListener("click", () => {
   toast(t(eraEdicion ? "toast_combo_actualizado" : "toast_combo_creado"));
 });
 
-document.getElementById("btnEliminarCombo").addEventListener("click", () => {
-  if (!comboEditandoId) return;
-  if (!DB.combos.get(comboEditandoId)) return;
+function eliminarCombo(id){
+  if (!id || !DB.combos.get(id)) return;
   pedirConfirmacion("combos_eliminar_titulo", "combos_eliminar_texto", () => {
-    if (conAviso(() => DB.combos.remove(comboEditandoId))) {
+    if (conAviso(() => DB.combos.remove(id))) {
       cerrarModal("modalCombo");
       renderCombos();
       toast(t("toast_combo_eliminado"));
     }
   });
-});
+}
+document.getElementById("btnEliminarCombo").addEventListener("click", () => eliminarCombo(comboEditandoId));
 
 /* ---------- Buscador del catálogo dentro de la cotización ---------- */
 function renderMenuProductosCot(){
@@ -4718,6 +4797,12 @@ let cotEsperandoTrabajo = null;
 
 document.getElementById("btnAprobarCotizacion").addEventListener("click", () => {
   const cot = guardarCotizacion();
+  if (cot) aprobarCotizacion(cot);
+});
+
+/* Recibe la cotización YA guardada. La usan el botón del formulario (que
+   guarda primero) y la ficha (donde ya está guardada). */
+function aprobarCotizacion(cot){
   if (!cot) return;
   if (!puedeGestionarTrabajos()) { toast(t("sin_permiso_trabajos"), true); return; }
 
@@ -4749,7 +4834,7 @@ document.getElementById("btnAprobarCotizacion").addEventListener("click", () => 
   /* La foto se vuelve a tomar DESPUÉS de llenar los campos: si no, el
      formulario nace marcado como "con cambios sin guardar". */
   marcarBaseModal("modalTrabajo");
-});
+}
 
 /* Si el formulario del trabajo se cierra sin guardar, la cotización se queda
    como estaba y el botón de aprobar sigue disponible. */
@@ -4759,8 +4844,7 @@ document.getElementById("modalTrabajo").addEventListener("click", (e) => {
   if (e.target === e.currentTarget && !modalSucio("modalTrabajo")) cotEsperandoTrabajo = null;
 });
 
-document.getElementById("btnEliminarCotizacion").addEventListener("click", () => {
-  const id = cotizacionEditandoId;
+function eliminarCotizacion(id){
   if (!id) return;
   pedirConfirmacion("cot_eliminar_titulo", "cot_eliminar_texto", () => {
     if (!conAviso(() => DB.cotizaciones.remove(id))) return;
@@ -4769,7 +4853,8 @@ document.getElementById("btnEliminarCotizacion").addEventListener("click", () =>
     renderFiltrosCotizaciones();
     renderCotizaciones();
   });
-});
+}
+document.getElementById("btnEliminarCotizacion").addEventListener("click", () => eliminarCotizacion(cotizacionEditandoId));
 
 /* =========================================================================
    FINANZAS · el libro de la plata de la empresa
@@ -5607,6 +5692,370 @@ function proyConectarTrato(trabajoId){
 }
 
 /* =========================================================================
+   FICHA · ver antes de editar
+   -------------------------------------------------------------------------
+   Tocar algo en una lista MUESTRA sus datos; editar es uno de los botones.
+   Antes cotizaciones, catálogo y trabajos iban directo al formulario, y
+   mirar un dato era arriesgarse a cambiarlo sin querer. Es el patrón de DES.
+
+   Una sola ficha para toda la app. Cada pantalla le pasa:
+     codigo, titulo, sub          → el encabezado
+     estado {…}                   → un menú para cambiarlo sin editar
+     pares [[etiqueta, html]]     → los datos; los vacíos no se muestran
+     extra                        → html suelto abajo (la lista de un combo)
+     acciones [{txt, fn|href}]    → los botones
+   Los valores de `pares` llegan YA escapados: la ficha no sabe qué es texto
+   del usuario y qué es un link armado adentro.
+   ========================================================================= */
+let fichaAcciones = [];
+
+function abrirFicha(f){
+  const cod = document.getElementById("fichaCodigo");
+  cod.textContent = f.codigo || ""; cod.hidden = !f.codigo;
+  document.getElementById("fichaTitulo").textContent = f.titulo || "";
+  const sub = document.getElementById("fichaSub");
+  sub.textContent = f.sub || ""; sub.hidden = !f.sub;
+
+  const filas = [];
+  if (f.estado) {
+    filas.push(`<div class="k">${esc(f.estado.etiqueta)}</div><div class="v">
+      <select class="ficha-estado" aria-label="${esc(f.estado.etiqueta)}">
+        ${f.estado.opciones.map(o => `<option value="${esc(o.v)}"${o.v === f.estado.valor ? " selected" : ""}>${esc(o.txt)}</option>`).join("")}
+      </select></div>`);
+  }
+  /* Solo lo que tiene algo. Un "Marca: —" en cada ficha es ruido. */
+  for (const [k, v] of (f.pares || [])) {
+    if (v === null || v === undefined || v === "") continue;
+    filas.push(`<div class="k">${esc(k)}</div><div class="v">${v}</div>`);
+  }
+  document.getElementById("fichaKv").innerHTML = filas.join("");
+  document.getElementById("fichaExtra").innerHTML = f.extra || "";
+
+  /* El pie lleva lo mismo que todos los formularios de la app: Eliminar a la
+     izquierda —lejos de Editar, porque es el que no tiene vuelta atrás— y
+     Editar a la derecha. Lo demás son atajos y va en su propia fila. */
+  fichaAcciones = (f.acciones || []).filter(Boolean);
+  const boton = (a, i) => a.href
+    ? `<a class="btn ghost" href="${esc(a.href)}"${a.nuevaVentana ? ' target="_blank" rel="noopener"' : ""}>${esc(a.txt)}</a>`
+    : `<button type="button" class="btn ${a.primario ? "primary" : a.peligro ? "danger ghost" : "ghost"}" data-accion="${i}">${esc(a.txt)}</button>`;
+  const alPie = (a) => a.lado === "izq" || a.primario;
+  const izq = fichaAcciones.map((a, i) => a.lado === "izq" ? boton(a, i) : "").join("");
+  const der = fichaAcciones.map((a, i) => a.primario ? boton(a, i) : "").join("");
+  const atajos = fichaAcciones.map((a, i) => alPie(a) ? "" : boton(a, i)).join("");
+  document.getElementById("fichaAcciones").innerHTML = izq + '<div class="spacer"></div>' + der;
+  const caja = document.getElementById("fichaAtajos");
+  caja.innerHTML = atajos;
+  caja.hidden = !atajos;
+
+  const sel = document.querySelector("#fichaKv .ficha-estado");
+  if (sel && f.estado) sel.addEventListener("change", () => f.estado.alCambiar(sel.value));
+
+  /* Si ya está abierta (se repinta tras cambiar el estado) no se vuelve a
+     abrir: `abrirModal` la subiría de capa y la animación se repetiría. */
+  if (!document.getElementById("modalFicha").classList.contains("open")) abrirModal("modalFicha");
+}
+
+document.getElementById("modalFicha").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-accion]");
+  if (!b) return;
+  const a = fichaAcciones[Number(b.dataset.accion)];
+  if (!a || !a.fn) return;
+  /* Casi todas las acciones llevan a otra ventana: la ficha se cierra antes
+     para no quedar debajo. Las que se quedan (activar, desactivar) repintan
+     la ficha misma. */
+  if (!a.quedarse) cerrarModal("modalFicha");
+  a.fn();
+});
+
+/* Clientes y equipo: la fila entera abre la ficha, pero lo que hay adentro
+   —el teléfono, los menús de categoría y estado, los botones— sigue
+   haciendo lo suyo. Sin esta guarda, cambiar la categoría abría la ficha. */
+function tocarFila(e, tipo, id){
+  if (e.target.closest("a, button, select, input, label, .badge-sel")) return;
+  if (tipo === "cliente") fichaCliente(id);
+  else if (tipo === "trabajador") fichaTrabajador(id);
+}
+
+/* ---------- Ayudantes de la ficha ---------- */
+const fmoney = (c) => esc(DB.dinero.formato(c || 0, CFG_LANG));
+const fsino = (activo) => esc(t(activo === false ? "clientes_inactivo" : "clientes_activo"));
+const ftel = (tel) => tel ? `<a href="tel:${esc(tel)}">${esc(tel)}</a>` : "";
+const fmail = (m) => m ? `<a href="mailto:${esc(m)}">${esc(m)}</a>` : "";
+/* Google Maps con la ubicación exacta si la hay, y si no con la dirección.
+   Es la dirección pública de Maps: no gasta la clave de la app. */
+function urlMapaDe(o){
+  if (!o) return null;
+  if (o.lat !== null && o.lat !== undefined && o.lat !== "" && o.lng !== null && o.lng !== undefined && o.lng !== "") {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.lat + "," + o.lng)}`;
+  }
+  return o.direccion ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccionCompleta(o))}` : null;
+}
+const accLlamar = (tel) => tel ? { txt: t("ficha_llamar"), href: "tel:" + tel } : null;
+const accMapa = (o) => { const u = urlMapaDe(o); return u ? { txt: t("ficha_mapa"), href: u, nuevaVentana: true } : null; };
+
+/* ---------- Cotización ---------- */
+function fichaCotizacion(id){
+  const c = DB.cotizaciones.get(id);
+  if (!c) return;
+  const cli = DB.clientes.get(c.cliente_id);
+  const tot = DB.cotizaciones.totales(c);
+  const tj = c.trabajo_id ? DB.trabajos.get(c.trabajo_id) : null;
+  abrirFicha({
+    codigo: numeroCot(c),
+    titulo: c.titulo,
+    sub: cli ? cli.nombre : "",
+    estado: {
+      etiqueta: t("cot_estado"), valor: c.estado,
+      opciones: DB.estadosCotizacion.map(e => ({ v: e, txt: t("cot_estado_" + e) })),
+      alCambiar: (v) => {
+        if (conAviso(() => DB.cotizaciones.update(id, { estado: v }))) {
+          renderFiltrosCotizaciones(); renderCotizaciones();
+          toast(t("toast_cot_actualizada"));
+        }
+        fichaCotizacion(id);
+      },
+    },
+    pares: [
+      [t("form_trabajo_cliente"), cli ? esc(cli.nombre) : ""],
+      [t("pdf_fecha"), c.fecha ? esc(fechaLargaISO(c.fecha)) : ""],
+      [t("cot_valida_hasta"), c.valida_hasta ? esc(fechaLargaISO(c.valida_hasta)) : ""],
+      [t("ficha_renglones"), String(DB.cotizaciones.items(c.id).length)],
+      [t("cot_subtotal"), fmoney(tot.subtotal_centavos)],
+      [t("cot_impuesto"), tot.impuesto_centavos
+        ? `${fmoney(tot.impuesto_centavos)} <span class="ficha-nota">(${(c.impuesto_centesimas || 0) / 100}%)</span>` : ""],
+      [t("cot_total"), `<b>${fmoney(tot.total_centavos)}</b>`],
+      [t("ficha_trabajo"), tj ? `#${tj.numero}` : ""],
+      [t("cot_notas"), c.notas ? textoAHtml(c.notas) : ""],
+    ],
+    acciones: [
+      { txt: t("eliminar"), lado: "izq", peligro: true, fn: () => eliminarCotizacion(id) },
+      { txt: t("cot_pdf"), fn: () => abrirPdfCotizacion(id) },
+      /* Mismo criterio que el formulario: se ve siempre que la cotización no
+         tenga su trabajo, y el permiso se revisa al tocarlo (aprobarCotizacion
+         avisa si no hay). Esconderlo acá y mostrarlo allá era una incongruencia. */
+      !c.trabajo_id
+        ? { txt: t("cot_aprobar"), fn: () => aprobarCotizacion(DB.cotizaciones.get(id)) } : null,
+      { txt: t("ficha_editar"), primario: true, fn: () => abrirEdicionCotizacion(id) },
+    ],
+  });
+}
+
+/* ---------- Trabajo ---------- */
+function fichaTrabajo(id){
+  const tj = DB.trabajos.get(id);
+  if (!tj) return;
+  const cli = DB.clientes.get(tj.cliente_id);
+  const tecnicos = (tj.trabajador_ids || [])
+    .map(uid => DB.usuarios.getAll().find(u => u.id === uid)).filter(Boolean)
+    .map(u => esc(u.nombre)).join(", ");
+  const horas = tj.hora_inicio ? formatHora(tj.hora_inicio) + (tj.hora_fin ? " – " + formatHora(tj.hora_fin) : "") : "";
+  const acordado = tj.cobrar_centavos !== null && tj.cobrar_centavos !== undefined;
+  abrirFicha({
+    codigo: "#" + tj.numero,
+    titulo: tj.titulo,
+    sub: cli ? cli.nombre : "",
+    estado: {
+      etiqueta: t("ficha_estado"), valor: tj.estado,
+      opciones: DB.estadosTrabajo.map(e => ({ v: e, txt: t("estado_" + e) })),
+      alCambiar: (v) => {
+        /* "Agendado" sin fecha lo rechaza la capa de datos: conAviso muestra
+           el motivo y la ficha se repinta con el estado que quedó de verdad. */
+        if (conAviso(() => DB.trabajos.update(id, { estado: v }))) {
+          renderTrabajos();
+          toast(t("toast_trabajo_actualizado"));
+        }
+        fichaTrabajo(id);
+      },
+    },
+    pares: [
+      [t("form_trabajo_cliente"), cli ? esc(cli.nombre) : ""],
+      [t("ficha_fecha"), tj.fecha ? esc(fechaLargaISO(tj.fecha)) : esc(t("ficha_sin_fecha"))],
+      [t("ficha_horario"), esc(horas)],
+      [t("ficha_tecnicos"), tecnicos || esc(t("ficha_sin_tecnicos"))],
+      [t("form_trabajo_direccion"), tj.direccion ? esc(direccionCompleta(tj)) : ""],
+      [t("ficha_precio"), fmoney(tj.precio_centavos)],
+      [t("proy_cobrar"), acordado ? fmoney(tj.cobrar_centavos) : ""],
+      [t("ficha_costo"), fmoney(tj.costo_centavos)],
+      [t("ficha_ganancia"), `<b>${fmoney(DB.trabajos.ganancia(tj))}</b>`],
+      [t("proy_entrega"), tj.fecha_entrega ? esc(fechaLargaISO(tj.fecha_entrega)) : ""],
+      [t("proy_garantia"), tj.garantia_meses ? esc(tj.garantia_meses + " " + t("proy_meses")) : ""],
+      [t("ficha_descripcion"), tj.descripcion ? textoAHtml(tj.descripcion) : ""],
+    ],
+    acciones: [
+      { txt: t("eliminar"), lado: "izq", peligro: true, fn: () => eliminarTrabajo(id) },
+      accLlamar(cli && cli.telefono),
+      accMapa(tj.direccion ? tj : cli),
+      { txt: t("ficha_ver_plata"), fn: () => { irATab("proyectos"); abrirProyecto(id); } },
+      { txt: t("ficha_editar"), primario: true, fn: () => abrirEdicionTrabajo(id) },
+    ],
+  });
+}
+
+/* ---------- Cliente ---------- */
+function fichaCliente(id){
+  const c = DB.clientes.get(id);
+  if (!c) return;
+  const cat = categoriaDe(c.categoria_id);
+  abrirFicha({
+    codigo: "",
+    titulo: c.nombre,
+    sub: c.empresa || "",
+    pares: [
+      [t("form_relacion"), esc(t(c.relacion === "cliente" ? "clientes_cliente" : "clientes_lead"))],
+      [t("ficha_estado"), fsino(c.estado === "inactivo" ? false : true)],
+      [t("form_categoria"), cat ? esc(cat.nombre) : ""],
+      [t("form_telefono"), ftel(c.telefono)],
+      [t("form_email"), fmail(c.email)],
+      [t("form_direccion"), c.direccion ? esc(direccionCompleta(c)) : ""],
+      [t("ficha_facturacion"), (!c.fact_igual && c.direccion_fact)
+        ? esc(c.direccion_fact + (c.direccion_fact_2 ? ", " + c.direccion_fact_2 : "")) : ""],
+      [t("ficha_cotizaciones"), String(DB.cotizaciones.deCliente(id).length)],
+      [t("ficha_trabajos"), String(DB.trabajos.deCliente(id).length)],
+      [t("form_notas"), c.notas ? textoAHtml(c.notas) : ""],
+    ],
+    acciones: [
+      { txt: t("eliminar"), lado: "izq", peligro: true, fn: () => pedirEliminarCliente(id) },
+      accLlamar(c.telefono),
+      accMapa(c),
+      { txt: t("cliente_ver_historial"), fn: () => abrirHistorialCliente(id) },
+      { txt: t("cliente_nueva_cot"), fn: () => abrirNuevaCotizacion(id) },
+      { txt: t("ficha_editar"), primario: true, fn: () => abrirEdicionCliente(id) },
+    ],
+  });
+}
+
+/* ---------- Producto del catálogo ---------- */
+function fichaProducto(id){
+  const p = DB.catalogo.get(id);
+  if (!p) return;
+  const prov = p.proveedor_id ? DB.proveedores.get(p.proveedor_id) : null;
+  const m = DB.catalogo.margen(p);
+  abrirFicha({
+    codigo: p.codigo || "",
+    titulo: p.nombre,
+    sub: [t("catalogo_tipo_" + p.tipo), p.marca, p.modelo].filter(Boolean).join(" · "),
+    pares: [
+      [t("catalogo_tipo"), esc(t("catalogo_tipo_" + p.tipo))],
+      [t("catalogo_marca"), esc(p.marca || "")],
+      [t("catalogo_modelo"), esc(p.modelo || "")],
+      [t("ficha_capacidad"), p.capacidad_btu ? esc(formatoBtu(p.capacidad_btu)) : ""],
+      [t("catalogo_proveedor"), prov ? esc(prov.nombre) : ""],
+      [t("catalogo_unidad"), esc(t("unidad_" + p.unidad))],
+      [t("catalogo_precio"), `<b>${fmoney(p.precio_centavos)}</b>`],
+      [t("catalogo_costo"), fmoney(p.costo_centavos)],
+      [t("ficha_ganancia"), m.porcentaje !== null ? t("catalogo_margen_detalle")
+        .replace("{g}", `<b>${fmoney(m.ganancia_centavos)}</b>`).replace("{p}", `<b>${m.porcentaje}%</b>`) : ""],
+      [t("ficha_estado"), fsino(p.activo)],
+      [t("ficha_descripcion"), p.descripcion ? textoAHtml(p.descripcion) : ""],
+    ],
+    acciones: [
+      { txt: t("eliminar"), lado: "izq", peligro: true, fn: () => eliminarProducto(id) },
+      /* Se queda en la ficha: prender o apagar un producto es un toque, no un
+         trámite, y lo natural es ver el cambio ahí mismo. */
+      { txt: t(p.activo === false ? "ficha_activar" : "ficha_desactivar"), quedarse: true, fn: () => {
+          if (conAviso(() => DB.catalogo.update(id, { activo: p.activo === false }))) {
+            renderFiltrosCatalogo(); renderCatalogo();
+            toast(t("toast_producto_actualizado"));
+          }
+          fichaProducto(id);
+        } },
+      { txt: t("ficha_editar"), primario: true, fn: () => abrirEdicionItemCatalogo(id) },
+    ],
+  });
+}
+
+/* ---------- Proveedor ---------- */
+function fichaProveedor(id){
+  const p = DB.proveedores.get(id);
+  if (!p) return;
+  const n = DB.proveedores.productos(id).length;
+  const web = p.sitio_web ? urlSegura(p.sitio_web) : null;
+  abrirFicha({
+    codigo: "",
+    titulo: p.nombre,
+    sub: p.contacto || "",
+    pares: [
+      [t("ficha_contacto"), esc(p.contacto || "")],
+      [t("form_telefono"), ftel(p.telefono)],
+      [t("form_email"), fmail(p.email)],
+      [t("proveedores_sitio"), p.sitio_web
+        ? (web ? `<a href="${esc(web)}" target="_blank" rel="noopener">${esc(p.sitio_web)}</a>` : esc(p.sitio_web)) : ""],
+      [t("form_direccion"), esc(p.direccion || "")],
+      [t("ficha_productos"), String(n)],
+      [t("ficha_estado"), fsino(p.activo)],
+      [t("form_notas"), p.notas ? textoAHtml(p.notas) : ""],
+    ],
+    acciones: [
+      { txt: t("eliminar"), lado: "izq", peligro: true, fn: () => eliminarProveedor(id) },
+      accLlamar(p.telefono),
+      n ? { txt: t("ficha_ver_productos"), fn: () => {
+          irATab("catalogo");
+          mostrarVistaCatalogo("productos");
+          document.getElementById("filtroProveedorProducto").value = id;
+          renderCatalogo();
+        } } : null,
+      { txt: t("ficha_editar"), primario: true, fn: () => abrirEdicionProveedor(id) },
+    ],
+  });
+}
+
+/* ---------- Combo ---------- */
+function fichaCombo(id){
+  const c = DB.combos.get(id);
+  if (!c) return;
+  const items = DB.combos.items(id);
+  const tot = DB.combos.totales(id);
+  const lista = items.length ? `<div class="ficha-lista">
+      <h4>${esc(t("combos_productos"))}</h4>
+      ${items.map(i => `<div class="ficha-lista-fila${i.en_pdf === 0 ? " oculto" : ""}">
+        <span class="cant">${esc(DB.cantidad.aTexto(i.cantidad_centesimas))} ${esc(t("unidad_" + i.unidad))}</span>
+        <span class="nom">${esc(i.nombre)}</span>
+        <span class="mon">${fmoney(DB.cantidad.porPrecio(i.cantidad_centesimas, i.precio_centavos))}</span>
+      </div>`).join("")}
+    </div>` : "";
+  abrirFicha({
+    codigo: "",
+    titulo: c.nombre,
+    sub: c.descripcion || "",
+    pares: [
+      [t("ficha_productos"), String(items.length)],
+      [t("combos_precio"), `<b>${fmoney(tot.precio_centavos)}</b>`],
+      [t("cot_ganancia"), fmoney(tot.precio_centavos - tot.costo_centavos)],
+      [t("ficha_estado"), fsino(c.activo)],
+      [t("form_notas"), c.notas ? textoAHtml(c.notas) : ""],
+    ],
+    extra: lista,
+    acciones: [
+      { txt: t("eliminar"), lado: "izq", peligro: true, fn: () => eliminarCombo(id) },
+      { txt: t("ficha_editar"), primario: true, fn: () => abrirEdicionCombo(id) },
+    ],
+  });
+}
+
+/* ---------- Trabajador ---------- */
+function fichaTrabajador(id){
+  const u = DB.usuarios.getAll().find(x => x.id === id);
+  if (!u) return;
+  abrirFicha({
+    codigo: "",
+    titulo: u.nombre,
+    sub: t("rol_" + u.rol),
+    pares: [
+      [t("form_rol"), esc(t("rol_" + u.rol))],
+      [t("form_telefono"), ftel(u.telefono)],
+      [t("form_email"), fmail(u.email)],
+      [t("ficha_estado"), fsino(u.activo)],
+      [t("ficha_trabajos_asignados"), String(DB.usuarios.trabajosAsignados(id))],
+    ],
+    acciones: [
+      { txt: t("eliminar"), lado: "izq", peligro: true, fn: () => pedirEliminarTrabajador(id) },
+      accLlamar(u.telefono),
+      { txt: t("ficha_editar"), primario: true, fn: () => abrirEdicionTrabajador(id) },
+    ],
+  });
+}
+
+/* =========================================================================
    COTIZACIÓN IMPRESA (PDF)
    -------------------------------------------------------------------------
    Mismo camino que DES: se arma un HTML completo en una ventana nueva y se
@@ -6256,7 +6705,7 @@ function renderCatalogo(){
       prov ? prov.nombre : "",
       m.porcentaje !== null ? t("catalogo_margen_corto").replace("{p}", m.porcentaje) : "",
     ].filter(Boolean).join(" · ");
-    return `<button type="button" class="cat-card${p.activo === false ? " inactivo" : ""}" onclick="abrirEdicionItemCatalogo('${p.id}')">
+    return `<button type="button" class="cat-card${p.activo === false ? " inactivo" : ""}" onclick="fichaProducto('${p.id}')">
       <span class="cat-tag ${p.tipo}">${esc(t("catalogo_tipo_" + p.tipo))}</span>
       <b>${esc(p.nombre)}</b>
       <span class="cat-sub">${esc(detalle)}</span>
@@ -6420,8 +6869,7 @@ document.getElementById("btnGuardarItemCatalogo").addEventListener("click", () =
   renderCatalogo();
 });
 
-document.getElementById("btnEliminarItemCatalogo").addEventListener("click", () => {
-  const id = itemCatalogoEditandoId;
+function eliminarProducto(id){
   if (!id) return;
   pedirConfirmacion("confirmar_producto_titulo", "confirmar_producto_texto", () => {
     if (!conAviso(() => DB.catalogo.remove(id))) return;
@@ -6430,7 +6878,8 @@ document.getElementById("btnEliminarItemCatalogo").addEventListener("click", () 
     renderFiltrosCatalogo();
     renderCatalogo();
   });
-});
+}
+document.getElementById("btnEliminarItemCatalogo").addEventListener("click", () => eliminarProducto(itemCatalogoEditandoId));
 
 /* ---------- Proveedores ---------- */
 function renderProveedores(){
@@ -6449,7 +6898,7 @@ function renderProveedores(){
   cont.innerHTML = lista.map(p => {
     const n = DB.proveedores.productos(p.id).length;
     const detalle = [p.contacto, p.telefono, p.email].filter(Boolean).join(" · ");
-    return `<button type="button" class="cat-card${p.activo === false ? " inactivo" : ""}" onclick="abrirEdicionProveedor('${p.id}')">
+    return `<button type="button" class="cat-card${p.activo === false ? " inactivo" : ""}" onclick="fichaProveedor('${p.id}')">
       <b>${esc(p.nombre)}</b>
       <span class="cat-sub">${esc(detalle)}</span>
       <span class="cat-precio">
@@ -6537,8 +6986,7 @@ document.getElementById("btnGuardarProveedor").addEventListener("click", () => {
   }
 });
 
-document.getElementById("btnEliminarProveedor").addEventListener("click", () => {
-  const id = proveedorEditandoId;
+function eliminarProveedor(id){
   if (!id) return;
   pedirConfirmacion("confirmar_proveedor_titulo", "confirmar_proveedor_texto", () => {
     if (!conAviso(() => DB.proveedores.remove(id))) return;
@@ -6547,7 +6995,8 @@ document.getElementById("btnEliminarProveedor").addEventListener("click", () => 
     renderFiltrosCatalogo();
     renderProveedores();
   });
-});
+}
+document.getElementById("btnEliminarProveedor").addEventListener("click", () => eliminarProveedor(proveedorEditandoId));
 
 /* =========================================================================
    CONFIGURACIÓN
@@ -6609,7 +7058,7 @@ function renderUsuarios(){
     usuarios.map(u => `<option value="${u.id}">${esc(u.nombre)}</option>`).join("");
   selAct.value = DB.config.get("usuario_actual_id", "");
   document.getElementById("usuariosList").innerHTML = usuarios.map(u => `
-    <div class="user-row${u.activo === false ? " inactivo" : ""}">
+    <div class="user-row fila-tocable${u.activo === false ? " inactivo" : ""}" onclick="tocarFila(event, 'trabajador', '${u.id}')">
       <div class="user-avatar">${iniciales(u.nombre)}</div>
       <div class="info">
         <b>${esc(u.nombre)}${u.activo === false ? ` <span class="badge estado-inactivo">${t("clientes_inactivo")}</span>` : ""}</b>
