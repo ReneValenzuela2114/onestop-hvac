@@ -1863,6 +1863,7 @@ const DB = {
   tiposCatalogo: TIPOS_CATALOGO,
   unidades: UNIDADES,
   estadosCotizacion: ESTADOS_COTIZACION,
+  estadosTrabajo: ESTADOS_TRABAJO_VALIDOS,
   estadosMovimiento: ESTADOS_MOVIMIENTO,
   categoriasMovimiento: CATEGORIAS_MOVIMIENTO,
   ErrorDatos,

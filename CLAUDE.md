@@ -222,6 +222,22 @@ un bundler salvo que el proyecto lo pida de verdad.
    migración a v13 **no** convirtió precios en movimientos, que sería inventar
    cobros que quizá nunca ocurrieron.
 
+   3t. **Tres pestañas de plata y cada una responde algo distinto.**
+   **Trabajos** es la agenda (calendario, técnicos, fechas). **Proyectos** es
+   la plata de cada trabajo: qué se cobró y qué se gastó haciéndolo, con la
+   lista filtrable por estado y el libro de cada uno. **Finanzas** es la plata
+   de la empresa que no cuelga de ningún trabajo (renta, impuestos,
+   herramienta), agrupada en las tres categorías de DES.
+   El **formulario de movimiento es UNO SOLO** en todo el HTML y se muda al
+   panel que lo necesita con `finMontarFormularioEn()`. No es ahorro de
+   líneas: es lo que garantiza que en los dos lados se vea y se comporte
+   igual, que es lo que Rene pidió.
+   ⚠️ Antes de reescribir el `innerHTML` de un panel que pueda tener el
+   formulario adentro hay que llamar a **`finGuardarFormulario()`**. Sin eso,
+   el `innerHTML =` lo DESTRUYE: deja de existir en todo el DOM y la próxima
+   vez que se lo busca es `null`. Pasó de verdad al volver a Finanzas después
+   de abrir un proyecto.
+
    3h. **El orden de los renglones lo manda la persona, no el código.** `orden`
    se guarda con la posición en que quedaron después de arrastrar, y es el
    orden en que salen en el PDF. Nunca reordenar por nombre ni por precio.
@@ -245,7 +261,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    `ErrorDatos` con una clave de i18n. En la UI se envuelven con `conAviso(...)`,
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
-8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v67**:
+8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v70**:
    1. `const CACHE = 'onestop-shell-vNN'` en `service-worker.js`
    2. el `?v=` de `data.js` e `i18n.js` dentro del `SHELL` del service worker
    3. el `?v=` de los `<script src>` en `index.html`
@@ -298,7 +314,7 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Conversiones** (historial de lead → cliente, para reportes) | ✅ se registra solo (esquema v13) · la pantalla de reportes lo usará |
 | **Combos** (recetas de productos que se cotizan juntos) | ✅ terminado (esquema v13) |
 | **Finanzas** (entradas y salidas de la empresa, categorías, cuotas, baucher con IA) | ✅ terminado (esquema v13) |
-| **Movimientos por trabajo** | ⛔ la capa de datos está; falta la pantalla dentro del trabajo |
+| **Proyectos** (la plata de cada trabajo: lista con filtro por estados y su libro) | ✅ terminado (esquema v13) |
 | **Reportes** (cuánto se ganó por cliente / por mes, conversiones) | ⛔ los datos ya están, falta la pantalla |
 
 **Dónde viven los datos hoy:** solo en el navegador de cada dispositivo
@@ -343,8 +359,10 @@ serio hasta que exista D1.**
   guarda que revienta al arrancar si falta alguna, así no vuelve a pasar en
   silencio.
 
-- **Naming inconsistente**: la pestaña se llama `proyectos` en el HTML pero el módulo,
-  la tabla y los textos son "trabajos"/"jobs". Unificar a `trabajos` cuando se toque.
+- ~~**Naming inconsistente** en la pestaña de trabajos~~ ✅ saldada (9 sep 2026):
+  la pestaña de trabajos usa `trabajos` en el HTML, igual que su módulo y su
+  tabla. El nombre `proyectos` quedó libre y hoy lo usa la pestaña nueva, que
+  es la que muestra la plata de cada trabajo.
 - **El Worker queda con una dirección pública hasta que exista el login.** Se filtra
   por `Origin` (un pedido de otro sitio recibe 403 sin gastar un centavo), pero eso
   no frena a alguien decidido. **La protección real es el tope de gasto mensual del
