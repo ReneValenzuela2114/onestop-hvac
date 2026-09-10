@@ -27,7 +27,7 @@
    - IDs: crypto.randomUUID(). Fechas de auditoría: epoch ms (Date.now()).
    ========================================================================= */
 
-const ESQUEMA_VERSION = 12;
+const ESQUEMA_VERSION = 13;
 
 const CLAVES = {
   clientes: "os_clientes_v1",
@@ -42,10 +42,12 @@ const CLAVES = {
   conversiones: "os_conversiones_v1",
   combos: "os_combos_v1",
   comboItems: "os_combo_items_v1",
+  movimientos: "os_movimientos_v1",
+  cuentas: "os_cuentas_v1",
   config: "os_config_v1",
 };
 
-const COLECCIONES = ["clientes", "categoriasClientes", "usuarios", "trabajos", "archivos", "proveedores", "catalogo", "cotizaciones", "cotizacionItems", "conversiones", "combos", "comboItems"];
+const COLECCIONES = ["clientes", "categoriasClientes", "usuarios", "trabajos", "archivos", "proveedores", "catalogo", "cotizaciones", "cotizacionItems", "conversiones", "combos", "comboItems", "movimientos", "cuentas"];
 
 /* Los bytes de los archivos (logo, y en el futuro fotos) no viven con los
    demás datos: van aparte, igual que van a vivir aparte en R2. */
@@ -249,6 +251,13 @@ const ENTIDADES_ARCHIVO = ["trabajo", "cliente", "usuario", "empresa"];
 const ESTADOS_COTIZACION = ["borrador", "enviada", "aprobada", "rechazada", "vencida"];
 const TIPOS_CATALOGO = ["equipo", "material", "servicio"];
 const UNIDADES = ["unidad", "pie", "libra", "galon", "hora", "juego"];
+/* Un movimiento LISTO ya pasó de verdad; uno PENDIENTE es una promesa. Solo
+   los listos suman al saldo — es la regla que trae DES y es la que hace que
+   el número de arriba sea plata que existe y no plata que se espera. */
+const ESTADOS_MOVIMIENTO = ["listo", "pendiente"];
+/* Las mismas tres de DES, a pedido de Rene. Solo aplican a los movimientos de
+   la EMPRESA; los de un trabajo se agrupan por su trabajo, no por categoría. */
+const CATEGORIAS_MOVIMIENTO = ["mantenimiento", "impuestos", "otros"];
 
 const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const RE_FECHA = /^\d{4}-\d{2}-\d{2}$/;
@@ -328,6 +337,35 @@ const Validar = {
      endurece una, hay que endurecer la otra. */
   comboItem(d) {
     return this.cotizacionItem(d);
+  },
+  movimiento(d) {
+    const e = [];
+    if (!_texto(d.descripcion)) e.push("error_descripcion_requerida");
+    if (!d.fecha || !RE_FECHA.test(d.fecha)) e.push("error_fecha_invalida");
+    if (d.trabajo_id && !Trabajos.get(d.trabajo_id)) e.push("error_trabajo_inexistente");
+    if (d.estado !== undefined && !ESTADOS_MOVIMIENTO.includes(d.estado)) e.push("error_estado_invalido");
+    /* La categoría solo tiene sentido en un movimiento de la empresa: uno de
+       un trabajo ya está agrupado por su trabajo. */
+    if (!d.trabajo_id && d.categoria !== undefined && !CATEGORIAS_MOVIMIENTO.includes(d.categoria)) {
+      e.push("error_categoria_invalida");
+    }
+    for (const campo of ["entrada_centavos", "salida_centavos"]) {
+      if (d[campo] !== undefined && !Dinero.esValido(d[campo])) e.push("error_monto_invalido");
+    }
+    /* Un movimiento es entrada O salida, nunca las dos ni ninguna: si fuera
+       las dos, el saldo lo tomaría como la resta y nadie sabría qué pasó. */
+    const ent = d.entrada_centavos || 0, sal = d.salida_centavos || 0;
+    if (ent > 0 && sal > 0) e.push("error_entrada_y_salida");
+    if (ent <= 0 && sal <= 0) e.push("error_monto_requerido");
+    return e;
+  },
+  cuenta(d) {
+    const e = [];
+    if (!_texto(d.descripcion)) e.push("error_descripcion_requerida");
+    if (d.tipo !== "entrada" && d.tipo !== "salida") e.push("error_tipo_invalido");
+    if (!Dinero.esValido(d.total_centavos) || d.total_centavos <= 0) e.push("error_monto_requerido");
+    if (d.trabajo_id && !Trabajos.get(d.trabajo_id)) e.push("error_trabajo_inexistente");
+    return e;
   },
   proveedor(d) {
     const e = [];
@@ -632,6 +670,177 @@ const Combos = {
       costo_centavos: i.costo_centavos || 0,
       en_pdf: i.en_pdf === 0 ? 0 : 1,
     }));
+  },
+};
+
+/* ---------------- Movimientos de dinero ----------------
+   El libro de la plata: qué entró y qué salió, de verdad.
+
+   `trabajo_id` con valor = el movimiento es de ESE trabajo (lo que se cobró y
+   lo que se gastó haciéndolo). En null = es de la empresa (renta, impuestos,
+   herramienta) y entonces va a una de las tres categorías.
+
+   ⚠️ Cada movimiento es una FILA de su propia tabla, no una lista guardada
+   adentro del trabajo. En DES viven adentro del proyecto y arreglarlo con
+   datos reales costó tres días; acá nace bien.
+
+   El precio y el costo del trabajo son lo PRESUPUESTADO; esto es lo que pasó
+   de verdad. Son dos cosas y por eso se guardan aparte: comparar una con otra
+   es justamente lo que dice si el trabajo salió como se pensaba. */
+const CAMPOS_MOVIMIENTO = ["trabajo_id", "cuenta_id", "categoria", "fecha", "descripcion",
+  "entrada_centavos", "salida_centavos", "estado", "archivo_id"];
+
+const Movimientos = {
+  getAll() {
+    /* Por fecha y, dentro del mismo día, por orden de carga: dos movimientos
+       del mismo día tienen que salir siempre en el mismo orden o el saldo
+       corrido baila de una pantalla a otra. */
+    return _vivos("movimientos").slice()
+      .sort((a, b) => (a.fecha || "").localeCompare(b.fecha || "") || a.creado - b.creado);
+  },
+  get(id) {
+    return _vivos("movimientos").find((m) => m.id === id) || null;
+  },
+  /* Los de un trabajo. */
+  deTrabajo(trabajoId) {
+    return this.getAll().filter((m) => m.trabajo_id === trabajoId);
+  },
+  /* Los de la empresa: los que no cuelgan de ningún trabajo. */
+  deEmpresa(categoria) {
+    return this.getAll().filter((m) => !m.trabajo_id && (!categoria || m.categoria === categoria));
+  },
+  create(datos = {}) {
+    const item = {
+      id: _uuid(),
+      trabajo_id: datos.trabajo_id || null,
+      cuenta_id: datos.cuenta_id || null,
+      categoria: datos.trabajo_id ? null
+        : (CATEGORIAS_MOVIMIENTO.includes(datos.categoria) ? datos.categoria : "otros"),
+      fecha: datos.fecha || _fechaLocalISO(Date.now()),
+      descripcion: _texto(datos.descripcion),
+      entrada_centavos: Math.round(Number(datos.entrada_centavos) || 0),
+      salida_centavos: Math.round(Number(datos.salida_centavos) || 0),
+      estado: ESTADOS_MOVIMIENTO.includes(datos.estado) ? datos.estado : "listo",
+      archivo_id: datos.archivo_id || null,
+      ..._sellosNuevo(),
+    };
+    _exigir(Validar.movimiento(item));
+    _estado.movimientos.push(item);
+    _persistir(Almacen.crear("movimientos", item));
+    return item;
+  },
+  update(id, datos) {
+    const item = this.get(id);
+    if (!item) return null;
+    const cambios = _tomar(datos, CAMPOS_MOVIMIENTO);
+    if (cambios.descripcion !== undefined) cambios.descripcion = _texto(cambios.descripcion);
+    for (const c of ["entrada_centavos", "salida_centavos"]) {
+      if (cambios[c] !== undefined) cambios[c] = Math.round(Number(cambios[c]) || 0);
+    }
+    _exigir(Validar.movimiento({ ...item, ...cambios }));
+    Object.assign(item, cambios, _sellosEdicion());
+    _persistir(Almacen.actualizar("movimientos", item));
+    return item;
+  },
+  remove(id) {
+    return _borradoSuave("movimientos", id);
+  },
+
+  /* ---- Las cuentas ----
+     Cuánto se lleva pagado de un acuerdo. Solo cuenta lo LISTO: una cuota
+     prometida no baja lo que se debe. */
+  pagadoDeCuenta(cuentaId) {
+    return this.getAll()
+      .filter((m) => m.cuenta_id === cuentaId && m.estado === "listo")
+      .reduce((s, m) => s + (m.entrada_centavos || 0) + (m.salida_centavos || 0), 0);
+  },
+
+  /* ---- El saldo ----
+     UNA sola función, como los totales de la cotización (regla 3d). Todo se
+     acumula en centavos enteros: el saldo corrido suma fila por fila y con
+     decimales cada suma arrastra su error; para la fila 150 ya no cierra.
+     `pendientes` va aparte para poder mostrarlo sin mezclarlo con lo real. */
+  totales(lista) {
+    let entradas = 0, salidas = 0, entradasPend = 0, salidasPend = 0;
+    for (const m of lista || []) {
+      if (m.estado === "listo") {
+        entradas += m.entrada_centavos || 0;
+        salidas += m.salida_centavos || 0;
+      } else {
+        entradasPend += m.entrada_centavos || 0;
+        salidasPend += m.salida_centavos || 0;
+      }
+    }
+    return {
+      entradas_centavos: entradas,
+      salidas_centavos: salidas,
+      saldo_centavos: entradas - salidas,
+      entradas_pendientes_centavos: entradasPend,
+      salidas_pendientes_centavos: salidasPend,
+    };
+  },
+};
+
+/* ---------------- Cuentas (acuerdos que se pagan en cuotas) ----------------
+   "Instalación del equipo, $3,000, a pagar en tres". La cuenta guarda el
+   TOTAL acordado; cada cuota es un movimiento que apunta a ella. Así el
+   pendiente se calcula y no se guarda: si se guardara, borrar una cuota
+   dejaría el pendiente mintiendo. */
+const CAMPOS_CUENTA = ["trabajo_id", "descripcion", "tipo", "total_centavos"];
+
+const Cuentas = {
+  getAll() {
+    return _vivos("cuentas").slice().sort((a, b) => a.creado - b.creado);
+  },
+  get(id) {
+    return _vivos("cuentas").find((c) => c.id === id) || null;
+  },
+  deTrabajo(trabajoId) {
+    return this.getAll().filter((c) => c.trabajo_id === trabajoId);
+  },
+  deEmpresa() {
+    return this.getAll().filter((c) => !c.trabajo_id);
+  },
+  create(datos = {}) {
+    const item = {
+      id: _uuid(),
+      trabajo_id: datos.trabajo_id || null,
+      descripcion: _texto(datos.descripcion),
+      tipo: datos.tipo === "entrada" ? "entrada" : "salida",
+      total_centavos: Math.round(Number(datos.total_centavos) || 0),
+      ..._sellosNuevo(),
+    };
+    _exigir(Validar.cuenta(item));
+    _estado.cuentas.push(item);
+    _persistir(Almacen.crear("cuentas", item));
+    return item;
+  },
+  update(id, datos) {
+    const item = this.get(id);
+    if (!item) return null;
+    const cambios = _tomar(datos, CAMPOS_CUENTA);
+    if (cambios.descripcion !== undefined) cambios.descripcion = _texto(cambios.descripcion);
+    if (cambios.total_centavos !== undefined) cambios.total_centavos = Math.round(Number(cambios.total_centavos) || 0);
+    _exigir(Validar.cuenta({ ...item, ...cambios }));
+    Object.assign(item, cambios, _sellosEdicion());
+    _persistir(Almacen.actualizar("cuentas", item));
+    return item;
+  },
+  /* Al borrar la cuenta, sus cuotas NO se borran: son plata que se movió de
+     verdad. Solo se sueltan del acuerdo y quedan como movimientos comunes. */
+  remove(id) {
+    _vivos("movimientos").filter((m) => m.cuenta_id === id)
+      .forEach((m) => Movimientos.update(m.id, { cuenta_id: null }));
+    return _borradoSuave("cuentas", id);
+  },
+  /* Cuánto se pagó y cuánto falta. No se guarda: se calcula (regla 3d). */
+  estado(id) {
+    const c = this.get(id);
+    if (!c) return null;
+    const pagado = Movimientos.pagadoDeCuenta(id);
+    const pendiente = Math.max(0, c.total_centavos - pagado);
+    const cuotas = Movimientos.getAll().filter((m) => m.cuenta_id === id).length;
+    return { pagado_centavos: pagado, pendiente_centavos: pendiente, saldada: pendiente <= 0, cuotas };
   },
 };
 
@@ -1536,6 +1745,16 @@ function _migrar() {
     });
   }
 
+  /* --- v12 → v13: aparece el libro de la plata ---
+     Nacen vacías, no hay datos viejos que convertir. El precio y el costo que
+     ya tienen los trabajos NO se convierten en movimientos: son lo
+     presupuestado, no lo que paso de verdad, y meterlos como movimientos
+     inventaría cobros que quizá nunca ocurrieron. */
+  if (desde < 13) {
+    if (!Array.isArray(_estado.movimientos)) _estado.movimientos = [];
+    if (!Array.isArray(_estado.cuentas)) _estado.cuentas = [];
+  }
+
   _estado.config.esquema_version = ESQUEMA_VERSION;
   return true;
 }
@@ -1633,6 +1852,8 @@ const DB = {
   cotizaciones: Cotizaciones,
   conversiones: Conversiones,
   combos: Combos,
+  movimientos: Movimientos,
+  cuentas: Cuentas,
   config: Config,
   respaldo: Respaldo,
   dinero: Dinero,
@@ -1642,6 +1863,8 @@ const DB = {
   tiposCatalogo: TIPOS_CATALOGO,
   unidades: UNIDADES,
   estadosCotizacion: ESTADOS_COTIZACION,
+  estadosMovimiento: ESTADOS_MOVIMIENTO,
+  categoriasMovimiento: CATEGORIAS_MOVIMIENTO,
   ErrorDatos,
 
   alFallarGuardado(fn) { _alFallarGuardado = fn; },

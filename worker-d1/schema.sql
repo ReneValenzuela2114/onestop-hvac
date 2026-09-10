@@ -181,6 +181,61 @@ CREATE TABLE IF NOT EXISTS combo_items (
 CREATE INDEX IF NOT EXISTS idx_combo_items_combo ON combo_items(combo_id);
 CREATE INDEX IF NOT EXISTS idx_combo_items_producto ON combo_items(catalogo_id);
 CREATE INDEX IF NOT EXISTS idx_combo_items_vivos ON combo_items(eliminado);
+
+-- ---- Cuentas: un acuerdo que se paga en cuotas ----
+-- "Instalacion del equipo, 3000, a pagar en tres". Guarda el TOTAL acordado;
+-- cada cuota es un movimiento que apunta aca. El pendiente NO se guarda: se
+-- calcula, porque si se guardara, borrar una cuota lo dejaria mintiendo.
+CREATE TABLE IF NOT EXISTS cuentas (
+  id TEXT PRIMARY KEY,
+  -- NULL = acuerdo de la empresa, no de un trabajo puntual
+  trabajo_id TEXT REFERENCES trabajos(id),
+  descripcion TEXT NOT NULL,
+  tipo TEXT NOT NULL CHECK (tipo IN ('entrada','salida')),
+  total_centavos INTEGER NOT NULL,
+  creado INTEGER NOT NULL,
+  creado_por TEXT REFERENCES usuarios(id),
+  actualizado INTEGER NOT NULL,
+  actualizado_por TEXT REFERENCES usuarios(id),
+  eliminado INTEGER,
+  eliminado_por TEXT REFERENCES usuarios(id)
+);
+CREATE INDEX IF NOT EXISTS idx_cuentas_trabajo ON cuentas(trabajo_id);
+CREATE INDEX IF NOT EXISTS idx_cuentas_vivos ON cuentas(eliminado);
+
+-- ---- Movimientos: el libro de la plata ----
+-- Que entro y que salio, de verdad. Una FILA por movimiento, no una lista
+-- guardada adentro del trabajo: asi se filtra, se suma y se pagina en SQL.
+-- El precio y el costo del trabajo son lo PRESUPUESTADO; esto es lo que paso.
+CREATE TABLE IF NOT EXISTS movimientos (
+  id TEXT PRIMARY KEY,
+  -- Con valor: el movimiento es de ESE trabajo. NULL: es de la empresa
+  -- (renta, impuestos, herramienta) y entonces lleva categoria.
+  trabajo_id TEXT REFERENCES trabajos(id),
+  cuenta_id TEXT REFERENCES cuentas(id),
+  categoria TEXT CHECK (categoria IS NULL OR categoria IN ('mantenimiento','impuestos','otros')),
+  fecha TEXT NOT NULL,                    -- YYYY-MM-DD local
+  descripcion TEXT NOT NULL,
+  -- Un movimiento es entrada O salida, nunca las dos ni ninguna.
+  entrada_centavos INTEGER NOT NULL DEFAULT 0,
+  salida_centavos INTEGER NOT NULL DEFAULT 0,
+  -- listo = ya paso de verdad y suma al saldo. pendiente = es una promesa.
+  estado TEXT NOT NULL DEFAULT 'listo' CHECK (estado IN ('listo','pendiente')),
+  archivo_id TEXT REFERENCES archivos(id),   -- el baucher
+  creado INTEGER NOT NULL,
+  creado_por TEXT REFERENCES usuarios(id),
+  actualizado INTEGER NOT NULL,
+  actualizado_por TEXT REFERENCES usuarios(id),
+  eliminado INTEGER,
+  eliminado_por TEXT REFERENCES usuarios(id),
+  CHECK ((entrada_centavos > 0) <> (salida_centavos > 0))
+);
+CREATE INDEX IF NOT EXISTS idx_movimientos_trabajo ON movimientos(trabajo_id);
+CREATE INDEX IF NOT EXISTS idx_movimientos_cuenta ON movimientos(cuenta_id);
+CREATE INDEX IF NOT EXISTS idx_movimientos_fecha ON movimientos(fecha);
+CREATE INDEX IF NOT EXISTS idx_movimientos_categoria ON movimientos(categoria);
+CREATE INDEX IF NOT EXISTS idx_movimientos_estado ON movimientos(estado);
+CREATE INDEX IF NOT EXISTS idx_movimientos_vivos ON movimientos(eliminado);
 CREATE INDEX IF NOT EXISTS idx_clientes_vivos ON clientes(eliminado);
 
 -- ---- Trabajos (jobs) ----

@@ -375,6 +375,82 @@
      dedo, para que no inviten a tocarlos. */
   .field.cerrado .num-paso{background:var(--line-soft);border-color:var(--line)}
   .field.cerrado .num-menos,.field.cerrado .num-mas{opacity:.35;pointer-events:none}
+  /* ---------- Finanzas ---------- */
+  /* Dos columnas en escritorio, como en DES: a la izquierda el formulario y
+     el libro, a la derecha las tres categorias. En telefono se apilan. */
+  .fin-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:var(--sp-4);align-items:start}
+  .fin-col{display:flex;flex-direction:column;gap:var(--sp-4);min-width:0}
+  .fin-banco{text-align:right;background:var(--azulsuave);border:1.5px solid var(--linea-suave);
+    border-radius:var(--radius);padding:10px 16px;min-width:0}
+  .fin-banco > span{display:block;font-size:9.5px;font-weight:800;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.06em}
+  .fin-banco b{display:block;font-size:22px;font-weight:800;color:var(--frio-900);line-height:1.2;
+    white-space:nowrap;font-variant-numeric:tabular-nums}
+  .fin-banco #finBancoNota{font-size:10.5px;font-weight:600;text-transform:none;letter-spacing:0}
+  .fin-form,.fin-libro{padding:var(--sp-5)}
+  .fin-form-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);
+    margin-bottom:var(--sp-4);flex-wrap:wrap}
+  .fin-form-head h3{margin:0;font-size:14.5px;font-weight:700;color:var(--ink)}
+  .fin-baucher{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;margin-top:var(--sp-4)}
+
+  /* Una fila del libro. La misma forma que la fila de una cotizacion, para
+     que se lea igual en toda la app. */
+  .fin-fila{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line-soft)}
+  .fin-fila:last-child{border-bottom:none}
+  .fin-fila-txt{flex:1 1 auto;min-width:0}
+  .fin-fila-txt b{display:block;font-size:13px;font-weight:650;color:var(--ink);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fin-fila-txt span{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+  .fin-monto{flex-shrink:0;font-size:13px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .fin-monto.entra{color:var(--success)}
+  .fin-monto.sale{color:var(--danger)}
+  /* Lo pendiente se ve, pero apagado: es plata que todavia no paso. */
+  .fin-fila.pendiente .fin-monto{opacity:.45}
+  .fin-saldo{flex-shrink:0;width:96px;text-align:right;font-size:12.5px;font-weight:800;
+    color:var(--ink);font-variant-numeric:tabular-nums}
+  .fin-saldo.rojo{color:var(--danger)}
+  .fin-acciones{display:flex;gap:4px;flex-shrink:0}
+
+  .fin-chip-estado{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;
+    font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;cursor:pointer;border:none}
+  .fin-chip-estado.listo{background:var(--success-soft);color:var(--success)}
+  .fin-chip-estado.pendiente{background:var(--calor-soft);color:var(--calor-600)}
+
+  /* Tarjeta de categoria: el nombre y su saldo arriba, sus movimientos abajo. */
+  .fin-cat{padding:var(--sp-4) var(--sp-5)}
+  .fin-cat-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);
+    padding-bottom:8px;margin-bottom:6px;border-bottom:2px solid var(--line)}
+  .fin-cat-head b{font-size:13.5px;font-weight:700;color:var(--ink)}
+  .fin-cat-head .saldo{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+  .fin-cat-head .saldo.verde{color:var(--success)}
+  .fin-cat-head .saldo.rojo{color:var(--danger)}
+
+  /* Los acuerdos por cuotas */
+  .fin-cuenta{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);
+    flex-wrap:wrap;padding:8px 11px;border-radius:var(--radius-sm);margin-bottom:6px;background:var(--line-soft)}
+  .fin-cuenta.saldada{background:var(--success-soft)}
+  .fin-cuenta-txt{min-width:0}
+  .fin-cuenta-txt b{font-size:12.5px;font-weight:700;color:var(--ink)}
+  .fin-cuenta-txt span{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+  .fin-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--sp-4)}
+  .fin-chip{background:none;border:1.5px solid var(--calor-500);border-radius:999px;padding:5px 12px;
+    font-size:11.5px;font-weight:700;color:var(--ink);cursor:pointer;white-space:nowrap;min-height:38px}
+  .fin-chip.entrada{border-color:var(--success)}
+  .fin-chip b{color:var(--calor-600);margin-left:4px}
+  .fin-chip.entrada b{color:var(--success)}
+  .fin-separador{display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-4)}
+  .fin-separador::before,.fin-separador::after{content:"";flex:1;height:1px;background:var(--line)}
+  .fin-separador span{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+
+  @media (max-width: 900px){
+    .fin-grid{grid-template-columns:1fr}
+  }
+  @media (max-width: 560px){
+    /* El saldo corrido es lo primero que sobra cuando falta ancho: el monto y
+       el estado alcanzan para saber que paso. */
+    .fin-saldo{display:none}
+    .fin-banco{text-align:left;width:100%}
+  }
   .aviso-ojo{margin:0 0 var(--sp-4);padding:10px 12px;border-radius:var(--radius-sm);
     background:var(--calor-soft);color:var(--calor-600);font-size:12px;line-height:1.45}
   /* En telefono la tarjeta esconde el subtitulo por espacio, y en un producto
@@ -656,7 +732,14 @@
   /* ---------- Bottom nav mobile ---------- */
   .bottomnav{display:none;position:fixed;bottom:0;left:0;right:0;height:var(--bottomnav-h);background:var(--panel);border-top:1px solid var(--line);z-index:40;padding-bottom:env(safe-area-inset-bottom)}
   .bottomnav-inner{display:flex;height:100%}
-  .bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;color:var(--muted);font-size:10.5px;font-weight:600}
+  /* `min-width:0` y el texto recortado: con cinco pestañas, en 375px cada una
+     tiene 75px y "Cotizaciones" no entra. Sin esto, la quinta se salía de la
+     barra y no había forma de tocarla. */
+  .bn-item{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;color:var(--muted);font-size:10.5px;font-weight:600}
+  .bn-item span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  @media (max-width: 400px){
+    .bn-item{font-size:9.5px;gap:2px}
+  }
   .bn-item.active{color:var(--frio-600)}
 
   /* ---------- Responsive ---------- */
@@ -697,6 +780,7 @@
     </nav>
     <div class="sidebar-foot">
       <button class="navitem" id="langBtnDesktop"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20Z"/></svg><span id="langBtnLabelDesktop">English</span></button>
+      <button class="navitem" data-tab="finanzas"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span data-i18n="nav_finanzas">Finanzas</span></button>
       <button class="navitem" data-tab="config"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg><span data-i18n="nav_config">Configuración</span></button>
     </div>
   </aside>
@@ -880,6 +964,109 @@
         <h3 id="listaDiaTitulo" style="font-size:14.5px;margin-bottom:var(--sp-3)"></h3>
         <div id="listaDia"></div>
         <p id="listaDiaVacio" style="display:none;color:var(--muted);font-size:13px" data-i18n="trabajos_dia_vacio">No jobs on this day.</p>
+      </section>
+
+      <!-- ============ TAB: Finanzas ============
+           El libro de la plata de la empresa: lo que no cuelga de ningún
+           trabajo (renta, impuestos, herramienta). Lo de cada trabajo se ve
+           en el trabajo. -->
+      <section id="tab-finanzas" class="tabpanel" style="display:none">
+        <div class="page-head">
+          <div>
+            <h1 data-i18n="fin_titulo">Finanzas</h1>
+            <p data-i18n="fin_subtitulo">Entradas y salidas de la empresa. Solo lo que está en Listo cuenta para el saldo.</p>
+          </div>
+          <div class="fin-banco">
+            <span data-i18n="fin_en_banco">Total en banco</span>
+            <b id="finBanco">$0.00</b>
+            <span id="finBancoNota"></span>
+          </div>
+        </div>
+
+        <div class="fin-grid">
+          <div class="fin-col">
+            <!-- Nuevo movimiento -->
+            <div class="card fin-form">
+              <div class="fin-form-head">
+                <h3 id="finFormTitulo" data-i18n="fin_nuevo">Nuevo movimiento</h3>
+                <button type="button" class="btn ghost sm" id="btnFinCancelar" style="display:none"><span data-i18n="cancelar">Cancelar</span></button>
+              </div>
+
+              <!-- Cuotas pendientes: se toca una y el formulario queda listo
+                   para abonarle, con lo que falta ya puesto. -->
+              <div id="finChipsCuentas"></div>
+
+              <input type="hidden" id="finMovId">
+              <input type="hidden" id="finCuentaId">
+              <div class="field-row">
+                <div class="field">
+                  <label data-i18n="fin_fecha">Fecha</label>
+                  <input type="date" id="finFecha">
+                </div>
+                <div class="field">
+                  <label data-i18n="fin_tipo">Tipo</label>
+                  <select id="finTipo"></select>
+                </div>
+              </div>
+              <div class="field" id="fieldFinDesc">
+                <label data-i18n="fin_descripcion">Descripción</label>
+                <input type="text" id="finDesc" data-i18n-ph="fin_descripcion_ph" placeholder="e.g. Shop rent, fuel, permit…">
+                <p class="error-msg" data-i18n="error_descripcion_requerida">Falta la descripción</p>
+              </div>
+              <div class="field-row">
+                <div class="field" id="fieldFinMonto">
+                  <label data-i18n="fin_monto">Monto</label>
+                  <input type="number" id="finMonto" min="0" step="0.01" placeholder="0.00" data-paso1>
+                </div>
+                <div class="field" id="fieldFinCategoria">
+                  <label data-i18n="fin_categoria">Categoría</label>
+                  <select id="finCategoria"></select>
+                </div>
+              </div>
+              <div class="field">
+                <label data-i18n="fin_estado">Estado</label>
+                <div class="estado-toggle" id="finEstadoToggle">
+                  <button type="button" data-v="listo" data-i18n="fin_listo">Listo</button>
+                  <button type="button" data-v="pendiente" data-i18n="fin_pendiente">Pendiente</button>
+                </div>
+                <p class="hint" data-i18n="fin_estado_ayuda">Listo ya pasó de verdad y suma al saldo. Pendiente es una promesa y se muestra aparte.</p>
+              </div>
+
+              <!-- El baucher y la lectura con IA -->
+              <div class="fin-baucher">
+                <input type="file" id="finBaucherInput" accept="image/png,image/jpeg,image/webp,application/pdf" hidden>
+                <button type="button" class="btn sm" id="btnFinBaucher">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                  <span data-i18n="fin_adjuntar">Adjuntar baucher</span>
+                </button>
+                <button type="button" class="btn sm" id="btnFinLeerIa" style="display:none">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1H7a3 3 0 0 0-3 3v2H3a1 1 0 0 0 0 2h1v2a3 3 0 0 0 3 3h2v1a3 3 0 0 0 6 0v-1h2a3 3 0 0 0 3-3v-2h1a1 1 0 0 0 0-2h-1V9a3 3 0 0 0-3-3h-2V5a3 3 0 0 0-3-3Z"/><circle cx="9.5" cy="12" r="1.2" fill="currentColor"/><circle cx="14.5" cy="12" r="1.2" fill="currentColor"/></svg>
+                  <span data-i18n="fin_leer_ia">Leer con IA</span>
+                </button>
+                <span class="ia-estado" id="finIaEstado"></span>
+                <span id="finBaucherNombre" class="hint"></span>
+              </div>
+
+              <div class="modal-foot" style="padding:0;margin-top:var(--sp-4);border:none">
+                <div class="spacer"></div>
+                <button type="button" class="btn primary" id="btnFinGuardar"><span id="txtFinGuardar" data-i18n="fin_agregar">Agregar movimiento</span></button>
+              </div>
+            </div>
+
+            <!-- El libro -->
+            <div class="card fin-libro">
+              <div class="fin-form-head">
+                <h3 data-i18n="fin_movimientos">Movimientos</h3>
+                <button type="button" class="btn ghost sm" id="btnFinNuevaCuenta"><span data-i18n="fin_nueva_cuenta">Acordar un pago en cuotas</span></button>
+              </div>
+              <div id="finCuentas"></div>
+              <div id="finLibro"></div>
+            </div>
+          </div>
+
+          <!-- Las tres categorías -->
+          <div class="fin-col" id="finCategorias"></div>
+        </div>
       </section>
 
       <!-- ============ TAB: Configuración ============ -->
@@ -1227,6 +1414,7 @@
     <button class="bn-item" data-tab="catalogo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"/></svg><span data-i18n="nav_catalogo">Catálogo</span></button>
     <button class="bn-item" data-tab="cotizaciones"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg><span data-i18n="nav_cotizaciones">Cotizaciones</span></button>
     <button class="bn-item" data-tab="proyectos"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 5-1.5L20.5 7 17 3.5 3.5 17 2 22Z"/></svg><span data-i18n="nav_proyectos">Proyectos</span></button>
+    <button class="bn-item" data-tab="finanzas"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span data-i18n="nav_finanzas">Finanzas</span></button>
   </div>
 </nav>
 
@@ -1357,6 +1545,43 @@
       <button class="btn ghost" data-close-modal="modalCotizacion"><span data-i18n="form_cancelar">Cancelar</span></button>
       <button class="btn" id="btnAprobarCotizacion" style="display:none"><span data-i18n="cot_aprobar">Aprobar y crear trabajo</span></button>
       <button class="btn primary" id="btnGuardarCotizacion"><span data-i18n="form_guardar">Guardar</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Modal: Acuerdo en cuotas ============
+     Guarda el TOTAL acordado. Cada cuota es un movimiento que apunta acá, así
+     lo que falta se calcula y no se guarda: si se guardara, borrar una cuota
+     lo dejaría mintiendo. -->
+<div class="modal-backdrop" id="modalCuenta">
+  <div class="modal angosto">
+    <div class="modal-head">
+      <h3 data-i18n="fin_cuenta_titulo">Pago en cuotas</h3>
+      <button class="btn icon ghost" data-close-modal="modalCuenta"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cuentaTrabajoId">
+      <div class="field" id="fieldCuentaDesc">
+        <label data-i18n="fin_cuenta_desc">Qué se acordó</label>
+        <input type="text" id="cuentaDesc" data-i18n-ph="fin_cuenta_desc_ph" placeholder="e.g. Installer payment">
+        <p class="error-msg" data-i18n="error_descripcion_requerida">Falta la descripción</p>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label data-i18n="fin_tipo">Tipo</label>
+          <select id="cuentaTipo"></select>
+        </div>
+        <div class="field">
+          <label data-i18n="fin_cuenta_total">Total acordado</label>
+          <input type="number" id="cuentaTotal" min="0" step="0.01" placeholder="0.00" data-paso1>
+        </div>
+      </div>
+      <p class="hint" data-i18n="fin_cuenta_ayuda">Después vas abonando con el botón que aparece arriba del formulario. Lo que falta se calcula solo.</p>
+    </div>
+    <div class="modal-foot">
+      <div class="spacer"></div>
+      <button class="btn ghost" data-close-modal="modalCuenta"><span data-i18n="cancelar">Cancelar</span></button>
+      <button class="btn primary" id="btnGuardarCuenta"><span data-i18n="guardar">Guardar</span></button>
     </div>
   </div>
 </div>
@@ -2046,6 +2271,7 @@ function setLang(lang){
   renderFiltros(); renderClientes(); renderCategoriasChips(); renderUsuarios(); renderTrabajos();
   renderFiltrosCatalogo(); renderCatalogo(); renderProveedores(); renderCombos();
   renderFiltrosCotizaciones(); renderCotizaciones();
+  renderFinanzas();   // sus menús se arman con t(), no con data-i18n
   document.getElementById("btnNuevoItemCatalogoLabel").textContent =
     t((VISTAS_CATALOGO[catalogoVista] || VISTAS_CATALOGO.productos).boton);
 }
@@ -2061,6 +2287,7 @@ function irATab(tab){
   document.getElementById("tab-" + tab).style.display = "block";
   document.querySelectorAll(".navitem[data-tab], .bn-item[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
   if (tab === "proyectos") renderTrabajos(); // refresca por si cambiaron clientes/trabajadores
+  if (tab === "finanzas") renderFinanzas();
   window.scrollTo(0,0);
 }
 document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => irATab(b.dataset.tab)));
@@ -4269,6 +4496,450 @@ document.getElementById("btnEliminarCotizacion").addEventListener("click", () =>
     renderCotizaciones();
   });
 });
+
+/* =========================================================================
+   FINANZAS · el libro de la plata de la empresa
+   -------------------------------------------------------------------------
+   Mismo comportamiento que la pestaña de DES: entradas y salidas por
+   categoría, con estado Listo/Pendiente, baucher adjunto y lectura con IA.
+   Lo de cada trabajo NO va acá: va adentro del trabajo, porque ahí es donde
+   sirve para saber si ese trabajo dejó lo que se esperaba.
+   ========================================================================= */
+let finEditandoId = null;
+let finBaucherTemp = null;   // {dataUrl, mime, nombre, bytes} hasta que se guarda
+
+function finFilaHTML(m, saldo){
+  const entra = (m.entrada_centavos || 0) > 0;
+  const monto = entra ? m.entrada_centavos : m.salida_centavos;
+  const pend = m.estado !== "listo";
+  const tj = m.trabajo_id ? DB.trabajos.get(m.trabajo_id) : null;
+  const cta = m.cuenta_id ? DB.cuentas.get(m.cuenta_id) : null;
+  const sub = [fechaLargaISO(m.fecha)];
+  if (tj) sub.push("#" + tj.numero);
+  if (cta) sub.push(esc(cta.descripcion));
+  return `<div class="fin-fila${pend ? " pendiente" : ""}" data-id="${m.id}">
+    <div class="fin-fila-txt">
+      <b>${esc(m.descripcion)}</b>
+      <span>${sub.join(" · ")}</span>
+    </div>
+    <span class="fin-monto ${entra ? "entra" : "sale"}">${entra ? "+" : "−"}${esc(DB.dinero.formato(monto, CFG_LANG))}</span>
+    ${saldo === null ? "" : `<span class="fin-saldo${saldo < 0 ? " rojo" : ""}">${esc(DB.dinero.formato(saldo, CFG_LANG))}</span>`}
+    <div class="fin-acciones">
+      <button type="button" class="fin-chip-estado ${pend ? "pendiente" : "listo"}" data-estado="${m.id}"
+        title="${esc(t("fin_cambiar_estado"))}">${esc(t(pend ? "fin_pendiente" : "fin_listo"))}</button>
+      ${m.archivo_id ? `<button type="button" class="btn icon ghost sm" data-ver="${m.id}" title="${esc(t("fin_ver_baucher"))}" aria-label="${esc(t("fin_ver_baucher"))}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button>` : ""}
+      <button type="button" class="btn icon ghost sm" data-editar="${m.id}" aria-label="${esc(t("form_editar_titulo"))}">${iconEdit()}</button>
+      <button type="button" class="btn icon ghost sm" data-borrar="${m.id}" aria-label="${esc(t("eliminar"))}">${iconTrash()}</button>
+    </div>
+  </div>`;
+}
+
+/* El saldo corrido se acumula en CENTAVOS, fila por fila. Es el caso donde los
+   decimales más daño hacen: cada suma agrega su error al anterior y para la
+   fila 150 el saldo ya no cierra con el total. */
+function finLibroHTML(lista){
+  if (!lista.length) return `<p class="hint" style="margin:0">${esc(t("fin_sin_movimientos"))}</p>`;
+  let corrido = 0;
+  return lista.map(m => {
+    if (m.estado === "listo") corrido += (m.entrada_centavos || 0) - (m.salida_centavos || 0);
+    return finFilaHTML(m, m.estado === "listo" ? corrido : null);
+  }).join("");
+}
+
+/* Los menús salen de las listas cerradas de `DB`: así no aparece un tipo o
+   una categoría que la validación después rechaza. Se rearman al cambiar de
+   idioma, como el resto de los filtros. */
+function renderMenusFinanzas(){
+  const tipo = (id, sel) => {
+    const e = document.getElementById(id); if (!e) return;
+    const antes = e.value;
+    e.innerHTML = `<option value="salida">${esc(t("fin_salida"))}</option>` +
+                  `<option value="entrada">${esc(t("fin_entrada"))}</option>`;
+    e.value = antes || sel;
+  };
+  tipo("finTipo", "salida");
+  tipo("cuentaTipo", "salida");
+  const cat = document.getElementById("finCategoria");
+  if (cat) {
+    const antes = cat.value;
+    cat.innerHTML = DB.categoriasMovimiento
+      .map(c => `<option value="${c}">${esc(t("fin_cat_" + c))}</option>`).join("");
+    cat.value = antes || "otros";
+  }
+}
+
+function renderFinanzas(){
+  renderMenusFinanzas();
+  const movs = DB.movimientos.deEmpresa();
+  const tot = DB.movimientos.totales(movs);
+
+  document.getElementById("finBanco").textContent = DB.dinero.formato(tot.saldo_centavos, CFG_LANG);
+  const pendiente = tot.entradas_pendientes_centavos - tot.salidas_pendientes_centavos;
+  const nota = document.getElementById("finBancoNota");
+  nota.textContent = pendiente ? t("fin_mas_pendiente").replace("{m}", DB.dinero.formato(pendiente, CFG_LANG)) : "";
+
+  document.getElementById("finLibro").innerHTML = finLibroHTML(movs);
+
+  /* Las tres categorías, cada una con su saldo y sus movimientos. */
+  document.getElementById("finCategorias").innerHTML = DB.categoriasMovimiento.map(cat => {
+    const suyos = DB.movimientos.deEmpresa(cat);
+    const saldo = DB.movimientos.totales(suyos).saldo_centavos;
+    return `<div class="card fin-cat">
+      <div class="fin-cat-head">
+        <b>${esc(t("fin_cat_" + cat))}</b>
+        <span class="saldo ${saldo < 0 ? "rojo" : "verde"}">${esc(DB.dinero.formato(saldo, CFG_LANG))}</span>
+      </div>
+      <div>${suyos.length ? suyos.slice().reverse().map(m => finFilaHTML(m, null)).join("")
+        : `<p class="hint" style="margin:6px 0 0">${esc(t("fin_sin_movimientos"))}</p>`}</div>
+    </div>`;
+  }).join("");
+
+  renderCuentasEmpresa();
+
+  /* La primera vez que se entra, el formulario está en blanco: sin fecha y sin
+     estado marcado. Se prepara acá y no en el arranque de la app porque los
+     menús se arman con `t()`, que necesita el idioma ya cargado. */
+  if (!finEditandoId && !document.getElementById("finFecha").value) finLimpiarFormulario();
+}
+
+/* ---------- Los acuerdos por cuotas ---------- */
+function renderCuentasEmpresa(){
+  const cuentas = DB.cuentas.deEmpresa();
+  const caja = document.getElementById("finCuentas");
+  caja.innerHTML = cuentas.map(c => {
+    const e = DB.cuentas.estado(c.id);
+    return `<div class="fin-cuenta${e.saldada ? " saldada" : ""}">
+      <div class="fin-cuenta-txt">
+        <b>${esc(c.descripcion)}</b>
+        <span>${esc(t(c.tipo === "entrada" ? "fin_a_cobrar" : "fin_a_pagar"))} ${esc(DB.dinero.formato(c.total_centavos, CFG_LANG))}
+          · ${esc(t("fin_pagado"))} ${esc(DB.dinero.formato(e.pagado_centavos, CFG_LANG))}
+          · ${e.saldada ? esc(t("fin_saldada")) : esc(t("fin_falta")) + " " + esc(DB.dinero.formato(e.pendiente_centavos, CFG_LANG))}</span>
+      </div>
+      <button type="button" class="btn icon ghost sm" data-borrar-cuenta="${c.id}" aria-label="${esc(t("eliminar"))}">${iconTrash()}</button>
+    </div>`;
+  }).join("");
+
+  /* Chips de lo que falta pagar: se toca uno y el formulario queda listo. */
+  const pendientes = cuentas.filter(c => !DB.cuentas.estado(c.id).saldada);
+  const chips = document.getElementById("finChipsCuentas");
+  chips.innerHTML = pendientes.length ? `
+    <div class="fin-chips">${pendientes.map(c => {
+      const e = DB.cuentas.estado(c.id);
+      return `<button type="button" class="fin-chip${c.tipo === "entrada" ? " entrada" : ""}" data-cuenta="${c.id}">
+        ${esc(c.descripcion)} <b>${esc(DB.dinero.formato(e.pendiente_centavos, CFG_LANG))}</b></button>`;
+    }).join("")}</div>
+    <div class="fin-separador"><span>${esc(t("fin_o_nuevo"))}</span></div>` : "";
+}
+
+/* ---------- El formulario ---------- */
+function finLimpiarFormulario(){
+  finEditandoId = null;
+  finBaucherTemp = null;
+  document.getElementById("finMovId").value = "";
+  document.getElementById("finCuentaId").value = "";
+  document.getElementById("finFecha").value = hoyISO();
+  document.getElementById("finDesc").value = "";
+  document.getElementById("finMonto").value = "";
+  document.getElementById("finTipo").value = "salida";
+  document.getElementById("finCategoria").value = "otros";
+  setFinEstado("listo");
+  document.getElementById("fieldFinDesc").classList.remove("error");
+  document.getElementById("finFormTitulo").textContent = t("fin_nuevo");
+  document.getElementById("txtFinGuardar").textContent = t("fin_agregar");
+  document.getElementById("btnFinCancelar").style.display = "none";
+  finRefrescarBaucher();
+  finRefrescarCategoria();
+}
+
+/* La categoría solo tiene sentido si el movimiento no abona a una cuenta de
+   otro tipo; y nunca cuando el movimiento es de un trabajo. */
+function finRefrescarCategoria(){
+  document.getElementById("fieldFinCategoria").style.display = "";
+}
+
+function setFinEstado(v){
+  document.querySelectorAll("#finEstadoToggle button").forEach(b => b.classList.toggle("active", b.dataset.v === v));
+  document.getElementById("finEstadoToggle").dataset.value = v;
+}
+document.getElementById("finEstadoToggle").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return; setFinEstado(b.dataset.v);
+});
+
+function finRefrescarBaucher(){
+  const hay = !!finBaucherTemp;
+  document.getElementById("btnFinLeerIa").style.display = hay ? "" : "none";
+  document.getElementById("finBaucherNombre").textContent = hay ? finBaucherTemp.nombre : "";
+}
+
+function finRellenarDesde(m){
+  finEditandoId = m.id;
+  finBaucherTemp = null;
+  document.getElementById("finMovId").value = m.id;
+  document.getElementById("finCuentaId").value = m.cuenta_id || "";
+  document.getElementById("finFecha").value = m.fecha;
+  document.getElementById("finDesc").value = m.descripcion;
+  const entra = (m.entrada_centavos || 0) > 0;
+  document.getElementById("finTipo").value = entra ? "entrada" : "salida";
+  document.getElementById("finMonto").value = DB.dinero.aTexto(entra ? m.entrada_centavos : m.salida_centavos);
+  document.getElementById("finCategoria").value = m.categoria || "otros";
+  setFinEstado(m.estado);
+  document.getElementById("finFormTitulo").textContent = t("fin_editar");
+  document.getElementById("txtFinGuardar").textContent = t("form_guardar");
+  document.getElementById("btnFinCancelar").style.display = "";
+  finRefrescarBaucher();
+  document.getElementById("finDesc").focus();
+}
+
+document.getElementById("btnFinCancelar").addEventListener("click", finLimpiarFormulario);
+
+document.getElementById("btnFinGuardar").addEventListener("click", () => {
+  const desc = document.getElementById("finDesc").value.trim();
+  const campo = document.getElementById("fieldFinDesc");
+  if (!desc) { campo.classList.add("error"); document.getElementById("finDesc").focus(); return; }
+  campo.classList.remove("error");
+
+  const monto = DB.dinero.aCentavos(document.getElementById("finMonto").value);
+  if (!monto || monto <= 0) { toast(t("error_monto_requerido"), true); return; }
+
+  const entrada = document.getElementById("finTipo").value === "entrada";
+  const datos = {
+    fecha: document.getElementById("finFecha").value || hoyISO(),
+    descripcion: desc,
+    entrada_centavos: entrada ? monto : 0,
+    salida_centavos: entrada ? 0 : monto,
+    categoria: document.getElementById("finCategoria").value,
+    estado: document.getElementById("finEstadoToggle").dataset.value || "listo",
+    cuenta_id: document.getElementById("finCuentaId").value || null,
+  };
+
+  /* El baucher se guarda primero: si falla, no queda un movimiento diciendo
+     que tiene comprobante cuando no lo tiene. */
+  if (finBaucherTemp) {
+    const arch = conAviso(() => DB.archivos.crear({
+      entidad: "trabajo", entidad_id: null, tipo: "documento",
+      nombre_original: finBaucherTemp.nombre, mime: finBaucherTemp.mime,
+      bytes: finBaucherTemp.bytes, dataUrl: finBaucherTemp.dataUrl,
+    }));
+    if (!arch) return;
+    datos.archivo_id = arch.id;
+  }
+
+  const guardado = conAviso(() => finEditandoId
+    ? DB.movimientos.update(finEditandoId, datos)
+    : DB.movimientos.create(datos));
+  if (!guardado) return;
+
+  const eraEdicion = !!finEditandoId;
+  finLimpiarFormulario();
+  renderFinanzas();
+  toast(t(eraEdicion ? "fin_toast_actualizado" : "fin_toast_creado"));
+});
+
+/* ---------- Tocar una fila del libro ---------- */
+function finConectarLista(id){
+  document.getElementById(id).addEventListener("click", (e) => {
+    const bEstado = e.target.closest("[data-estado]");
+    if (bEstado) {
+      const m = DB.movimientos.get(bEstado.dataset.estado);
+      if (m && conAviso(() => DB.movimientos.update(m.id, { estado: m.estado === "listo" ? "pendiente" : "listo" }))) {
+        renderFinanzas();
+      }
+      return;
+    }
+    const bVer = e.target.closest("[data-ver]");
+    if (bVer) { finVerBaucher(bVer.dataset.ver); return; }
+    const bEd = e.target.closest("[data-editar]");
+    if (bEd) { const m = DB.movimientos.get(bEd.dataset.editar); if (m) finRellenarDesde(m); return; }
+    const bDel = e.target.closest("[data-borrar]");
+    if (bDel) {
+      const m = DB.movimientos.get(bDel.dataset.borrar);
+      if (!m) return;
+      pedirConfirmacion("fin_borrar_titulo", "fin_borrar_texto", () => {
+        if (conAviso(() => DB.movimientos.remove(m.id))) { renderFinanzas(); toast(t("fin_toast_borrado")); }
+      });
+      return;
+    }
+    const bCuenta = e.target.closest("[data-cuenta]");
+    if (bCuenta) { finAbonarACuenta(bCuenta.dataset.cuenta); return; }
+    const bDelCta = e.target.closest("[data-borrar-cuenta]");
+    if (bDelCta) {
+      pedirConfirmacion("fin_borrar_cuenta_titulo", "fin_borrar_cuenta_texto", () => {
+        if (conAviso(() => DB.cuentas.remove(bDelCta.dataset.borrarCuenta))) { renderFinanzas(); toast(t("fin_toast_cuenta_borrada")); }
+      });
+    }
+  });
+}
+finConectarLista("finLibro");
+finConectarLista("finCategorias");
+finConectarLista("finCuentas");
+finConectarLista("finChipsCuentas");
+
+/* Abonar a una cuenta: el formulario queda listo con lo que falta ya puesto,
+   que es lo que casi siempre se paga. */
+function finAbonarACuenta(cuentaId){
+  const c = DB.cuentas.get(cuentaId);
+  if (!c) return;
+  const e = DB.cuentas.estado(cuentaId);
+  const cuota = e.cuotas + 1;
+  finLimpiarFormulario();
+  document.getElementById("finCuentaId").value = c.id;
+  document.getElementById("finTipo").value = c.tipo;
+  document.getElementById("finDesc").value = c.descripcion + " · " + t("fin_cuota").replace("{n}", cuota);
+  document.getElementById("finMonto").value = DB.dinero.aTexto(e.pendiente_centavos);
+  document.getElementById("finFormTitulo").textContent = t("fin_abonar").replace("{c}", c.descripcion);
+  document.getElementById("btnFinCancelar").style.display = "";
+  document.getElementById("finMonto").focus();
+  document.getElementById("finMonto").select();
+}
+
+/* ---------- Acordar un pago en cuotas ---------- */
+document.getElementById("btnFinNuevaCuenta").addEventListener("click", () => abrirModalCuenta(null));
+
+function abrirModalCuenta(trabajoId){
+  document.getElementById("cuentaTrabajoId").value = trabajoId || "";
+  document.getElementById("cuentaDesc").value = "";
+  document.getElementById("cuentaTotal").value = "";
+  document.getElementById("cuentaTipo").value = "salida";
+  document.getElementById("fieldCuentaDesc").classList.remove("error");
+  ponerBotonesDePaso(document.getElementById("modalCuenta"));
+  abrirModal("modalCuenta");
+  setTimeout(() => document.getElementById("cuentaDesc").focus(), 60);
+}
+
+document.getElementById("btnGuardarCuenta").addEventListener("click", () => {
+  const desc = document.getElementById("cuentaDesc").value.trim();
+  const campo = document.getElementById("fieldCuentaDesc");
+  if (!desc) { campo.classList.add("error"); document.getElementById("cuentaDesc").focus(); return; }
+  campo.classList.remove("error");
+  const total = DB.dinero.aCentavos(document.getElementById("cuentaTotal").value);
+  if (!total || total <= 0) { toast(t("error_monto_requerido"), true); return; }
+  const guardada = conAviso(() => DB.cuentas.create({
+    trabajo_id: document.getElementById("cuentaTrabajoId").value || null,
+    descripcion: desc,
+    tipo: document.getElementById("cuentaTipo").value,
+    total_centavos: total,
+  }));
+  if (!guardada) return;
+  cerrarModal("modalCuenta");
+  renderFinanzas();
+  toast(t("fin_toast_cuenta_creada"));
+});
+
+/* ---------- El baucher ----------
+   Se guarda como archivo (DB.archivos), igual que el logo y la firma. Hoy los
+   bytes viven en el navegador; el día que exista R2 cambia el almacén y esta
+   pantalla no se entera. */
+document.getElementById("btnFinBaucher").addEventListener("click", () =>
+  document.getElementById("finBaucherInput").click());
+
+document.getElementById("finBaucherInput").addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if (!f) return;
+  /* Tope de tamaño: los bytes van a localStorage y una foto de 8 MB llena la
+     cuota de golpe. 4 MB alcanza de sobra para la foto de un baucher. */
+  if (f.size > 4 * 1024 * 1024) { toast(t("fin_baucher_pesado"), true); return; }
+  const lector = new FileReader();
+  lector.onload = () => {
+    finBaucherTemp = { dataUrl: lector.result, mime: f.type, nombre: f.name, bytes: f.size };
+    finRefrescarBaucher();
+  };
+  lector.onerror = () => toast(t("error_archivo_invalido"), true);
+  lector.readAsDataURL(f);
+});
+
+function finVerBaucher(movId){
+  const m = DB.movimientos.get(movId);
+  const url = m && m.archivo_id ? DB.archivos.url(DB.archivos.get(m.archivo_id)) : null;
+  if (!url) { toast(t("fin_sin_baucher"), true); return; }
+  const w = window.open("", "_blank");
+  if (!w) { toast(t("fin_ventana_bloqueada"), true); return; }
+  /* Se abre en una ventana propia y no en un modal: así se puede acercar,
+     girar y guardar con lo que ya trae el navegador. */
+  w.document.write(`<!doctype html><title>${esc(m.descripcion)}</title>
+    <style>body{margin:0;background:#1B2733;display:flex;align-items:center;justify-content:center;min-height:100vh}
+    img,embed{max-width:100%;max-height:100vh}</style>
+    ${(m.archivo_id && (DB.archivos.get(m.archivo_id).mime || "").includes("pdf"))
+      ? `<embed src="${url}" type="application/pdf" width="100%" height="100%">`
+      : `<img src="${url}" alt="">`}`);
+  w.document.close();
+}
+
+/* ---------- Leer el baucher con IA ----------
+   Va por el Worker, igual que el lector de mensajes de clientes: la clave de
+   Anthropic vive en Cloudflare y nunca pasa por el navegador. En DES hay que
+   pegarla a mano en la pantalla; acá no hace falta. */
+document.getElementById("btnFinLeerIa").addEventListener("click", async () => {
+  if (!finBaucherTemp) { toast(t("fin_adjunta_primero"), true); return; }
+  const boton = document.getElementById("btnFinLeerIa");
+  const estado = document.getElementById("finIaEstado");
+  boton.disabled = true;
+  estado.className = "ia-estado cargando";
+  estado.textContent = t("fin_leyendo");
+  try {
+    const datos = await leerBaucherConIa(finBaucherTemp);
+    let puestos = 0;
+    if (datos.monto) {
+      const c = DB.dinero.aCentavos(String(datos.monto).replace(/[^\d.,-]/g, ""));
+      if (c > 0) { document.getElementById("finMonto").value = DB.dinero.aTexto(c); puestos++; }
+    }
+    if (datos.fecha) {
+      const iso = fechaDesdeTexto(datos.fecha);
+      if (iso) { document.getElementById("finFecha").value = iso; puestos++; }
+    }
+    if (!document.getElementById("finDesc").value.trim()) {
+      const d = [datos.banco, datos.numero ? t("fin_ref") + " " + datos.numero : ""].filter(Boolean).join(" · ");
+      if (d) { document.getElementById("finDesc").value = d; puestos++; }
+    }
+    estado.className = "ia-estado ok";
+    estado.textContent = puestos ? t("fin_ia_listo").replace("{n}", puestos) : t("fin_ia_nada");
+  } catch (err) {
+    estado.className = "ia-estado error";
+    estado.textContent = t(err.clave || "error_ia_servicio");
+  } finally {
+    boton.disabled = false;
+  }
+});
+
+/* Le pide al Worker que lea el baucher. Mismo camino que el lector de
+   clientes: la clave de Anthropic vive en Cloudflare y el navegador solo
+   manda la imagen. Devuelve {fecha, numero, monto, banco}. */
+async function leerBaucherConIa(baucher){
+  if (!urlWorker()) throw new DB.ErrorDatos("error_ia_sin_worker");
+  /* El dataUrl trae el encabezado "data:image/png;base64," adelante; el
+     Worker espera solo los bytes. */
+  const datos = String(baucher.dataUrl).split(",")[1] || "";
+  let r;
+  try {
+    r = await fetch(urlWorker() + "/api/leer-baucher", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ mime: baucher.mime, datos }),
+    });
+  } catch { throw new DB.ErrorDatos("error_ia_red"); }
+  const cuerpo = await r.json().catch(() => ({}));
+  if (!r.ok) throw new DB.ErrorDatos(cuerpo.error || "error_ia_servicio");
+  return cuerpo;
+}
+
+/* Una fecha puede venir "12/03/2026", "2026-03-12" o "Mar 12, 2026". Se
+   normaliza a YYYY-MM-DD o se descarta: media fecha es peor que ninguna. */
+function fechaDesdeTexto(txt){
+  const s2 = String(txt || "").trim();
+  let m = s2.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return `${m[1]}-${String(m[2]).padStart(2, "0")}-${String(m[3]).padStart(2, "0")}`;
+  m = s2.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+  if (m) {
+    /* Formato de California: mes primero. */
+    let mes = m[1], dia = m[2], anio = m[3];
+    if (anio.length === 2) anio = "20" + anio;
+    if (Number(mes) > 12) { const x = mes; mes = dia; dia = x; }
+    return `${anio}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+  }
+  const d = new Date(s2);
+  return isNaN(d) ? "" : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 
 /* =========================================================================
    COTIZACIÓN IMPRESA (PDF)

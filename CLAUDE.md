@@ -205,6 +205,23 @@ un bundler salvo que el proyecto lo pida de verdad.
    La línea marino va **abajo** de las firmas, pegada al pie: así el bloque de
    firmas se lee como el final del documento y no como una sección más.
 
+   3s. **El libro de la plata: `movimientos` y `cuentas`.** `trabajo_id` con
+   valor = el movimiento es de ESE trabajo; en null = es de la empresa y va a
+   una de las tres categorías (las mismas de DES: mantenimiento, impuestos,
+   otros). **Solo `estado = "listo"` suma al saldo**; lo pendiente se muestra
+   aparte porque es una promesa, no plata. Un movimiento es entrada **o**
+   salida, nunca las dos: la validación lo rechaza.
+   Una `cuenta` es un acuerdo que se paga en cuotas y guarda el TOTAL; cada
+   cuota es un movimiento que le apunta. Lo que falta **se calcula**, no se
+   guarda (regla 3d): si se guardara, borrar una cuota lo dejaría mintiendo.
+   Borrar la cuenta **no borra sus cuotas** —esa plata se movió de verdad—:
+   solo las suelta del acuerdo.
+   ⚠️ El precio y el costo de un trabajo son lo **presupuestado**; los
+   movimientos son lo que **pasó**. Son dos cosas y por eso viven aparte:
+   compararlas es justo lo que dice si el trabajo salió como se pensaba. La
+   migración a v13 **no** convirtió precios en movimientos, que sería inventar
+   cobros que quizá nunca ocurrieron.
+
    3h. **El orden de los renglones lo manda la persona, no el código.** `orden`
    se guarda con la posición en que quedaron después de arrastrar, y es el
    orden en que salen en el PDF. Nunca reordenar por nombre ni por precio.
@@ -229,7 +246,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
 8. **Al publicar, subir la versión del caché** en `service-worker.js`
-   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v64**. Si no se sube, hay
+   (`const CACHE = 'onestop-shell-vNN'`). Hoy va en **v66**. Si no se sube, hay
    usuarios que se quedan pegados en la versión vieja.
 9. **IDs**: `crypto.randomUUID()`. **Fechas de auditoría**: epoch ms (`Date.now()`)
    en `creado`/`actualizado`/`eliminado`. **Fechas de agenda**: string `YYYY-MM-DD`
@@ -262,17 +279,19 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Clientes** (alta/edición/borrado, categorías, filtros, búsqueda, Google Maps + autocompletado) | ✅ terminado |
 | **Trabajos** (calendario mensual, "por agendar", modal completo, precio/costo, asignar trabajadores) | ✅ terminado |
 | **Equipo** (alta de trabajadores, roles, usuario del dispositivo) | ✅ terminado, sin login real |
-| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v12) |
+| **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v13) |
 | **Lector de mensajes** (captura/PDF → campos del cliente, con Claude) | ✅ programado; falta desplegar el Worker |
 | **Catálogo** (equipos/materiales/servicios, proveedores, filtros para reportes) | ✅ terminado (esquema v3) |
-| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v12) |
+| **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v13) |
 | **Cotización impresa / PDF** (datos de empresa, presentación, términos, firma) | ✅ terminado · igual que DES: HTML + impresión del navegador |
 | **Worker en Cloudflare** | ✅ desplegado en la cuenta de Rene · hoy sirve el lector de mensajes |
-| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v12), pero todavía sin desplegar |
+| **Base de datos D1** | ⛔ `schema.sql` escrito y al día (v13), pero todavía sin desplegar |
 | **R2** | ⛔ la tabla `archivos` y `DB.archivos` ya existen; falta el bucket. Hoy solo lo usa el logo |
 | **Login / permisos reales** | ⛔ hoy los roles son solo etiquetas de interfaz |
-| **Conversiones** (historial de lead → cliente, para reportes) | ✅ se registra solo (esquema v12) · la pantalla de reportes lo usará |
-| **Combos** (recetas de productos que se cotizan juntos) | ✅ terminado (esquema v12) |
+| **Conversiones** (historial de lead → cliente, para reportes) | ✅ se registra solo (esquema v13) · la pantalla de reportes lo usará |
+| **Combos** (recetas de productos que se cotizan juntos) | ✅ terminado (esquema v13) |
+| **Finanzas** (entradas y salidas de la empresa, categorías, cuotas, baucher con IA) | ✅ terminado (esquema v13) |
+| **Movimientos por trabajo** | ⛔ la capa de datos está; falta la pantalla dentro del trabajo |
 | **Reportes** (cuánto se ganó por cliente / por mes, conversiones) | ⛔ los datos ya están, falta la pantalla |
 
 **Dónde viven los datos hoy:** solo en el navegador de cada dispositivo

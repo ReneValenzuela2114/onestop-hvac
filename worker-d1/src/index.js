@@ -1,12 +1,13 @@
 /* =========================================================================
    One Stop Heating and Cooling · Worker
    -------------------------------------------------------------------------
-   Único endpoint por ahora:
+   Dos endpoints, los dos con la misma forma:
 
      POST /api/leer-cliente   { mime, datos }  →  { nombre, telefono, ... }
+     POST /api/leer-baucher   { mime, datos }  →  { fecha, numero, monto, banco }
 
    `datos` es la imagen o el PDF en base64. La respuesta son los campos del
-   formulario de cliente; lo que la IA no encuentre vuelve como texto vacío.
+   formulario; lo que la IA no encuentre vuelve como texto vacío.
 
    POR QUÉ EXISTE ESTE WORKER: la clave de Claude no se puede poner en la app,
    porque la app corre en el navegador y cualquiera vería la clave en el código
@@ -56,6 +57,42 @@ Reglas:
 - El teléfono puede estar en el encabezado del chat, no solo en el texto.
 - En "notas", resumí en una o dos frases qué necesita, con las palabras del cliente.`;
 
+/* Lo que se saca de un comprobante de pago. Mismo criterio que el de cliente:
+   `required` con todos y texto vacío cuando no aparece, para que la app no
+   tenga que adivinar qué falta. El monto va como TEXTO tal cual se lee: la app
+   lo convierte a centavos con su propia función, que es la que sabe de comas y
+   puntos. Si el Worker mandara un número, ya habría redondeado por su cuenta. */
+const ESQUEMA_BAUCHER = {
+  type: "object",
+  properties: {
+    fecha: { type: "string", description: "Fecha del pago tal como aparece. Vacío si no está." },
+    numero: { type: "string", description: "Número de transferencia, referencia o autorización." },
+    monto: { type: "string", description: "Monto total pagado, solo el número tal como se lee." },
+    banco: { type: "string", description: "Banco o medio de pago (Chase, Zelle, efectivo...)." },
+    notas: { type: "string", description: "Concepto del pago en pocas palabras, si aparece." },
+  },
+  required: ["fecha", "numero", "monto", "banco", "notas"],
+  additionalProperties: false,
+};
+
+const INSTRUCCIONES_BAUCHER = `Esta imagen es un comprobante de pago: una transferencia, un depósito, un recibo o el ticket de una compra.
+
+Extraé los datos del pago.
+
+Reglas:
+- Copiá los datos tal como aparecen. No corrijas ni completes nada.
+- Si un dato no está, devolvé texto vacío. NO lo inventes ni lo deduzcas.
+- El monto es el TOTAL pagado, no el subtotal ni el impuesto por separado.
+- Devolvé el monto solo como número, sin el signo de moneda.
+- Si hay varias fechas, la del pago, no la de impresión.`;
+
+/* Cada ruta con su esquema y sus instrucciones. Agregar una tercera es una
+   línea más acá y no tocar el resto. */
+const RUTAS = {
+  "/api/leer-cliente": { esquema: ESQUEMA_CLIENTE, instrucciones: INSTRUCCIONES },
+  "/api/leer-baucher": { esquema: ESQUEMA_BAUCHER, instrucciones: INSTRUCCIONES_BAUCHER },
+};
+
 export default {
   async fetch(request, env) {
     const origen = request.headers.get("Origin") || "";
@@ -69,7 +106,8 @@ export default {
     }
 
     const url = new URL(request.url);
-    if (url.pathname !== "/api/leer-cliente" || request.method !== "POST") {
+    const ruta = RUTAS[url.pathname];
+    if (!ruta || request.method !== "POST") {
       return responder({ error: "error_ia_ruta" }, 404, origen);
     }
     if (!env.ANTHROPIC_API_KEY) {
@@ -111,9 +149,9 @@ export default {
           // OJO: no agregar `effort` acá. Haiku 4.5 no lo acepta y devuelve 400.
           // Si algún día se vuelve a un modelo Opus/Sonnet, ahí sí se puede usar.
           output_config: {
-            format: { type: "json_schema", schema: ESQUEMA_CLIENTE },
+            format: { type: "json_schema", schema: ruta.esquema },
           },
-          messages: [{ role: "user", content: [adjunto, { type: "text", text: INSTRUCCIONES }] }],
+          messages: [{ role: "user", content: [adjunto, { type: "text", text: ruta.instrucciones }] }],
         }),
       });
     } catch {
