@@ -232,6 +232,13 @@ un bundler salvo que el proyecto lo pida de verdad.
    panel que lo necesita con `finMontarFormularioEn()`. No es ahorro de
    líneas: es lo que garantiza que en los dos lados se vea y se comporte
    igual, que es lo que Rene pidió.
+   El libro es una **tabla** con las mismas columnas que DES (número, fecha,
+   descripción, entró, salió, saldo corrido, estado). En teléfono la MISMA
+   tabla se convierte en tarjetas por CSS: siete columnas en 375px no se leen
+   ni deslizándolas de lado.
+   ⚠️ El formulario usa **`@container`, no `@media`**: vive en dos lados —a
+   todo lo ancho en Proyectos y en una columna angosta en Finanzas— y midiendo
+   la ventana la descripción quedaba en 131px con la pantalla en 1265.
    ⚠️ Antes de reescribir el `innerHTML` de un panel que pueda tener el
    formulario adentro hay que llamar a **`finGuardarFormulario()`**. Sin eso,
    el `innerHTML =` lo DESTRUYE: deja de existir en todo el DOM y la próxima
@@ -261,7 +268,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    `ErrorDatos` con una clave de i18n. En la UI se envuelven con `conAviso(...)`,
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
-8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v70**:
+8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v71**:
    1. `const CACHE = 'onestop-shell-vNN'` en `service-worker.js`
    2. el `?v=` de `data.js` e `i18n.js` dentro del `SHELL` del service worker
    3. el `?v=` de los `<script src>` en `index.html`
