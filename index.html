@@ -30,7 +30,11 @@
        termina. Este tono llega a 3:1 contra el blanco, que es el mínimo que
        piden las pautas de accesibilidad para el borde de un control. */
     --line-campo:#8494AA;
-    --bg:#F3F6FA; --panel:#FFFFFF;
+    /* El fondo de la pagina, azulado como el de DES. El gris casi blanco de
+       antes daba 1.08:1 contra las tarjetas: estaban ahi pero no se
+       despegaban. Este llega a 1.24:1, que es lo que las hace verse como
+       tarjetas y no como bloques de texto sueltos. */
+    --bg:#DFE9F4; --panel:#FFFFFF;
     --success:#2E9E64; --success-soft:#E4F6EC;
     --danger:#D0422A; --danger-soft:#FBEAE6;
     --radius:14px; --radius-sm:10px;
@@ -435,6 +439,14 @@
 
   @media (max-width: 700px){
     .proy-cajas{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media (max-width: 560px){
+    /* En dos columnas de 150px, "COBRADO $1,500.00" no entra y el monto se
+       cortaba con puntitos. Un poco menos de letra y menos aire alcanza:
+       cortar el monto es lo unico que no se puede hacer en una caja de plata. */
+    .proy-cajas > div{padding:6px 9px;gap:5px}
+    .proy-cajas span{font-size:8.5px;letter-spacing:.03em}
+    .proy-cajas b{font-size:13px}
   }
 
   /* Titulo y herramientas en una fila, como DES. */
@@ -2481,8 +2493,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=74"></script>
-<script src="data.js?v=74"></script>
+<script src="i18n.js?v=76"></script>
+<script src="data.js?v=76"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
