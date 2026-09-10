@@ -379,33 +379,40 @@
   /* La tarjeta de un proyecto: arriba quien y en que estado, abajo la plata.
      Se toca entera para entrar a su libro. */
   .proy-card{display:block;width:100%;text-align:left;background:var(--panel);
-    border:1px solid var(--line);border-radius:var(--radius);padding:var(--sp-4);
-    margin-bottom:var(--sp-3);cursor:pointer}
+    border:1px solid var(--line);border-radius:var(--radius);padding:13px 16px;
+    margin-bottom:10px;cursor:pointer}
   .proy-card:hover{border-color:var(--frio-500);box-shadow:var(--shadow-sm)}
-  .proy-card-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .proy-card-top{display:flex;align-items:flex-start;gap:12px}
   .proy-card-top b{font-size:14px;font-weight:700;color:var(--ink);min-width:0}
   .proy-card-titulo{display:block;font-size:12.5px;color:var(--muted);margin-top:3px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .proy-card-quien{min-width:0;flex:1 1 auto}
-  .proy-card-quien b{display:block;font-size:15px;font-weight:800;color:var(--ink)}
-  .proy-card-obra{display:block;font-size:12.5px;font-weight:700;color:var(--frio-600);margin-top:1px}
-  .proy-card-num{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+  .proy-card-quien b{display:block;font-size:15px;font-weight:800;color:var(--ink);line-height:1.25}
+  .proy-card-obra{display:block;font-size:12.5px;font-weight:700;color:var(--frio-600);margin-top:2px}
+  .proy-card-obra i{font-style:normal;margin-right:4px;font-size:11px}
+  .proy-card-num{display:block;font-size:10.5px;color:var(--muted);margin-top:2px;
+    font-variant-numeric:tabular-nums}
   /* El estado se cambia sin entrar al proyecto, como en DES. */
   .proy-estado-sel{flex-shrink:0;min-height:38px;padding:6px 10px;border:1.5px solid var(--line-campo);
     border-radius:var(--radius-sm);background:var(--panel);font-size:12.5px;font-weight:600;color:var(--ink)}
 
   /* Las cuatro cajas: cotizado, cobrado, gastado y saldo. Los colores dicen
      de que se trata sin leer: verde lo que entra, rojo lo que sale. */
+  /* Etiqueta y monto en la MISMA linea, como DES: asi la caja mide 32px y no
+     60, y la tarjeta entera entra de un vistazo. */
   .proy-cajas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-2);margin-top:11px}
-  .proy-cajas > div{background:var(--line-soft);border-radius:var(--radius-sm);padding:8px 12px;min-width:0}
-  .proy-cajas > div.verde{background:var(--success-soft)}
-  .proy-cajas > div.rojo{background:var(--danger-soft)}
-  .proy-cajas span{display:block;font-size:9.5px;font-weight:800;color:var(--muted);
-    text-transform:uppercase;letter-spacing:.05em}
-  .proy-cajas b{display:block;font-size:15px;font-weight:800;color:var(--ink);margin-top:2px;
+  .proy-cajas > div{display:flex;align-items:baseline;gap:8px;background:var(--line-soft);
+    border-radius:var(--radius-sm);padding:7px 12px;min-width:0}
+  .proy-cajas span{font-size:9px;font-weight:800;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.05em;flex-shrink:0}
+  .proy-cajas b{font-size:14px;font-weight:800;color:var(--ink);margin-left:auto;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+  /* En la LISTA las cuatro cajas son grises y lo que cambia es el color del
+     numero. En el DETALLE si llevan fondo, que es como se ve en DES. */
   .proy-cajas > div.verde b{color:var(--success)}
   .proy-cajas > div.rojo b{color:var(--danger)}
+  .proy-cabecera .proy-cajas > div.verde{background:var(--success-soft)}
+  .proy-cabecera .proy-cajas > div.rojo{background:var(--danger-soft)}
   .proy-ajuste{display:flex;align-items:center;gap:6px;margin-top:2px;cursor:pointer}
   .proy-ajuste input{width:16px;height:16px;flex-shrink:0}
   .proy-ajuste s{font-size:11.5px;color:var(--muted)}
@@ -428,6 +435,20 @@
 
   @media (max-width: 700px){
     .proy-cajas{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+
+  /* Titulo y herramientas en una fila, como DES. */
+  .proy-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);
+    flex-wrap:wrap;margin-bottom:16px}
+  .proy-head h1{margin:0;font-size:18px;font-weight:800;color:var(--ink)}
+  .proy-head-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  /* Angosto a proposito: se busca un nombre, no un parrafo. */
+  .proy-buscador{flex:0 0 230px;min-width:0}
+  .proy-buscador input{padding:8px 12px 8px 34px;font-size:13px}
+  .proy-buscador svg{left:11px}
+  @media (max-width: 560px){
+    .proy-head-tools{width:100%}
+    .proy-buscador{flex:1 1 auto}
   }
 
   /* El menu de estados con casillas, como el de DES. */
@@ -1124,35 +1145,29 @@
 
         <!-- ---- Vista lista ---- -->
         <div id="proyListaView">
-          <div class="page-head">
-            <div>
-              <h1 data-i18n="proy_titulo">Proyectos</h1>
-              <p data-i18n="proy_subtitulo">Entradas y salidas de cada trabajo. Tocá uno para ver su libro.</p>
-            </div>
-            <div class="fin-banco">
-              <span data-i18n="proy_saldo_total">Saldo de todos</span>
-              <b id="proySaldoTotal">$0.00</b>
-              <span id="proySaldoNota"></span>
-            </div>
-          </div>
-
-          <div class="toolbar">
-            <div class="search-box">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-              <input type="text" id="buscarProyecto" data-i18n-ph="proy_buscar" placeholder="Search client or job #…">
-            </div>
-            <!-- Filtro de estados con casillas, igual que DES: se ven todos a la
-                 vez y se apagan los que no interesan, en vez de elegir uno solo. -->
-            <div class="proy-filtro">
-              <button type="button" class="btn" id="btnProyEstados">
-                <span data-i18n="proy_estados">Estados</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-              </button>
-              <div class="proy-menu" id="proyEstadosMenu" hidden>
-                <div id="proyEstadosLista"></div>
-                <div class="proy-menu-pie">
-                  <button type="button" class="btn ghost sm" data-todos="1"><span data-i18n="proy_todos">Todos</span></button>
-                  <button type="button" class="btn ghost sm" data-todos="0"><span data-i18n="proy_ninguno">Ninguno</span></button>
+          <!-- Todo en una fila, como DES: el titulo a la izquierda y el
+               buscador con el filtro a la derecha. El buscador es angosto a
+               proposito: se busca un nombre, no un parrafo. -->
+          <div class="proy-head">
+            <h1 data-i18n="proy_titulo">Proyectos</h1>
+            <div class="proy-head-tools">
+              <div class="search-box proy-buscador">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" id="buscarProyecto" data-i18n-ph="proy_buscar" placeholder="Search client or job #…">
+              </div>
+              <!-- Filtro de estados con casillas, igual que DES: se ven todos a
+                   la vez y se apagan los que no interesan. -->
+              <div class="proy-filtro">
+                <button type="button" class="btn" id="btnProyEstados">
+                  <span data-i18n="proy_estados">Estados</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="proy-menu" id="proyEstadosMenu" hidden>
+                  <div id="proyEstadosLista"></div>
+                  <div class="proy-menu-pie">
+                    <button type="button" class="btn ghost sm" data-todos="1"><span data-i18n="proy_todos">Todos</span></button>
+                    <button type="button" class="btn ghost sm" data-todos="0"><span data-i18n="proy_ninguno">Ninguno</span></button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2466,8 +2481,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=73"></script>
-<script src="data.js?v=73"></script>
+<script src="i18n.js?v=74"></script>
+<script src="data.js?v=74"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -3850,6 +3865,16 @@ document.getElementById("cotValidezDias").addEventListener("input", refrescarVal
 /* Un "2026-09-08" suelto se lee como medianoche UTC y en California puede
    retroceder al día anterior. Con Date.UTC de punta a punta la fecha no se
    corre nunca. Es el mismo criterio que usa la validez de la cotización. */
+/* "05/09/2026", como el numero de cotizacion de DES. Con Date.UTC de punta a
+   punta: un "2026-09-05" suelto se lee como medianoche UTC y en California
+   puede retroceder al dia anterior. */
+function fechaCortaISO(iso){
+  if (!iso) return "";
+  const [a, m, d] = String(iso).split("-").map(Number);
+  return new Date(Date.UTC(a, m - 1, d)).toLocaleDateString(CFG_LANG === "es" ? "es-US" : "en-US",
+    { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
+}
+
 function fechaLargaISO(iso){
   if (!iso) return "";
   const [a, m, d] = String(iso).split("-").map(Number);
@@ -5376,19 +5401,6 @@ function renderProyectos(){
   document.getElementById("proyResumen").textContent =
     todos.length ? t("catalogo_resumen").replace("{n}", lista.length).replace("{total}", todos.length) : "";
 
-  /* El saldo de arriba es el de TODOS los trabajos, no el de los filtrados:
-     es la plata que hay, y no cambia porque uno esconda una fila. */
-  let entradas = 0, salidas = 0, pendientes = 0;
-  for (const tj of todos) {
-    const tot = DB.movimientos.totales(DB.movimientos.deTrabajo(tj.id));
-    entradas += tot.entradas_centavos;
-    salidas += tot.salidas_centavos;
-    pendientes += tot.entradas_pendientes_centavos - tot.salidas_pendientes_centavos;
-  }
-  document.getElementById("proySaldoTotal").textContent = DB.dinero.formato(entradas - salidas, CFG_LANG);
-  document.getElementById("proySaldoNota").textContent =
-    pendientes ? t("fin_mas_pendiente").replace("{m}", DB.dinero.formato(pendientes, CFG_LANG)) : "";
-
   const cont = document.getElementById("proyLista");
   if (!lista.length) {
     cont.innerHTML = `<div class="placeholder-tab"><h3>${esc(t(todos.length ? "catalogo_sin_resultados" : "proy_vacio_titulo"))}</h3>
@@ -5409,8 +5421,8 @@ function proyTarjetaHTML(tj){
     <div class="proy-card-top">
       <div class="proy-card-quien">
         <b>${esc(cli ? cli.nombre : t("auditoria_desconocido"))}</b>
-        <span class="proy-card-obra">${esc(tj.titulo)}</span>
-        <span class="proy-card-num">#${tj.numero}${tj.fecha ? " · " + esc(fechaLargaISO(tj.fecha)) : ""}</span>
+        <span class="proy-card-obra"><i aria-hidden="true">✦</i>${esc(tj.titulo)}</span>
+        <span class="proy-card-num">#${tj.numero}${tj.fecha ? " · " + esc(fechaCortaISO(tj.fecha)) : ""}</span>
       </div>
       <select class="proy-estado-sel" data-estado-trabajo="${tj.id}" aria-label="${esc(t("fin_estado"))}">
         ${DB.estadosTrabajo.map(e => `<option value="${e}"${e === tj.estado ? " selected" : ""}>${esc(t("estado_" + e))}</option>`).join("")}
@@ -5424,7 +5436,7 @@ function proyTarjetaHTML(tj){
    queda. Mismos nombres y mismos colores que DES. */
 function proyCajasHTML(tj, tot){
   return `<div class="proy-cajas">
-    <div><span>${esc(t("proy_cotizado"))}</span><b>${esc(DB.dinero.formato(tj.precio_centavos || 0, CFG_LANG))}</b></div>
+    <div><span>${esc(t("proy_cotizado"))}</span><b>${esc(DB.dinero.formato(DB.trabajos.aCobrar(tj), CFG_LANG))}</b></div>
     <div class="verde"><span>${esc(t("proy_cobrado"))}</span><b>${esc(DB.dinero.formato(tot.entradas_centavos, CFG_LANG))}</b></div>
     <div class="rojo"><span>${esc(t("proy_gastado"))}</span><b>${esc(DB.dinero.formato(tot.salidas_centavos, CFG_LANG))}</b></div>
     <div class="${tot.saldo_centavos < 0 ? "rojo" : "verde"}"><span>${esc(t("proy_saldo"))}</span><b>${esc(DB.dinero.formato(tot.saldo_centavos, CFG_LANG))}</b></div>
@@ -5488,8 +5500,8 @@ function renderProyectoDetalle(trabajoId){
       <div class="proy-card-top">
         <div class="proy-card-quien">
           <b>${esc(cli ? cli.nombre : t("auditoria_desconocido"))}</b>
-          <span class="proy-card-obra">${esc(tj.titulo)}</span>
-          <span class="proy-card-num">#${tj.numero}${tj.fecha ? " · " + esc(fechaLargaISO(tj.fecha)) : ""}</span>
+          <span class="proy-card-obra"><i aria-hidden="true">✦</i>${esc(tj.titulo)}</span>
+          <span class="proy-card-num">#${tj.numero}${tj.fecha ? " · " + esc(fechaCortaISO(tj.fecha)) : ""}</span>
         </div>
         <select class="proy-estado-sel" data-estado-trabajo="${tj.id}" aria-label="${esc(t("fin_estado"))}">
           ${DB.estadosTrabajo.map(e => `<option value="${e}"${e === tj.estado ? " selected" : ""}>${esc(t("estado_" + e))}</option>`).join("")}
