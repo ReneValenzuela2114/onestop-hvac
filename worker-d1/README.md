@@ -88,6 +88,24 @@ npx.cmd wrangler deploy
 
 La clave no hay que volver a cargarla.
 
+### Sin terminal ni token: desde la página de Cloudflare
+
+Es el camino más fácil para Rene y el que se usó el 11 sep 2026:
+
+1. <https://dash.cloudflare.com> → **Workers & Pages** → **onestop-api**
+2. **Edit code** (arriba a la derecha, el botón `</>`)
+3. Clic en el código → **Ctrl + A** → **Ctrl + V** con el contenido entero de
+   `src/index.js` (Claude lo deja copiado en el portapapeles)
+4. **Deploy**
+
+Las variables (`ORIGENES_PERMITIDOS`) y la clave de Claude quedan como están:
+el editor cambia solo el código.
+
+Para comprobar que quedó la versión nueva sin gastar créditos: un pedido a
+`/api/leer-baucher` con `"mime":"text/plain"` tiene que contestar
+`400 error_ia_tipo`. La versión vieja no tenía esa ruta y contestaba
+`404 error_ia_ruta`.
+
 ---
 
 ## Comprobar que quedó bien, sin gastar créditos

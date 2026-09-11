@@ -383,7 +383,7 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Trabajos** (calendario mensual, "por agendar", modal completo, precio/costo, asignar trabajadores) | ✅ terminado |
 | **Equipo** (alta de trabajadores, roles, usuario del dispositivo) | ✅ terminado, sin login real |
 | **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v14) |
-| **Lector de mensajes** (captura/PDF → campos del cliente y del trabajo, con Claude) | ✅ desplegado · la versión que lee el trabajo y los bauchers espera `npx.cmd wrangler deploy` (11 sep 2026) |
+| **Lector de mensajes** (captura/PDF → campos del cliente y del trabajo, con Claude) | ✅ desplegado (11 sep 2026) · lee cliente, trabajo y bauchers · se actualizó desde el editor web de Cloudflare (ver `worker-d1/README.md`) |
 | **Catálogo** (equipos/materiales/servicios, proveedores, filtros para reportes) | ✅ terminado (esquema v3) |
 | **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v14) |
 | **Cotización impresa / PDF** (datos de empresa, presentación, términos, firma) | ✅ terminado · igual que DES: HTML + impresión del navegador |
