@@ -273,7 +273,11 @@ un bundler salvo que el proyecto lo pida de verdad.
    todos los formularios; los demás botones (Llamar, Mapa, Ver PDF, Ver su
    plata…) van en una fila de atajos aparte. Con todo en el pie, cinco o seis
    botones se partían en dos filas desparejas.
-   El estado se cambia **desde la ficha** con un menú, sin abrir el formulario.
+   El estado de cotizaciones y trabajos **se muestra en la ficha pero se
+   cambia desde la lista** —una etiqueta de color que se toca, igual que la
+   categoría en Clientes— o editando. La ficha es para mirar (pedido de Rene,
+   10 y 11 sep 2026). `abrirFicha()` todavía acepta un `estado` con menú, pero
+   hoy ninguna ficha lo usa.
    **Pantalla nueva = ficha nueva con `abrirFicha()`**, nunca tocar → editar.
    En Clientes y Equipo la fila entera abre la ficha; `tocarFila()` deja pasar
    los clics a lo que hay adentro (teléfono, menús, botones) —sin esa guarda,
@@ -306,7 +310,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    `ErrorDatos` con una clave de i18n. En la UI se envuelven con `conAviso(...)`,
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
-8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v81**:
+8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v82**:
    1. `const CACHE = 'onestop-shell-vNN'` en `service-worker.js`
    2. el `?v=` de `data.js` e `i18n.js` dentro del `SHELL` del service worker
    3. el `?v=` de los `<script src>` en `index.html`

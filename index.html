@@ -211,6 +211,14 @@
   .tc-info span{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .tc-hora{color:var(--frio-600) !important;font-weight:600;margin-top:2px}
   .tc-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+  /* La etiqueta de estado que se toca para cambiarlo: mismo tamaño de letra
+     y mismo punto de color que la etiqueta fija que había antes. */
+  .badge-sel.tj-estado-sel{flex-shrink:0;gap:6px;font-size:11.5px;font-weight:600}
+  .badge-sel.tj-estado-sel .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  @media (max-width: 560px){
+    /* En el teléfono se toca con el dedo: 38px, como las de Clientes. */
+    .badge-sel.tj-estado-sel{min-height:38px;padding:0 8px 0 11px}
+  }
   .tc-avatars{display:flex;gap:3px}
   .user-avatar.mini{width:23px;height:23px;font-size:9.5px}
   .chip.sel{background:var(--frio-600);color:#fff;border-color:var(--frio-600)}
@@ -480,12 +488,7 @@
   .proy-ajuste b{margin:0}
   /* El campo del acordado vive en la fila del trato, con Entrega y Garantia.
      Adentro de la caja quedaba aplastado en 18px y no se veia lo escrito. */
-  .proy-trato input.proy-ajuste-campo[type=number]{width:130px;font-weight:700;
-    font-variant-numeric:tabular-nums;-moz-appearance:textfield;appearance:textfield}
-  /* Sin las flechitas del navegador: en un monto suben de a un centavo, no
-     sirven, y le comen lugar al numero. */
-  .proy-ajuste-campo::-webkit-outer-spin-button,
-  .proy-ajuste-campo::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .proy-trato input.proy-ajuste-campo[type=number]{width:130px;font-weight:700;font-variant-numeric:tabular-nums}
 
   /* Entrega y garantia: el trato, no la agenda. */
   .proy-trato{display:flex;align-items:center;gap:var(--sp-4);flex-wrap:wrap;margin-top:11px;
@@ -495,7 +498,12 @@
     text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
   .proy-trato input{min-height:38px;padding:5px 9px;border:1.5px solid var(--line-campo);
     border-radius:8px;font-size:12.5px;background:var(--panel)}
-  .proy-trato input[type=number]{width:74px}
+  .proy-trato input[type=number]{width:74px;-moz-appearance:textfield;appearance:textfield}
+  /* Sin las flechitas del navegador en los números del trato (garantía y
+     acordado): suben de a uno, con el dedo no sirven y le comen lugar al
+     número. Se escriben con el teclado numérico. */
+  .proy-trato input[type=number]::-webkit-outer-spin-button,
+  .proy-trato input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   .proy-trato i{font-style:normal;font-size:11.5px;color:var(--muted)}
   .proy-trato em{font-style:italic;font-size:11.5px;color:var(--muted)}
   .proy-cabecera{padding:var(--sp-4) var(--sp-5)}
@@ -2617,8 +2625,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=81"></script>
-<script src="data.js?v=81"></script>
+<script src="i18n.js?v=82"></script>
+<script src="data.js?v=82"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -3601,22 +3609,38 @@ document.getElementById("btnCalPrev").addEventListener("click", () => { calFecha
 document.getElementById("btnCalNext").addEventListener("click", () => { calFecha = new Date(calFecha.getFullYear(), calFecha.getMonth() + 1, 1); renderCalendario(); });
 document.getElementById("btnCalHoy").addEventListener("click", () => { calFecha = new Date(); seleccionarDia(hoyISO()); });
 
+/* El estado del trabajo se cambia desde la lista, igual que en Cotizaciones
+   y Clientes: la misma etiqueta de color, que se toca y abre la lista del
+   sistema. La ficha solo lo muestra. */
+function selEstadoTrabajo(tj){
+  const e = estadoInfo(tj.estado);
+  const ops = DB.estadosTrabajo.map(v =>
+    `<option value="${v}"${v === tj.estado ? " selected" : ""}>${esc(t("estado_" + v))}</option>`).join("");
+  return `<span class="badge-sel tj-estado-sel" style="background:${e.color}22;color:${e.color}">
+    <span class="dot" style="background:${e.color}"></span>
+    <span class="badge-sel-txt">${esc(t("estado_" + tj.estado))}</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    <select data-estado-tj="${tj.id}" aria-label="${esc(t("ficha_estado"))}">${ops}</select>
+  </span>`;
+}
+
 function tarjetaTrabajo(tj){
   const c = DB.clientes.get(tj.cliente_id);
-  const e = estadoInfo(tj.estado);
   const avatars = (tj.trabajador_ids || []).map(id => {
     const u = DB.usuarios.getAll().find(x => x.id === id);
     return u ? `<span class="user-avatar mini" title="${esc(u.nombre)}">${iniciales(u.nombre)}</span>` : "";
   }).join("");
   const horas = tj.hora_inicio ? formatHora(tj.hora_inicio) + (tj.hora_fin ? " – " + formatHora(tj.hora_fin) : "") : "";
-  return `<div class="trabajo-card" onclick="fichaTrabajo('${tj.id}')">
+  /* Un <div> con role="button" y no un onclick: adentro va el <select> del
+     estado, y el toque sobre él no tiene que abrir la ficha. */
+  return `<div class="trabajo-card" role="button" tabindex="0" data-tj="${tj.id}">
     <div class="tc-info">
       <b><span class="tc-num">#${tj.numero}</span>${esc(tj.titulo)}</b>
       <span>${c ? esc(c.nombre) : "—"}${tj.direccion ? " · " + esc(tj.direccion) : ""}</span>
       ${horas ? `<span class="tc-hora">${horas}</span>` : ""}
     </div>
     <div class="tc-right">
-      <span class="badge" style="background:${e.color}22;color:${e.color}"><span class="dot" style="background:${e.color}"></span>${t("estado_" + tj.estado)}</span>
+      ${selEstadoTrabajo(tj)}
       ${avatars ? `<div class="tc-avatars">${avatars}</div>` : ""}
     </div>
   </div>`;
@@ -3640,6 +3664,35 @@ function renderPorAgendar(){
 document.getElementById("btnPorAgendar").addEventListener("click", () => {
   const el = document.getElementById("porAgendarLista");
   el.style.display = el.style.display === "none" ? "block" : "none";
+});
+
+/* Las dos listas de trabajos: tocar la tarjeta abre la ficha; tocar el estado
+   lo cambia ahí mismo. Se conectan UNA vez: las cajas no se destruyen, solo
+   su contenido (ver finConectarLista: conectarlas al repintar acumulaba). */
+["listaDia", "porAgendarLista"].forEach(id => {
+  const lista = document.getElementById(id);
+  lista.addEventListener("click", (e) => {
+    if (e.target.closest("select, .badge-sel")) return;
+    const card = e.target.closest("[data-tj]");
+    if (card) fichaTrabajo(card.dataset.tj);
+  });
+  lista.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const card = e.target.closest("[data-tj]");
+    if (!card || e.target !== card) return;
+    e.preventDefault();
+    fichaTrabajo(card.dataset.tj);
+  });
+  lista.addEventListener("change", (e) => {
+    const sel = e.target.closest("[data-estado-tj]");
+    if (!sel) return;
+    /* "Agendado" sin fecha lo rechaza la capa de datos: conAviso muestra el
+       motivo, y el repintado deja la etiqueta con lo que quedó de verdad y no
+       con lo que se eligió. */
+    const ok = conAviso(() => DB.trabajos.update(sel.dataset.estadoTj, { estado: sel.value }));
+    renderTrabajos();
+    if (ok) toast(t("toast_trabajo_actualizado"));
+  });
 });
 
 function renderTrabajos(){ renderCalendario(); renderListaDia(); renderPorAgendar(); }
@@ -5750,7 +5803,7 @@ function renderProyectoDetalle(trabajoId){
         </label>
         <label>
           <span>${esc(t("proy_garantia"))}</span>
-          <input type="number" id="proyGarantia" min="0" max="240" step="1" value="${tj.garantia_meses ?? 12}">
+          <input type="number" id="proyGarantia" min="0" max="240" step="1" inputmode="numeric" value="${tj.garantia_meses ?? 12}">
           <i>${esc(t("proy_meses"))}</i>
         </label>
         <em>${tj.fecha_entrega ? esc(fechaLargaISO(tj.fecha_entrega)) : esc(t("proy_sin_entrega"))}</em>
@@ -5964,20 +6017,10 @@ function fichaTrabajo(id){
     codigo: "#" + tj.numero,
     titulo: tj.titulo,
     sub: cli ? cli.nombre : "",
-    estado: {
-      etiqueta: t("ficha_estado"), valor: tj.estado,
-      opciones: DB.estadosTrabajo.map(e => ({ v: e, txt: t("estado_" + e) })),
-      alCambiar: (v) => {
-        /* "Agendado" sin fecha lo rechaza la capa de datos: conAviso muestra
-           el motivo y la ficha se repinta con el estado que quedó de verdad. */
-        if (conAviso(() => DB.trabajos.update(id, { estado: v }))) {
-          renderTrabajos();
-          toast(t("toast_trabajo_actualizado"));
-        }
-        fichaTrabajo(id);
-      },
-    },
+    /* El estado se MUESTRA con su etiqueta de color: la ficha es para mirar.
+       Se cambia editando el trabajo o desde la lista, como en Cotizaciones. */
     pares: [
+      [t("ficha_estado"), `<span class="badge" style="background:${estadoInfo(tj.estado).color}22;color:${estadoInfo(tj.estado).color}"><span class="dot" style="background:${estadoInfo(tj.estado).color}"></span>${esc(t("estado_" + tj.estado))}</span>`],
       [t("form_trabajo_cliente"), cli ? esc(cli.nombre) : ""],
       [t("ficha_fecha"), tj.fecha ? esc(fechaLargaISO(tj.fecha)) : esc(t("ficha_sin_fecha"))],
       [t("ficha_horario"), esc(horas)],
