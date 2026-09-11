@@ -291,6 +291,24 @@ un bundler salvo que el proyecto lo pida de verdad.
    y el formulario; antes vivía atada al formulario abierto. Lo mismo
    `aprobarCotizacion(cot)`.
 
+   3w. **La imagen del cliente llena también el trabajo.** Cuando el cliente
+   se crea desde "Nuevo trabajo" con "Leer imagen", la IA devuelve además
+   `trabajo_titulo`, `trabajo_fecha` y las horas, y al **guardar el cliente**
+   (`volcarIaEnTrabajo`) pasan al formulario de trabajo junto con lo que pide
+   (va a la descripción). **Solo se llena lo vacío o lo que se puso solo al
+   abrir** (`trabajoAlAbrir`: el horario de 8 a 5 y el día del calendario):
+   lo que la persona escribió no se pisa, y lo que trajo una cotización
+   aprobada tampoco. Con día puesto, el trabajo pasa a "agendado".
+   La fecha de hoy la manda la app (`hoy`), porque el Worker corre en UTC.
+   La IA calcula "mañana" o "el martes" desde la fecha del MENSAJE si se ve
+   en la captura, y no confunde la hora de la burbuja con la del servicio.
+   Ante la duda deja la fecha vacía: una fecha equivocada termina en el
+   calendario en el día equivocado. El Worker descarta lo que no tenga forma
+   exacta (`fechaValida`, `horaValida`) y la app lo vuelve a mirar.
+   ⚠️ Cada ruta del Worker tiene su propia `salida`. Antes la respuesta armaba
+   siempre los campos del cliente, y un baucher habría vuelto vacío sin ningún
+   error; se encontró antes de publicarlo (11 sep 2026).
+
    3h. **El orden de los renglones lo manda la persona, no el código.** `orden`
    se guarda con la posición en que quedaron después de arrastrar, y es el
    orden en que salen en el PDF. Nunca reordenar por nombre ni por precio.
@@ -314,7 +332,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    `ErrorDatos` con una clave de i18n. En la UI se envuelven con `conAviso(...)`,
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
-8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v84**:
+8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v85**:
    1. `const CACHE = 'onestop-shell-vNN'` en `service-worker.js`
    2. el `?v=` de `data.js` e `i18n.js` dentro del `SHELL` del service worker
    3. el `?v=` de los `<script src>` en `index.html`
@@ -365,7 +383,7 @@ nada) y actualizar `schema.sql` en el mismo cambio.
 | **Trabajos** (calendario mensual, "por agendar", modal completo, precio/costo, asignar trabajadores) | ✅ terminado |
 | **Equipo** (alta de trabajadores, roles, usuario del dispositivo) | ✅ terminado, sin login real |
 | **Capa de datos** (centavos, borrado suave, auditoría, validación, número de trabajo, respaldo) | ✅ terminado (esquema v14) |
-| **Lector de mensajes** (captura/PDF → campos del cliente, con Claude) | ✅ programado; falta desplegar el Worker |
+| **Lector de mensajes** (captura/PDF → campos del cliente y del trabajo, con Claude) | ✅ desplegado · la versión que lee el trabajo y los bauchers espera `npx.cmd wrangler deploy` (11 sep 2026) |
 | **Catálogo** (equipos/materiales/servicios, proveedores, filtros para reportes) | ✅ terminado (esquema v3) |
 | **Cotizaciones** (renglones editables uno por uno, renglón a mano, ojo del PDF, reordenar arrastrando, impuesto, aprobar → crea el trabajo) | ✅ terminado (esquema v14) |
 | **Cotización impresa / PDF** (datos de empresa, presentación, términos, firma) | ✅ terminado · igual que DES: HTML + impresión del navegador |

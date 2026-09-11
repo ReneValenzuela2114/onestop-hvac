@@ -2648,8 +2648,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=84"></script>
-<script src="data.js?v=84"></script>
+<script src="i18n.js?v=85"></script>
+<script src="data.js?v=85"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -3091,6 +3091,7 @@ function limpiarFormularioCliente(){
   setEstadoToggle("activo");
   setRelacionToggle("lead");   // un cliente nuevo nace lead
   document.getElementById("fieldNombre").classList.remove("error");
+  iaTrabajo = null;   // una imagen leída antes no pasa a otro cliente
   const estadoIa = document.getElementById("clienteIaEstado");
   estadoIa.className = "ia-estado";
   estadoIa.textContent = "";
@@ -3200,7 +3201,10 @@ document.getElementById("btnGuardarCliente").addEventListener("click", () => {
   if (guardado && document.getElementById("modalTrabajo").classList.contains("open")) {
     poblarSelectClientes(guardado.id);
     document.getElementById("trabajoCliente").dispatchEvent(new Event("change"));
+    // …y lo que la imagen dijo del trabajo pasa al formulario de trabajo
+    if (volcarIaEnTrabajo()) toast(t("toast_trabajo_desde_imagen"));
   }
+  iaTrabajo = null;   // si no se usó acá, no queda colgado para otro trabajo
 });
 
 /* =========================================================================
@@ -3223,6 +3227,56 @@ function archivoABase64(file){
 }
 
 /* Vuelca en el formulario solo los campos que la IA encontró. Devuelve cuántos. */
+/* Lo que la imagen dijo del TRABAJO (título, día, horas y qué pide). Se guarda
+   aparte hasta que se guarde el cliente: recién ahí se sabe si el cliente se
+   estaba creando desde "Nuevo trabajo". El Worker ya descarta lo que no tiene
+   la forma exacta; acá se vuelve a mirar por si responde uno viejo. */
+let iaTrabajo = null;
+function iaTrabajoDesde(d){
+  const hora = (v) => /^([01]\d|2[0-3]):[0-5]\d$/.test(v || "") ? v : "";
+  const ia = {
+    titulo: String(d.trabajo_titulo || "").trim(),
+    descripcion: String(d.notas || "").trim(),
+    fecha: /^\d{4}-\d{2}-\d{2}$/.test(d.trabajo_fecha || "") ? d.trabajo_fecha : "",
+    hora_inicio: hora(d.trabajo_hora_inicio),
+    hora_fin: hora(d.trabajo_hora_fin),
+  };
+  return Object.values(ia).some(Boolean) ? ia : null;
+}
+
+/* Pasa al formulario de trabajo lo que la imagen dijo. Solo llena lo que está
+   vacío o sigue con lo que se puso solo al abrir (el horario de 8 a 5, el día
+   elegido en el calendario): lo que la persona ya escribió no se pisa. */
+function volcarIaEnTrabajo(){
+  const ia = iaTrabajo;
+  iaTrabajo = null;
+  if (!ia) return 0;
+  const campo = (id) => document.getElementById(id);
+  const inicial = trabajoAlAbrir || {};
+  const libre = (id, clave) => !campo(id).value || campo(id).value === inicial[clave];
+  let puestos = 0;
+  const poner = (id, clave, valor) => {
+    if (valor && libre(id, clave)) { campo(id).value = valor; puestos++; }
+  };
+  poner("trabajoTitulo", "titulo", ia.titulo);
+  poner("trabajoDescripcion", "descripcion", ia.descripcion);
+  poner("trabajoFecha", "fecha", ia.fecha);
+  poner("trabajoHoraInicio", "hora_inicio", ia.hora_inicio);
+  poner("trabajoHoraFin", "hora_fin", ia.hora_fin);
+  /* Si la imagen da solo la hora de inicio y queda después del fin que se
+     puso solo (las 5), el fin se vacía: "de 6 PM a 5 PM" no existe. */
+  const ini = campo("trabajoHoraInicio").value, fin = campo("trabajoHoraFin").value;
+  if (ia.hora_inicio && !ia.hora_fin && fin === inicial.hora_fin && fin <= ini) campo("trabajoHoraFin").value = "";
+  /* Con día puesto, el trabajo queda agendado, si el estado sigue siendo el
+     que tenía al abrir. Sin día no se toca: "agendado" sin fecha no se puede. */
+  if (ia.fecha && campo("trabajoFecha").value === ia.fecha &&
+      campo("trabajoEstado").value === (inicial.estado || "por_agendar")) {
+    campo("trabajoEstado").value = "agendado";
+  }
+  refrescarBotonesLimpiar();
+  return puestos;
+}
+
 function volcarClienteEnFormulario(d){
   const mapa = {
     clienteNombre: d.nombre, clienteEmpresa: d.empresa, clienteTelefono: d.telefono,
@@ -3254,11 +3308,13 @@ async function leerClienteDeArchivo(file){
     const r = await fetch(urlWorker() + "/api/leer-cliente", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ mime: file.type, datos }),
+      /* hoy: la fecha del teléfono, para que la IA sepa qué día es "mañana". */
+      body: JSON.stringify({ mime: file.type, datos, hoy: hoyISO() }),
     });
     const cuerpo = await r.json().catch(() => ({}));
     if (!r.ok) throw new DB.ErrorDatos(cuerpo.error || "error_ia_servicio");
     const puestos = volcarClienteEnFormulario(cuerpo);
+    iaTrabajo = iaTrabajoDesde(cuerpo);
     estado.className = puestos ? "ia-estado ok" : "ia-estado";
     estado.textContent = puestos ? t("form_ia_listo") : t("form_ia_nada");
   } catch (err) {
@@ -3825,8 +3881,14 @@ document.getElementById("trabajoCliente").addEventListener("change", () => {
   }
 });
 
+/* Lo que el formulario de trabajo nuevo trae puesto solo al abrirse. La imagen
+   leída al crear el cliente puede reemplazarlo; lo que se escriba a mano, no.
+   En null al editar un trabajo: ahí todo lo que hay es dato de verdad. */
+let trabajoAlAbrir = null;
+
 function limpiarFormularioTrabajo(){
   trabajoEditandoId = null;
+  trabajoAlAbrir = null;
   trabajoTrabSel = new Set();
   cerrarMenuTrabajadores();
   ["trabajoTitulo", "trabajoFecha", "trabajoHoraInicio", "trabajoHoraFin", "trabajoDireccion",
@@ -3858,6 +3920,11 @@ function abrirNuevoTrabajo(){
     document.getElementById("trabajoFecha").value = diaSeleccionado;
     document.getElementById("trabajoEstado").value = "agendado";
   }
+  trabajoAlAbrir = {
+    titulo: "", descripcion: "", hora_inicio: "08:00", hora_fin: "17:00",
+    fecha: document.getElementById("trabajoFecha").value,
+    estado: document.getElementById("trabajoEstado").value,
+  };
   abrirModal("modalTrabajo");
   activarAutocompletadoDireccion();
   marcarBaseModal("modalTrabajo");

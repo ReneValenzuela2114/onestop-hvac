@@ -3,8 +3,8 @@
    -------------------------------------------------------------------------
    Dos endpoints, los dos con la misma forma:
 
-     POST /api/leer-cliente   { mime, datos }  →  { nombre, telefono, ... }
-     POST /api/leer-baucher   { mime, datos }  →  { fecha, numero, monto, banco }
+     POST /api/leer-cliente   { mime, datos, hoy }  →  { nombre, telefono, ..., trabajo_titulo, trabajo_fecha, ... }
+     POST /api/leer-baucher   { mime, datos }       →  { fecha, numero, monto, banco, notas }
 
    `datos` es la imagen o el PDF en base64. La respuesta son los campos del
    formulario; lo que la IA no encuentre vuelve como texto vacío.
@@ -41,21 +41,38 @@ const ESQUEMA_CLIENTE = {
     email: { type: "string", description: "Correo electrónico. Vacío si no aparece." },
     direccion: { type: "string", description: "Dirección del servicio: calle y número, ciudad y estado." },
     notas: { type: "string", description: "Una o dos frases: qué necesita el cliente." },
+    /* Lo del TRABAJO que pide: con esto la app llena también el formulario de
+       trabajo cuando el cliente se crea desde "Nuevo trabajo". Mismo criterio,
+       texto vacío si no aparece. */
+    trabajo_titulo: { type: "string", description: "Nombre corto del trabajo que pide, de 3 a 8 palabras (ej. 'Revisión de AC que no enfría'). Vacío si no se entiende qué pide." },
+    trabajo_fecha: { type: "string", description: "Día en que pide el servicio, en formato AAAA-MM-DD. Vacío si no dice un día." },
+    trabajo_hora_inicio: { type: "string", description: "Hora a la que pide que empiece el servicio, HH:MM en 24 horas. Vacío si no dice una hora." },
+    trabajo_hora_fin: { type: "string", description: "Hora a la que termina el servicio, HH:MM en 24 horas. Vacío si no la dice." },
   },
-  required: ["nombre", "empresa", "telefono", "email", "direccion", "notas"],
+  required: ["nombre", "empresa", "telefono", "email", "direccion", "notas",
+    "trabajo_titulo", "trabajo_fecha", "trabajo_hora_inicio", "trabajo_hora_fin"],
   additionalProperties: false,
 };
 
-const INSTRUCCIONES = `Esta imagen es la captura de una conversación (mensaje de texto, WhatsApp, correo) entre una empresa de aire acondicionado y una persona que pide servicio.
+/* Es una función y no un texto fijo porque lleva la fecha de HOY: sin ella la
+   IA no puede saber qué día es "mañana" o "el martes". */
+const instruccionesCliente = (hoy) => `Esta imagen es la captura de una conversación (mensaje de texto, WhatsApp, correo) entre una empresa de aire acondicionado y una persona que pide servicio.
 
-Extraé los datos del CLIENTE — la persona que pide el servicio, no la empresa que responde.
+Extraé los datos del CLIENTE —la persona que pide el servicio, no la empresa que responde— y del TRABAJO que pide.
 
 Reglas:
 - Copiá los datos tal como aparecen. No corrijas ni completes nada.
 - Si un dato no está en la imagen, devolvé texto vacío. NO lo inventes ni lo deduzcas.
 - Si hay varias personas, quedate con quien pide el servicio.
 - El teléfono puede estar en el encabezado del chat, no solo en el texto.
-- En "notas", resumí en una o dos frases qué necesita, con las palabras del cliente.`;
+- En "notas", resumí en una o dos frases qué necesita, con las palabras del cliente. Si dice cuándo lo quiere, incluilo tal como lo dijo ("el martes en la tarde").
+- "trabajo_titulo" va en el mismo idioma que el mensaje.
+
+Fecha y hora del trabajo:
+- Son las del SERVICIO que pide, NO la hora en que se mandó el mensaje (la que aparece al lado de cada burbuja).
+- Hoy es ${hoy}. Si dice un día relativo ("mañana", "el martes", "next Monday"), calculalo desde la fecha en que se mandó el mensaje si se ve en la captura; si no se ve, desde hoy.
+- Si dice solo "en la mañana" o "en la tarde", sin una hora, dejá las horas vacías.
+- Si hay cualquier duda sobre el día, dejá la fecha vacía: una fecha equivocada termina en el calendario en el día equivocado.`;
 
 /* Lo que se saca de un comprobante de pago. Mismo criterio que el de cliente:
    `required` con todos y texto vacío cuando no aparece, para que la app no
@@ -86,11 +103,40 @@ Reglas:
 - Devolvé el monto solo como número, sin el signo de moneda.
 - Si hay varias fechas, la del pago, no la de impresión.`;
 
-/* Cada ruta con su esquema y sus instrucciones. Agregar una tercera es una
-   línea más acá y no tocar el resto. */
+/* Cada ruta con su esquema, sus instrucciones y lo que devuelve. Agregar una
+   tercera es un bloque más acá y no tocar el resto.
+   `salida` es de CADA ruta: antes la respuesta armaba siempre los campos del
+   cliente, y un baucher habría vuelto vacío (fecha, número y monto se perdían
+   por el camino sin ningún error). Se encontró antes de publicarlo, sep 2026. */
 const RUTAS = {
-  "/api/leer-cliente": { esquema: ESQUEMA_CLIENTE, instrucciones: INSTRUCCIONES },
-  "/api/leer-baucher": { esquema: ESQUEMA_BAUCHER, instrucciones: INSTRUCCIONES_BAUCHER },
+  "/api/leer-cliente": {
+    esquema: ESQUEMA_CLIENTE,
+    instrucciones: instruccionesCliente,
+    salida: (c) => ({
+      nombre: texto_(c.nombre),
+      empresa: texto_(c.empresa),
+      telefono: texto_(c.telefono),
+      email: texto_(c.email),
+      direccion: texto_(c.direccion),
+      notas: texto_(c.notas),
+      trabajo_titulo: texto_(c.trabajo_titulo).slice(0, 120),
+      // Lo que no tenga la forma exacta vuelve vacío: la app no adivina.
+      trabajo_fecha: fechaValida(texto_(c.trabajo_fecha)),
+      trabajo_hora_inicio: horaValida(texto_(c.trabajo_hora_inicio)),
+      trabajo_hora_fin: horaValida(texto_(c.trabajo_hora_fin)),
+    }),
+  },
+  "/api/leer-baucher": {
+    esquema: ESQUEMA_BAUCHER,
+    instrucciones: () => INSTRUCCIONES_BAUCHER,
+    salida: (c) => ({
+      fecha: texto_(c.fecha),
+      numero: texto_(c.numero),
+      monto: texto_(c.monto),
+      banco: texto_(c.banco),
+      notas: texto_(c.notas),
+    }),
+  },
 };
 
 export default {
@@ -127,6 +173,10 @@ export default {
     if (!datos) return responder({ error: "error_ia_pedido" }, 400, origen);
     // base64 ocupa ~4 caracteres por cada 3 bytes reales
     if (datos.length * 0.75 > MAX_BYTES) return responder({ error: "error_ia_pesado" }, 413, origen);
+    /* La fecha de HOY la manda la app —la del teléfono, en California—: el
+       Worker corre en UTC, y a la tarde de allá acá ya sería mañana. */
+    const hoy = /^\d{4}-\d{2}-\d{2}$/.test(String(cuerpo?.hoy || ""))
+      ? cuerpo.hoy : new Date().toISOString().slice(0, 10);
 
     const adjunto = mime === "application/pdf"
       ? { type: "document", source: { type: "base64", media_type: mime, data: datos } }
@@ -151,7 +201,7 @@ export default {
           output_config: {
             format: { type: "json_schema", schema: ruta.esquema },
           },
-          messages: [{ role: "user", content: [adjunto, { type: "text", text: ruta.instrucciones }] }],
+          messages: [{ role: "user", content: [adjunto, { type: "text", text: ruta.instrucciones(hoy) }] }],
         }),
       });
     } catch {
@@ -184,20 +234,28 @@ export default {
       return responder({ error: "error_ia_vacio" }, 502, origen);
     }
 
-    return responder({
-      nombre: texto_(campos.nombre),
-      empresa: texto_(campos.empresa),
-      telefono: texto_(campos.telefono),
-      email: texto_(campos.email),
-      direccion: texto_(campos.direccion),
-      notas: texto_(campos.notas),
-    }, 200, origen);
+    return responder(ruta.salida(campos), 200, origen);
   },
 };
 
 /* ---------------- Utilidades ---------------- */
 function texto_(v) {
   return typeof v === "string" ? v.trim() : "";
+}
+
+/* AAAA-MM-DD de un día que exista (sin 31 de febrero); si no, vacío. */
+function fechaValida(v) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return "";
+  const [a, m, d] = v.split("-").map(Number);
+  const f = new Date(Date.UTC(a, m - 1, d));
+  return f.getUTCFullYear() === a && f.getUTCMonth() === m - 1 && f.getUTCDate() === d ? v : "";
+}
+
+/* HH:MM en 24 horas (9:00 → 09:00); cualquier otra cosa, vacío. */
+function horaValida(v) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(v);
+  if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return "";
+  return m[1].padStart(2, "0") + ":" + m[2];
 }
 
 function origenPermitido(origen, env) {

@@ -194,6 +194,7 @@ const I18N = {
     confirmar_eliminar_trabajo_texto: "Esta acción no se puede deshacer. Si no se hizo, mejor marcalo como Cancelado.",
     toast_trabajo_creado: "Trabajo creado",
     toast_trabajo_actualizado: "Cambios guardados",
+    toast_trabajo_desde_imagen: "Cliente guardado. El trabajo se completó con lo que decía la imagen.",
     toast_trabajo_eliminado: "Trabajo eliminado",
     cliente_con_trabajos: "Este cliente tiene trabajos. Marcalo como Inactivo en vez de eliminarlo.",
 
@@ -842,6 +843,7 @@ const I18N = {
     confirmar_eliminar_trabajo_texto: "This action can't be undone. If it didn't happen, mark it as Canceled instead.",
     toast_trabajo_creado: "Job created",
     toast_trabajo_actualizado: "Changes saved",
+    toast_trabajo_desde_imagen: "Client saved. The job was filled in with what the image said.",
     toast_trabajo_eliminado: "Job deleted",
     cliente_con_trabajos: "This client has jobs. Mark them Inactive instead of deleting.",
 
