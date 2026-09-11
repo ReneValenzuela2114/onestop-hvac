@@ -115,7 +115,12 @@
 
   .toolbar{display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:center;margin-bottom:var(--sp-4)}
   .search-box{position:relative;flex:1;min-width:220px}
-  .search-box svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
+  /* Solo la lupa (hija directa): con "svg" a secas la regla también pintaba
+     de gris la crucita de borrar —gris sobre el círculo gris, no se veía—.
+     z-index: la caja de la crucita va después en el HTML y el campo tapaba
+     la lupa. pointer-events: un toque sobre la lupa llega al campo. */
+  .search-box > svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);
+    z-index:1;pointer-events:none}
   .search-box input{width:100%;padding:10px 12px 10px 36px;border:1px solid var(--line-campo);border-radius:var(--radius-sm);background:var(--panel);font-size:13.5px}
   /* `max-width` + `min-width:0`: un <select> se ensancha hasta el largo de su
      opcion mas larga. Con una categoria de nombre largo el filtro medía 436px
@@ -326,6 +331,9 @@
   .clearable input{width:100%;padding-right:34px}
   .btn-limpiar{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:20px;height:20px;border:none;border-radius:50%;background:var(--muted);color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;padding:0;opacity:.55;transition:opacity .15s}
   .btn-limpiar:hover{opacity:.85}
+  /* Se ve de 20px, pero se toca en 38: el pseudo-elemento agranda la zona
+     tocable sin agrandar el círculo. */
+  .btn-limpiar::after{content:"";position:absolute;inset:-9px}
 
   /* Va con el contorno de campo, no con el de tarjeta: está adentro de un
      .field, con su etiqueta, y es algo que se toca. */
@@ -404,6 +412,12 @@
   .ficha-kv .k{color:var(--muted);font-size:12px;font-weight:600;padding-top:1px}
   .ficha-kv .v{color:var(--ink);min-width:0;overflow-wrap:anywhere}
   .ficha-kv .v a{color:var(--frio-600);text-decoration:none}
+  /* Teléfono, correo, web y dirección se tocan con el dedo: la zona tocable
+     crece a 38px con relleno, y el margen negativo lo compensa para que el
+     texto no se mueva de lugar. position:relative lo pone por encima de la
+     fila de al lado, que si no se quedaba con el toque en la parte que se
+     pisan. */
+  .ficha-kv .v a{display:inline-block;position:relative;padding:9px 0;margin:-9px 0}
   .ficha-kv .v a:hover{text-decoration:underline}
   .ficha-kv select{min-height:38px;padding:6px 10px;border:1.5px solid var(--line-campo);
     border-radius:var(--radius-sm);background:var(--panel);font-size:13px;color:var(--ink);max-width:100%}
@@ -533,7 +547,9 @@
   /* Angosto a proposito: se busca un nombre, no un parrafo. */
   .proy-buscador{flex:0 0 230px;min-width:0}
   .proy-buscador input{min-height:38px;padding:8px 12px 8px 34px;font-size:13px}
-  .proy-buscador svg{left:11px}
+  .proy-buscador > svg{left:11px}
+  /* Lugar para la crucita: el relleno de arriba le ganaba al de .clearable. */
+  .proy-buscador .clearable input{padding-right:34px}
   @media (max-width: 560px){
     .proy-head-tools{width:100%}
     .proy-buscador{flex:1 1 auto}
@@ -2625,8 +2641,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=82"></script>
-<script src="data.js?v=82"></script>
+<script src="i18n.js?v=83"></script>
+<script src="data.js?v=83"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -5961,6 +5977,14 @@ function urlMapaDe(o){
   }
   return o.direccion ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccionCompleta(o))}` : null;
 }
+/* La dirección se toca y abre Google Maps, igual que el teléfono abre la
+   llamada. Usa la misma dirección de Maps que el botón "Mapa". */
+const fdir = (o) => {
+  const txt = o && o.direccion ? direccionCompleta(o) : "";
+  if (!txt) return "";
+  const u = urlMapaDe(o);
+  return u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(txt)}</a>` : esc(txt);
+};
 const accLlamar = (tel) => tel ? { txt: t("ficha_llamar"), href: "tel:" + tel } : null;
 const accMapa = (o) => { const u = urlMapaDe(o); return u ? { txt: t("ficha_mapa"), href: u, nuevaVentana: true } : null; };
 
@@ -6025,7 +6049,7 @@ function fichaTrabajo(id){
       [t("ficha_fecha"), tj.fecha ? esc(fechaLargaISO(tj.fecha)) : esc(t("ficha_sin_fecha"))],
       [t("ficha_horario"), esc(horas)],
       [t("ficha_tecnicos"), tecnicos || esc(t("ficha_sin_tecnicos"))],
-      [t("form_trabajo_direccion"), tj.direccion ? esc(direccionCompleta(tj)) : ""],
+      [t("form_trabajo_direccion"), fdir(tj)],
       [t("ficha_precio"), fmoney(tj.precio_centavos)],
       [t("proy_cobrar"), acordado ? fmoney(tj.cobrar_centavos) : ""],
       [t("ficha_costo"), fmoney(tj.costo_centavos)],
@@ -6059,7 +6083,7 @@ function fichaCliente(id){
       [t("form_categoria"), cat ? esc(cat.nombre) : ""],
       [t("form_telefono"), ftel(c.telefono)],
       [t("form_email"), fmail(c.email)],
-      [t("form_direccion"), c.direccion ? esc(direccionCompleta(c)) : ""],
+      [t("form_direccion"), fdir(c)],
       [t("ficha_facturacion"), (!c.fact_igual && c.direccion_fact)
         ? esc(c.direccion_fact + (c.direccion_fact_2 ? ", " + c.direccion_fact_2 : "")) : ""],
       [t("ficha_cotizaciones"), String(DB.cotizaciones.deCliente(id).length)],
@@ -6133,7 +6157,7 @@ function fichaProveedor(id){
       [t("form_email"), fmail(p.email)],
       [t("proveedores_sitio"), p.sitio_web
         ? (web ? `<a href="${esc(web)}" target="_blank" rel="noopener">${esc(p.sitio_web)}</a>` : esc(p.sitio_web)) : ""],
-      [t("form_direccion"), esc(p.direccion || "")],
+      [t("form_direccion"), fdir(p)],
       [t("ficha_productos"), String(n)],
       [t("ficha_estado"), fsino(p.activo)],
       [t("form_notas"), p.notas ? textoAHtml(p.notas) : ""],
@@ -7870,7 +7894,10 @@ document.getElementById("respaldoFileInput").addEventListener("change", (e) => {
   document.getElementById("langBtnLabelDesktop").textContent = window.CFG_LANG === "es" ? "English" : "Español";
   aplicarLogo();
   ponerBotonesDePaso();
-  agregarBotonLimpiar(document.getElementById("buscarCliente"));
+  /* La crucita en TODOS los buscadores, no solo en el de Clientes: se vacía
+     de un toque y el "input" que dispara refresca la lista sola. */
+  ["buscarCliente", "buscarProducto", "buscarProveedor", "buscarCombo", "buscarCotizacion", "buscarProyecto"]
+    .forEach(id => agregarBotonLimpiar(document.getElementById(id)));
   agregarBotonLimpiar(document.getElementById("clienteDireccion"), () => {
     document.getElementById("clienteLat").value = "";
     document.getElementById("clienteLng").value = "";
