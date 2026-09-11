@@ -2713,8 +2713,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=88"></script>
-<script src="data.js?v=88"></script>
+<script src="i18n.js?v=89"></script>
+<script src="data.js?v=89"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -5892,7 +5892,9 @@ function renderProyectos(){
     if (!proyEstadosOn.has(tj.estado)) return false;
     if (!q) return true;
     const cli = DB.clientes.get(tj.cliente_id);
-    return [`#${tj.numero}`, String(tj.numero), tj.titulo, cli?.nombre].some(x =>
+    // Se busca también por el COT- que se ve en la tarjeta
+    const cot = DB.cotizaciones.getAll().find(c => c.trabajo_id === tj.id);
+    return [`#${tj.numero}`, String(tj.numero), tj.titulo, cli?.nombre, cot ? numeroCot(cot) : ""].some(x =>
       String(x || "").toLowerCase().includes(q));
   });
 
@@ -5909,6 +5911,16 @@ function renderProyectos(){
   cont.innerHTML = lista.map(tj => proyTarjetaHTML(tj)).join("");
 }
 
+/* El renglón chico de la tarjeta, como DES: el número de la COTIZACIÓN de la
+   que salió el trabajo y la fecha de esa cotización ("COT-020 · 20/08/2026").
+   Un trabajo creado a mano no tiene cotización: ahí va su propio número y la
+   fecha de agenda, que es lo único que lo identifica. */
+function proyNumeroYFecha(tj){
+  const cot = DB.cotizaciones.getAll().find(c => c.trabajo_id === tj.id);
+  if (cot) return numeroCot(cot) + (cot.fecha ? " · " + fechaCortaISO(cot.fecha) : "");
+  return "#" + tj.numero + (tj.fecha ? " · " + fechaCortaISO(tj.fecha) : "");
+}
+
 /* La tarjeta de un proyecto, con el mismo reparto que DES: arriba el cliente
    y el título, a la derecha el estado como menú —se cambia sin entrar—, y
    abajo las cuatro cajas de plata. */
@@ -5920,7 +5932,7 @@ function proyTarjetaHTML(tj){
       <div class="proy-card-quien">
         <b>${esc(cli ? cli.nombre : t("auditoria_desconocido"))}</b>
         <span class="proy-card-obra"><i aria-hidden="true">✦</i>${esc(tj.titulo)}</span>
-        <span class="proy-card-num">#${tj.numero}${tj.fecha ? " · " + esc(fechaCortaISO(tj.fecha)) : ""}</span>
+        <span class="proy-card-num">${esc(proyNumeroYFecha(tj))}</span>
       </div>
       <select class="proy-estado-sel" data-estado-trabajo="${tj.id}" aria-label="${esc(t("fin_estado"))}"
         style="border-color:${estadoInfo(tj.estado).color};color:${estadoInfo(tj.estado).color}">
@@ -6000,7 +6012,7 @@ function renderProyectoDetalle(trabajoId){
         <div class="proy-card-quien">
           <b>${esc(cli ? cli.nombre : t("auditoria_desconocido"))}</b>
           <span class="proy-card-obra"><i aria-hidden="true">✦</i>${esc(tj.titulo)}</span>
-          <span class="proy-card-num">#${tj.numero}${tj.fecha ? " · " + esc(fechaCortaISO(tj.fecha)) : ""}</span>
+          <span class="proy-card-num">${esc(proyNumeroYFecha(tj))}</span>
         </div>
         <select class="proy-estado-sel" data-estado-trabajo="${tj.id}" aria-label="${esc(t("fin_estado"))}"
         style="border-color:${estadoInfo(tj.estado).color};color:${estadoInfo(tj.estado).color}">
