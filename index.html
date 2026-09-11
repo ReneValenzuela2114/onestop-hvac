@@ -464,10 +464,20 @@
   /* ---------- Proyectos ---------- */
   /* La tarjeta de un proyecto: arriba quien y en que estado, abajo la plata.
      Se toca entera para entrar a su libro. */
+  /* Medidas copiadas de la tarjeta de DES (.vcard): relleno 8x13, borde de
+     1.5px, radio 11 y 6px entre una y otra. Antes medía 131px de alto contra
+     los ~88 de DES, y la lista se veía gruesa (pedido de Rene, sep 2026). */
   .proy-card{display:block;width:100%;text-align:left;background:var(--panel);
-    border:1px solid var(--line);border-radius:var(--radius);padding:13px 16px;
-    margin-bottom:10px;cursor:pointer}
-  .proy-card:hover{border-color:var(--frio-500);box-shadow:var(--shadow-sm)}
+    border:1.5px solid var(--line);border-radius:11px;padding:8px 13px;
+    margin-bottom:6px;cursor:pointer;box-shadow:0 1px 5px rgba(12,54,95,.05);transition:border-color .15s,box-shadow .15s;
+    /* El interlineado del navegador, como DES (no fija ninguno). Con el 1.5
+       de la app cada renglón salía más alto y la tarjeta seguía 10px gruesa. */
+    line-height:normal}
+  .proy-card:hover{border-color:var(--frio-500);box-shadow:0 3px 12px rgba(12,54,95,.12)}
+  .proy-card .proy-card-top{align-items:center;gap:10px;margin-bottom:6px}
+  .proy-card .proy-card-quien b{font-size:13.5px;line-height:1.15}
+  .proy-card .proy-card-obra{font-size:11.5px;margin-top:1px}
+  .proy-card .proy-card-num{margin-top:0}
   .proy-card-top{display:flex;align-items:flex-start;gap:12px}
   .proy-card-top b{font-size:14px;font-weight:700;color:var(--ink);min-width:0}
   .proy-card-titulo{display:block;font-size:12.5px;color:var(--muted);margin-top:3px;
@@ -479,8 +489,14 @@
   .proy-card-num{display:block;font-size:10.5px;color:var(--muted);margin-top:2px;
     font-variant-numeric:tabular-nums}
   /* El estado se cambia sin entrar al proyecto, como en DES. */
-  .proy-estado-sel{flex-shrink:0;min-height:38px;padding:6px 10px;border:1.5px solid var(--line-campo);
-    border-radius:var(--radius-sm);background:var(--panel);font-size:12.5px;font-weight:600;color:var(--ink)}
+  /* Píldora del color del estado, como la de DES (.vest): el borde y la letra
+     los pone el HTML con el color de cada estado. */
+  .proy-estado-sel{flex-shrink:0;padding:4px 10px;border:1.5px solid var(--line);border-radius:20px;
+    background:var(--panel);font-size:11.5px;font-weight:700;color:var(--ink);cursor:pointer}
+  @media (max-width: 560px){
+    /* En el teléfono se toca con el dedo: 38px, como todo lo demás. */
+    .proy-estado-sel{min-height:38px;padding:6px 12px}
+  }
 
   /* Las cuatro cajas: cotizado, cobrado, gastado y saldo. Los colores dicen
      de que se trata sin leer: verde lo que entra, rojo lo que sale. */
@@ -499,6 +515,23 @@
   .proy-cajas > div.rojo b{color:var(--danger)}
   .proy-cabecera .proy-cajas > div.verde{background:var(--success-soft)}
   .proy-cabecera .proy-cajas > div.rojo{background:var(--danger-soft)}
+  /* En la tarjeta de la LISTA, las cajas con las medidas de DES (.vnum-box):
+     relleno 3x8, radio 7, etiqueta de 8.5 y monto de 12, todo centrado. Van
+     con .proy-card adelante para no tocar las de adentro del proyecto. */
+  .proy-card .proy-cajas{margin-top:0;gap:5px}
+  /* flex-wrap + flex-shrink:0 en el monto: si no entra al lado de la
+     etiqueta, BAJA de renglón en vez de cortarse con puntitos. Cortar un
+     monto es lo único que no puede pasar en una caja de plata. */
+  .proy-card .proy-cajas > div{padding:3px 8px;border-radius:7px;align-items:center;justify-content:center;
+    gap:6px;flex-wrap:wrap;row-gap:0}
+  .proy-card .proy-cajas span{font-size:8.5px;letter-spacing:.05em}
+  .proy-card .proy-cajas b{font-size:12px;margin-left:0;flex-shrink:0}
+  @media (max-width: 560px){
+    /* En media caja de teléfono, en inglés ("COLLECTED $128,450.75") faltaban
+       3px: menos aire a los costados y letras un poco más juntas alcanzan. */
+    .proy-card .proy-cajas > div{padding:3px 6px;gap:4px}
+    .proy-card .proy-cajas span{letter-spacing:.02em}
+  }
   /* Si el tachado y el acordado no entran al lado del titulo (tablet, montos
      de seis cifras) bajan de renglon en vez de salirse de la caja. */
   .proy-cajas > div.con-check{flex-wrap:wrap;row-gap:2px;align-items:center}
@@ -2680,8 +2713,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=87"></script>
-<script src="data.js?v=87"></script>
+<script src="i18n.js?v=88"></script>
+<script src="data.js?v=88"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -5889,7 +5922,8 @@ function proyTarjetaHTML(tj){
         <span class="proy-card-obra"><i aria-hidden="true">✦</i>${esc(tj.titulo)}</span>
         <span class="proy-card-num">#${tj.numero}${tj.fecha ? " · " + esc(fechaCortaISO(tj.fecha)) : ""}</span>
       </div>
-      <select class="proy-estado-sel" data-estado-trabajo="${tj.id}" aria-label="${esc(t("fin_estado"))}">
+      <select class="proy-estado-sel" data-estado-trabajo="${tj.id}" aria-label="${esc(t("fin_estado"))}"
+        style="border-color:${estadoInfo(tj.estado).color};color:${estadoInfo(tj.estado).color}">
         ${DB.estadosTrabajo.map(e => `<option value="${e}"${e === tj.estado ? " selected" : ""}>${esc(t("estado_" + e))}</option>`).join("")}
       </select>
     </div>
@@ -5968,7 +6002,8 @@ function renderProyectoDetalle(trabajoId){
           <span class="proy-card-obra"><i aria-hidden="true">✦</i>${esc(tj.titulo)}</span>
           <span class="proy-card-num">#${tj.numero}${tj.fecha ? " · " + esc(fechaCortaISO(tj.fecha)) : ""}</span>
         </div>
-        <select class="proy-estado-sel" data-estado-trabajo="${tj.id}" aria-label="${esc(t("fin_estado"))}">
+        <select class="proy-estado-sel" data-estado-trabajo="${tj.id}" aria-label="${esc(t("fin_estado"))}"
+        style="border-color:${estadoInfo(tj.estado).color};color:${estadoInfo(tj.estado).color}">
           ${DB.estadosTrabajo.map(e => `<option value="${e}"${e === tj.estado ? " selected" : ""}>${esc(t("estado_" + e))}</option>`).join("")}
         </select>
       </div>
