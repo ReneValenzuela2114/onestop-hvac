@@ -249,6 +249,10 @@ un bundler salvo que el proyecto lo pida de verdad.
    ⚠️ Los menús (Tipo, Estado, Categoría) se arman en `finMontarFormularioEn`,
    no solo al entrar a Finanzas: entrando directo a un proyecto, Tipo quedaba
    en blanco.
+   ⚠️ En un proyecto el formulario **se pliega cada vez que el detalle se
+   repinta** (al guardar, al cambiar un estado). Todo lo que lo llene tiene
+   que abrirlo antes (`finPlegarFormulario(false)`): "Editar" llenaba un
+   formulario cerrado y parecía que el botón no andaba (11 sep 2026).
    El libro es una **tabla** con las mismas columnas que DES (número, fecha,
    descripción, entró, salió, saldo corrido, estado). En teléfono la MISMA
    tabla se convierte en tarjetas por CSS: siete columnas en 375px no se leen
@@ -345,7 +349,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    `ErrorDatos` con una clave de i18n. En la UI se envuelven con `conAviso(...)`,
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
-8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v86**:
+8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v87**:
    1. `const CACHE = 'onestop-shell-vNN'` en `service-worker.js`
    2. el `?v=` de `data.js` e `i18n.js` dentro del `SHELL` del service worker
    3. el `?v=` de los `<script src>` en `index.html`
