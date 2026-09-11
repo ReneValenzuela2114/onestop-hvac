@@ -299,6 +299,13 @@
   /* Se apagan las flechitas del navegador: las reemplazan estos botones */
   .num-paso input[type=number]::-webkit-outer-spin-button,
   .num-paso input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  /* Ningún número de la app lleva las flechitas del navegador (pedido de
+     Rene, sep 2026): suben de a un centavo, con el dedo no sirven y le comen
+     lugar al número. Los campos de plata van sin − y + también; esos quedan
+     solo en cantidades, días y porcentaje, donde sí se usan. */
+  input[type=number]{-moz-appearance:textfield;appearance:textfield}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   .num-paso input:focus{box-shadow:none}
   .num-paso:focus-within{border-color:var(--frio-500);box-shadow:0 0 0 3px rgba(46,143,217,.15);background:#fff}
   .num-paso button{flex:0 0 38px;min-height:38px;border:none;background:var(--line-soft);color:var(--frio-700);
@@ -1379,7 +1386,7 @@
               <div class="fin-fila-campos">
                 <div class="field angosta" id="fieldFinMonto">
                   <label data-i18n="fin_monto">Monto</label>
-                  <input type="number" id="finMonto" min="0" step="0.01" placeholder="0.00" data-paso1>
+                  <input type="number" id="finMonto" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
                 </div>
                 <div class="field" id="fieldFinCategoria">
                   <label data-i18n="fin_categoria">Categoría</label>
@@ -1937,7 +1944,7 @@
         </div>
         <div class="field">
           <label data-i18n="fin_cuenta_total">Total acordado</label>
-          <input type="number" id="cuentaTotal" min="0" step="0.01" placeholder="0.00" data-paso1>
+          <input type="number" id="cuentaTotal" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
         </div>
       </div>
       <p class="hint" data-i18n="fin_cuenta_ayuda">Después vas abonando con el botón que aparece arriba del formulario. Lo que falta se calcula solo.</p>
@@ -2121,11 +2128,11 @@
       <div class="field-row">
         <div class="field">
           <label data-i18n="cot_renglon_precio">Precio de venta</label>
-          <input type="number" id="renglonPrecio" min="0" step="0.01" placeholder="0.00" data-paso1>
+          <input type="number" id="renglonPrecio" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
         </div>
         <div class="field" id="fieldRenglonCosto">
           <label data-i18n="cot_renglon_costo">Precio de compra</label>
-          <input type="number" id="renglonCosto" min="0" step="0.01" placeholder="0.00" data-paso1>
+          <input type="number" id="renglonCosto" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
           <p class="hint" data-i18n="cot_renglon_costo_ayuda">Interno: el cliente no lo ve.</p>
         </div>
       </div>
@@ -2223,11 +2230,11 @@
       <div class="field-row">
         <div class="field">
           <label data-i18n="catalogo_costo">Costo (lo que pagás)</label>
-          <input type="number" id="itemCosto" min="0" step="0.01" placeholder="0.00" data-paso1>
+          <input type="number" id="itemCosto" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
         </div>
         <div class="field">
           <label data-i18n="catalogo_precio">Precio (lo que cobrás)</label>
-          <input type="number" id="itemPrecio" min="0" step="0.01" placeholder="0.00" data-paso1>
+          <input type="number" id="itemPrecio" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
         </div>
       </div>
       <p class="cat-margen" id="itemMargen"></p>
@@ -2551,11 +2558,11 @@
       <div class="field-row">
         <div class="field">
           <label data-i18n="form_precio">Price (charged to client)</label>
-          <input type="number" id="trabajoPrecio" min="0" step="0.01" placeholder="0.00" data-paso1>
+          <input type="number" id="trabajoPrecio" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
         </div>
         <div class="field">
           <label data-i18n="form_costo">Cost (materials & labor)</label>
-          <input type="number" id="trabajoCosto" min="0" step="0.01" placeholder="0.00" data-paso1>
+          <input type="number" id="trabajoCosto" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
         </div>
       </div>
 
@@ -2641,8 +2648,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=83"></script>
-<script src="data.js?v=83"></script>
+<script src="i18n.js?v=84"></script>
+<script src="data.js?v=84"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -3075,7 +3082,12 @@ function limpiarFormularioCliente(){
   document.getElementById("clienteDireccionFact2").value = "";
   actualizarGrupoFacturacion();
   document.getElementById("clienteNotas").value = "";
-  document.getElementById("clienteCategoria").value = "";
+  /* Un cliente nuevo arranca en Residencial, que es lo más común (pedido de
+     Rene, sep 2026). Se busca por NOMBRE: si la categoría se renombra o se
+     borra, el campo queda vacío como antes y no se rompe nada. */
+  const residencial = DB.categoriasClientes.getAll()
+    .find(c => ["residencial", "residential"].includes(String(c.nombre || "").trim().toLowerCase()));
+  document.getElementById("clienteCategoria").value = residencial ? residencial.id : "";
   setEstadoToggle("activo");
   setRelacionToggle("lead");   // un cliente nuevo nace lead
   document.getElementById("fieldNombre").classList.remove("error");
@@ -3830,6 +3842,11 @@ function limpiarFormularioTrabajo(){
    con lo que sale de la cotización. */
 function abrirNuevoTrabajo(){
   limpiarFormularioTrabajo();
+  /* Horario por defecto: de 8 a 5, la jornada normal (pedido de Rene, sep
+     2026). Con los minutos ya en 00, escribir solo la hora —un 9— deja 9:00.
+     Solo en un trabajo NUEVO: al editar uno sin horario no se inventa nada. */
+  document.getElementById("trabajoHoraInicio").value = "08:00";
+  document.getElementById("trabajoHoraFin").value = "17:00";
   poblarSelectClientes("");
   renderChipsTrabajadores();
   document.getElementById("modalTrabajoTitulo").textContent = t("form_trabajo_nuevo");

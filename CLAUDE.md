@@ -171,6 +171,10 @@ un bundler salvo que el proyecto lo pida de verdad.
    moviendo el número aunque el campo estuviera gris. El manejador ignora los
    campos `readOnly`/`disabled`, y al guardar el valor sale de `renglonBase`,
    no de lo que quedó en pantalla.
+   Desde el 11 sep 2026 **los campos de plata no llevan − y +** (pedido de
+   Rene): se escriben con el teclado numérico. Los − y + (`data-paso1`) quedan
+   solo en cantidades, días de validez y porcentaje de impuesto. Ningún
+   número de la app muestra las flechitas del navegador.
    Los nombres son **precio de compra** y **precio de venta**, iguales en la
    cotización, en el combo y en el catálogo: si en un lado se llaman distinto,
    vuelve la confusión que esto vino a arreglar.
@@ -310,7 +314,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    `ErrorDatos` con una clave de i18n. En la UI se envuelven con `conAviso(...)`,
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
-8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v83**:
+8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v84**:
    1. `const CACHE = 'onestop-shell-vNN'` en `service-worker.js`
    2. el `?v=` de `data.js` e `i18n.js` dentro del `SHELL` del service worker
    3. el `?v=` de los `<script src>` en `index.html`
