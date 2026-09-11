@@ -236,6 +236,19 @@ un bundler salvo que el proyecto lo pida de verdad.
    panel que lo necesita con `finMontarFormularioEn()`. No es ahorro de
    líneas: es lo que garantiza que en los dos lados se vea y se comporte
    igual, que es lo que Rene pidió.
+   Copiado del formulario de proyecto de DES (11 sep 2026): Fecha ·
+   Descripción · Tipo; la casilla **"Es pago en cuotas / parcialidades"** a la
+   izquierda y el **Estado como menú** (🟢 Completado / 🟡 Pendiente) a la
+   derecha; Monto; baucher; **Agregar + Cancelar** a la izquierda. La
+   categoría va al lado del monto y solo en Finanzas.
+   Con la casilla, "Agregar" crea el ACUERDO (`DB.cuentas`) con el total y el
+   primer pago como movimiento "… · cuota 1" que le apunta, como DES. Si el
+   pago no se puede guardar, el acuerdo se deshace: sin su primer pago diría
+   que se debe todo. Al editar o al abonarle a un acuerdo la casilla no se
+   ofrece.
+   ⚠️ Los menús (Tipo, Estado, Categoría) se arman en `finMontarFormularioEn`,
+   no solo al entrar a Finanzas: entrando directo a un proyecto, Tipo quedaba
+   en blanco.
    El libro es una **tabla** con las mismas columnas que DES (número, fecha,
    descripción, entró, salió, saldo corrido, estado). En teléfono la MISMA
    tabla se convierte en tarjetas por CSS: siete columnas en 375px no se leen
@@ -332,7 +345,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    `ErrorDatos` con una clave de i18n. En la UI se envuelven con `conAviso(...)`,
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
-8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v85**:
+8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v86**:
    1. `const CACHE = 'onestop-shell-vNN'` en `service-worker.js`
    2. el `?v=` de `data.js` e `i18n.js` dentro del `SHELL` del service worker
    3. el `?v=` de los `<script src>` en `index.html`

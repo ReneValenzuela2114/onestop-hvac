@@ -613,23 +613,41 @@
      y en Finanzas una columna angosta. Midiendo la ventana, en Finanzas la
      descripcion quedaba en 131px con la ventana en 1265. */
   .fin-form{container-type:inline-size}
+  /* Todo el cuerpo mide como mucho 600px, como en DES: en la pantalla ancha
+     de un proyecto los campos no se estiran de punta a punta. */
+  .fin-form > :not(.fin-form-head){max-width:600px}
   .fin-fila-campos{display:grid;grid-template-columns:1fr;gap:var(--sp-3);
     align-items:start;margin-bottom:var(--sp-3)}
   .fin-fila-campos .field{margin:0;min-width:0}
-  .fin-fila-campos .estado-toggle{width:100%}
-  .fin-fila-campos .estado-toggle button{flex:1}
-  /* Dos escalones. En la columna angosta de Finanzas entran igual las tres
-     columnas —como en DES— solo que mas ajustadas; apilarlas ahi hacia el
+  /* Las tres columnas de DES (fecha · descripción · tipo). En la columna
+     angosta de Finanzas entran igual, más ajustadas; apilarlas ahí hacía el
      formulario el doble de largo sin necesidad. */
   @container (min-width: 470px){
-    .fin-fila-campos{grid-template-columns:120px 1fr 132px}
-    .fin-fila-campos.sin-categoria{grid-template-columns:120px 1fr}
+    .fin-fila-campos{grid-template-columns:136px 1fr 140px}
   }
-  @container (min-width: 620px){
-    .fin-fila-campos{grid-template-columns:150px 1fr 165px}
-    .fin-fila-campos.sin-categoria{grid-template-columns:150px 1fr}
+  /* Segunda fila: la casilla de cuotas a la izquierda, el Estado a la
+     derecha. La casilla se esconde con visibility y no con display, para que
+     el Estado no se corra al costado cuando no va (al editar). */
+  .fin-fila-opc{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--sp-3);
+    flex-wrap:wrap;margin-bottom:var(--sp-3)}
+  .fin-chk-cuotas{display:flex;align-items:center;gap:8px;min-height:38px;font-size:13px;font-weight:700;
+    color:var(--frio-900);cursor:pointer;user-select:none}
+  .fin-chk-cuotas input{width:16px;height:16px;flex-shrink:0;accent-color:var(--frio-600);cursor:pointer}
+  .fin-estado-campo{margin:0;width:150px}
+  /* Tercera fila: el monto (o total y primer pago) con ancho fijo, como DES,
+     y la categoría de Finanzas llevándose lo que sobra. */
+  .fin-fila-monto{display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:flex-start}
+  .fin-fila-monto .field{margin:0;width:150px;min-width:0}
+  .fin-fila-monto #fieldFinCategoria{flex:1 1 150px;width:auto}
+  @container (max-width: 469px){
+    .fin-fila-opc{flex-direction:column;align-items:stretch}
+    .fin-estado-campo,.fin-fila-monto .field{width:100%}
   }
   .fin-baucher{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;margin-top:var(--sp-4)}
+  .fin-form-botones{display:flex;gap:var(--sp-2);margin-top:var(--sp-4)}
+  /* Fecha, texto y menús a la misma altura: la fecha y los menús medían 40 y
+     el de texto 38, y la primera fila quedaba despareja por 2px. */
+  .fin-form .field input:not([type=checkbox]),.fin-form .field select{height:40px;min-height:40px}
 
   /* ---- El libro, en tabla ----
      Las mismas columnas que DES. En telefono la MISMA tabla se convierte en
@@ -1353,7 +1371,6 @@
               <div class="fin-form-head">
                 <h3 id="finFormTitulo" data-i18n="fin_nuevo">Nuevo movimiento</h3>
                 <div style="display:flex;gap:var(--sp-2);align-items:center">
-                  <button type="button" class="btn ghost sm" id="btnFinCancelar" style="display:none"><span data-i18n="cancelar">Cancelar</span></button>
                   <button type="button" class="btn icon ghost sm" data-plegar-form="1" id="btnFinPlegar" title="Ocultar" aria-label="Ocultar">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
                   </button>
@@ -1366,8 +1383,7 @@
 
               <input type="hidden" id="finMovId">
               <input type="hidden" id="finCuentaId">
-              <!-- Dos filas de tres, con el mismo orden que DES: la fecha y el
-                   monto angostos, y lo que se escribe ocupando el resto. -->
+              <!-- Primera fila, igual que DES: Fecha · Descripción · Tipo. -->
               <div class="fin-fila-campos">
                 <div class="field angosta">
                   <label data-i18n="fin_fecha">Fecha</label>
@@ -1383,24 +1399,39 @@
                   <select id="finTipo"></select>
                 </div>
               </div>
-              <div class="fin-fila-campos">
-                <div class="field angosta" id="fieldFinMonto">
-                  <label data-i18n="fin_monto">Monto</label>
+              <!-- Segunda fila, como DES: la casilla de cuotas a la izquierda y
+                   el Estado a la derecha, como menú con su puntito de color. -->
+              <div class="fin-fila-opc">
+                <label class="fin-chk-cuotas" id="finCuotasOpc">
+                  <input type="checkbox" id="finEsCuotas">
+                  <span data-i18n="fin_es_cuotas">Es pago en cuotas / parcialidades</span>
+                </label>
+                <div class="field fin-estado-campo">
+                  <label for="finEstado" data-i18n="fin_estado">Estado</label>
+                  <select id="finEstado"></select>
+                </div>
+              </div>
+              <!-- El monto, o el total y el primer pago si es en cuotas. La
+                   categoría va al lado, y solo en Finanzas: un movimiento de
+                   un trabajo ya está agrupado por su trabajo. -->
+              <div class="fin-fila-monto">
+                <div class="field" id="fieldFinMonto">
+                  <label data-i18n="fin_monto_moneda">Monto ($)</label>
                   <input type="number" id="finMonto" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
+                </div>
+                <div class="field" id="fieldFinTotal" style="display:none">
+                  <label data-i18n="fin_total_acordado">Total acordado ($)</label>
+                  <input type="number" id="finTotal" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
+                </div>
+                <div class="field" id="fieldFinPrimer" style="display:none">
+                  <label data-i18n="fin_primer_pago">Primer pago ($)</label>
+                  <input type="number" id="finPrimerPago" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
                 </div>
                 <div class="field" id="fieldFinCategoria">
                   <label data-i18n="fin_categoria">Categoría</label>
                   <select id="finCategoria"></select>
                 </div>
-                <div class="field angosta">
-                  <label data-i18n="fin_estado">Estado</label>
-                  <div class="estado-toggle" id="finEstadoToggle">
-                    <button type="button" data-v="listo" data-i18n="fin_listo">Listo</button>
-                    <button type="button" data-v="pendiente" data-i18n="fin_pendiente">Pendiente</button>
-                  </div>
-                </div>
               </div>
-              <p class="hint" data-i18n="fin_estado_ayuda">Listo ya pasó de verdad y suma al saldo. Pendiente es una promesa y se muestra aparte.</p>
 
               <!-- El baucher y la lectura con IA -->
               <div class="fin-baucher">
@@ -1417,9 +1448,10 @@
                 <span id="finBaucherNombre" class="hint"></span>
               </div>
 
-              <div class="modal-foot" style="padding:0;margin-top:var(--sp-4);border:none">
-                <div class="spacer"></div>
-                <button type="button" class="btn primary" id="btnFinGuardar"><span id="txtFinGuardar" data-i18n="fin_agregar">Agregar movimiento</span></button>
+              <!-- Agregar y Cancelar a la izquierda, juntos, como DES. -->
+              <div class="fin-form-botones">
+                <button type="button" class="btn primary" id="btnFinGuardar"><span id="txtFinGuardar" data-i18n="fin_agregar">Agregar</span></button>
+                <button type="button" class="btn ghost" id="btnFinCancelar"><span data-i18n="cancelar">Cancelar</span></button>
               </div>
             </div>
 
@@ -2648,8 +2680,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=85"></script>
-<script src="data.js?v=85"></script>
+<script src="i18n.js?v=86"></script>
+<script src="data.js?v=86"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -5228,6 +5260,15 @@ function renderMenusFinanzas(){
   };
   tipo("finTipo", "salida");
   tipo("cuentaTipo", "salida");
+  const est = document.getElementById("finEstado");
+  if (est) {
+    const antes = est.value;
+    /* Con su puntito de color, como DES: verde lo que ya pasó y suma al
+       saldo, amarillo lo que todavía es una promesa. */
+    est.innerHTML = `<option value="listo">🟢 ${esc(t("fin_listo"))}</option>` +
+                    `<option value="pendiente">🟡 ${esc(t("fin_pendiente"))}</option>`;
+    est.value = antes || "listo";
+  }
   const cat = document.getElementById("finCategoria");
   if (cat) {
     const antes = cat.value;
@@ -5327,19 +5368,34 @@ function finLimpiarFormulario(){
   document.getElementById("fieldFinDesc").classList.remove("error");
   document.getElementById("finFormTitulo").textContent = t("fin_nuevo");
   document.getElementById("txtFinGuardar").textContent = t("fin_agregar");
-  document.getElementById("btnFinCancelar").style.display = "none";
+  document.getElementById("finEsCuotas").checked = false;
+  document.getElementById("finTotal").value = "";
+  document.getElementById("finPrimerPago").value = "";
+  finMostrarCuotas(true);
   finRefrescarBaucher();
   finRefrescarCategoria();
 }
+
+/* La casilla "Es pago en cuotas", como en DES: tildada, el monto se cambia
+   por el total acordado y el primer pago. `opcion` dice si la casilla se
+   ofrece: al editar un movimiento o al abonarle a una cuota no va, porque ese
+   movimiento ya es parte de un acuerdo o ya se decidió que no lo es. */
+function finMostrarCuotas(opcion){
+  const chk = document.getElementById("finEsCuotas");
+  if (!opcion) chk.checked = false;
+  const cuotas = opcion && chk.checked;
+  document.getElementById("finCuotasOpc").style.visibility = opcion ? "" : "hidden";
+  document.getElementById("fieldFinMonto").style.display = cuotas ? "none" : "";
+  document.getElementById("fieldFinTotal").style.display = cuotas ? "" : "none";
+  document.getElementById("fieldFinPrimer").style.display = cuotas ? "" : "none";
+}
+document.getElementById("finEsCuotas").addEventListener("change", () => finMostrarCuotas(true));
 
 /* La categoría agrupa la plata de la EMPRESA. Un movimiento de un trabajo ya
    está agrupado por su trabajo, así que ahí el campo no va. */
 function finRefrescarCategoria(){
   const campo = document.getElementById("fieldFinCategoria");
   campo.style.display = finTrabajoId ? "none" : "";
-  /* Sin esto, al esconder la categoría el hueco de esa columna se quedaba y
-     el Estado se estiraba al doble. La fila pasa a dos columnas. */
-  campo.parentElement.classList.toggle("sin-categoria", !!finTrabajoId);
 }
 
 /* Devuelve el formulario a su casa antes de que alguien reescriba el HTML
@@ -5364,16 +5420,15 @@ function finMontarFormularioEn(contenedorId, trabajoId){
   const caja = document.getElementById(contenedorId);
   const form = document.getElementById("finFormCaja");
   if (caja && form && form.parentElement !== caja) caja.appendChild(form);
+  /* Los menús se arman ACÁ y no solo al entrar a Finanzas: entrando directo
+     a un proyecto, Tipo quedaba en blanco, sin Entrada ni Salida (sep 2026). */
+  renderMenusFinanzas();
   finLimpiarFormulario();
 }
 
 function setFinEstado(v){
-  document.querySelectorAll("#finEstadoToggle button").forEach(b => b.classList.toggle("active", b.dataset.v === v));
-  document.getElementById("finEstadoToggle").dataset.value = v;
+  document.getElementById("finEstado").value = v === "pendiente" ? "pendiente" : "listo";
 }
-document.getElementById("finEstadoToggle").addEventListener("click", (e) => {
-  const b = e.target.closest("button"); if (!b) return; setFinEstado(b.dataset.v);
-});
 
 function finRefrescarBaucher(){
   const hay = !!finBaucherTemp;
@@ -5395,12 +5450,17 @@ function finRellenarDesde(m){
   setFinEstado(m.estado);
   document.getElementById("finFormTitulo").textContent = t("fin_editar");
   document.getElementById("txtFinGuardar").textContent = t("form_guardar");
-  document.getElementById("btnFinCancelar").style.display = "";
+  finMostrarCuotas(false);
   finRefrescarBaucher();
   document.getElementById("finDesc").focus();
 }
 
-document.getElementById("btnFinCancelar").addEventListener("click", finLimpiarFormulario);
+/* Cancelar, como DES: vacía el formulario y, dentro de un proyecto, lo pliega.
+   En Finanzas el formulario vive abierto al costado; ahí solo se vacía. */
+document.getElementById("btnFinCancelar").addEventListener("click", () => {
+  finLimpiarFormulario();
+  if (finTrabajoId) finPlegarFormulario(true);
+});
 
 document.getElementById("btnFinGuardar").addEventListener("click", () => {
   const desc = document.getElementById("finDesc").value.trim();
@@ -5408,44 +5468,74 @@ document.getElementById("btnFinGuardar").addEventListener("click", () => {
   if (!desc) { campo.classList.add("error"); document.getElementById("finDesc").focus(); return; }
   campo.classList.remove("error");
 
-  const monto = DB.dinero.aCentavos(document.getElementById("finMonto").value);
-  if (!monto || monto <= 0) { toast(t("error_monto_requerido"), true); return; }
-
   const entrada = document.getElementById("finTipo").value === "entrada";
+  const cuentaId = document.getElementById("finCuentaId").value || null;
+  /* En cuotas solo un movimiento NUEVO y suelto: editar uno o abonarle a un
+     acuerdo que ya existe no arma otro acuerdo. */
+  const esCuotas = !finEditandoId && !cuentaId && document.getElementById("finEsCuotas").checked;
+
+  let monto, total = 0;
+  if (esCuotas) {
+    total = DB.dinero.aCentavos(document.getElementById("finTotal").value);
+    monto = DB.dinero.aCentavos(document.getElementById("finPrimerPago").value);
+    const foco = (id) => document.getElementById(id).focus();
+    if (!total || total <= 0) { toast(t("error_total_requerido"), true); foco("finTotal"); return; }
+    if (!monto || monto <= 0) { toast(t("error_primer_pago_requerido"), true); foco("finPrimerPago"); return; }
+    if (monto > total) { toast(t("error_primer_pago_mayor"), true); foco("finPrimerPago"); return; }
+  } else {
+    monto = DB.dinero.aCentavos(document.getElementById("finMonto").value);
+    if (!monto || monto <= 0) { toast(t("error_monto_requerido"), true); return; }
+  }
+
   const datos = {
     fecha: document.getElementById("finFecha").value || hoyISO(),
-    descripcion: desc,
+    // El primer pago de un acuerdo se llama como en DES: "… · cuota 1"
+    descripcion: esCuotas ? desc + " · " + t("fin_cuota").replace("{n}", 1) : desc,
     entrada_centavos: entrada ? monto : 0,
     salida_centavos: entrada ? 0 : monto,
     /* Uno de los dos, nunca los dos: si lleva trabajo, la categoría no
        corresponde; si no lleva, la categoría es la que lo agrupa. */
     trabajo_id: finTrabajoId,
     categoria: finTrabajoId ? null : document.getElementById("finCategoria").value,
-    estado: document.getElementById("finEstadoToggle").dataset.value || "listo",
-    cuenta_id: document.getElementById("finCuentaId").value || null,
+    estado: document.getElementById("finEstado").value || "listo",
+    cuenta_id: cuentaId,
   };
 
-  /* El baucher se guarda primero: si falla, no queda un movimiento diciendo
-     que tiene comprobante cuando no lo tiene. */
+  /* En cuotas va primero el ACUERDO con el total, y el primer pago le apunta,
+     como en DES. Si algo de lo que sigue falla, el acuerdo se deshace: sin su
+     primer pago diría que se debe todo. */
+  let cuenta = null;
+  if (esCuotas) {
+    cuenta = conAviso(() => DB.cuentas.create({
+      trabajo_id: finTrabajoId, descripcion: desc,
+      tipo: entrada ? "entrada" : "salida", total_centavos: total,
+    }));
+    if (!cuenta) return;
+    datos.cuenta_id = cuenta.id;
+  }
+  const deshacer = () => { if (cuenta) DB.cuentas.remove(cuenta.id); };
+
+  /* El baucher se guarda antes que el movimiento: si falla, no queda un
+     movimiento diciendo que tiene comprobante cuando no lo tiene. */
   if (finBaucherTemp) {
     const arch = conAviso(() => DB.archivos.crear({
       entidad: "trabajo", entidad_id: null, tipo: "documento",
       nombre_original: finBaucherTemp.nombre, mime: finBaucherTemp.mime,
       bytes: finBaucherTemp.bytes, dataUrl: finBaucherTemp.dataUrl,
     }));
-    if (!arch) return;
+    if (!arch) { deshacer(); return; }
     datos.archivo_id = arch.id;
   }
 
   const guardado = conAviso(() => finEditandoId
     ? DB.movimientos.update(finEditandoId, datos)
     : DB.movimientos.create(datos));
-  if (!guardado) return;
+  if (!guardado) { deshacer(); return; }
 
   const eraEdicion = !!finEditandoId;
   finLimpiarFormulario();
   finRepintar();
-  toast(t(eraEdicion ? "fin_toast_actualizado" : "fin_toast_creado"));
+  toast(t(esCuotas ? "fin_toast_cuotas_creado" : eraEdicion ? "fin_toast_actualizado" : "fin_toast_creado"));
 });
 
 /* Repinta el libro que está a la vista. Los dos usan el mismo formulario, así
@@ -5532,7 +5622,7 @@ function finAbonarACuenta(cuentaId){
   document.getElementById("finDesc").value = c.descripcion + " · " + t("fin_cuota").replace("{n}", cuota);
   document.getElementById("finMonto").value = DB.dinero.aTexto(e.pendiente_centavos);
   document.getElementById("finFormTitulo").textContent = t("fin_abonar").replace("{c}", c.descripcion);
-  document.getElementById("btnFinCancelar").style.display = "";
+  finMostrarCuotas(false);
   document.getElementById("finMonto").focus();
   document.getElementById("finMonto").select();
 }
