@@ -20,7 +20,7 @@
  * Los tres archivos cambian juntos; si el navegador sirve el index nuevo con
  * el data.js viejo, la app arranca a medias y no se ve ningun error.
  */
-const CACHE = 'onestop-shell-v80';
+const CACHE = 'onestop-shell-v81';
 const API_PREFIX = '/api';
 
 /* Los tres archivos que forman la app y tienen que coincidir entre sí */
@@ -29,8 +29,8 @@ const CODIGO_DE_LA_APP = ['/', '/index.html', '/data.js', '/i18n.js'];
 const SHELL = [
   './',
   './index.html',
-  './data.js?v=80',
-  './i18n.js?v=80',
+  './data.js?v=81',
+  './i18n.js?v=81',
   './datos-ejemplo.json',
   './manifest.webmanifest',
   './assets/apple-touch-icon.png',

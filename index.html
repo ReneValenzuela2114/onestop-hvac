@@ -178,6 +178,9 @@
   .client-card-top b{font-size:14.5px}
   .client-card-top span{display:block;font-size:12px;color:var(--muted)}
   .client-card-row{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--frio-600);margin-top:6px;text-decoration:none}
+  /* El teléfono se toca para llamar: 38px como todo lo que va al dedo. En
+     20px era fácil abrir la ficha queriendo llamar, o llamar sin querer. */
+  a.client-card-row{min-height:38px;margin-top:0}
   .client-card-foot{display:flex;justify-content:flex-end;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)}
   .client-card-sel{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 
@@ -521,7 +524,7 @@
   .proy-head-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   /* Angosto a proposito: se busca un nombre, no un parrafo. */
   .proy-buscador{flex:0 0 230px;min-width:0}
-  .proy-buscador input{padding:8px 12px 8px 34px;font-size:13px}
+  .proy-buscador input{min-height:38px;padding:8px 12px 8px 34px;font-size:13px}
   .proy-buscador svg{left:11px}
   @media (max-width: 560px){
     .proy-head-tools{width:100%}
@@ -772,7 +775,10 @@
   .config-section h3{font-size:14.5px;margin-bottom:2px}
   .config-section .desc{color:var(--muted);font-size:12.5px;margin:0 0 var(--sp-4)}
   .lang-switch{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--line-soft)}
-  .lang-switch button{border:none;background:none;padding:7px 16px;border-radius:999px;font-size:12.5px;font-weight:700;color:var(--muted)}
+  .lang-switch button{border:none;background:none;min-height:38px;padding:0 18px;border-radius:999px;font-size:12.5px;font-weight:700;color:var(--muted)}
+  /* La barra del tamaño del logo: la línea sigue fina, pero la zona que se
+     puede tocar y arrastrar mide 38px. */
+  #logoTamanoSlider{height:38px;margin:0}
   .lang-switch button.active{background:var(--panel);color:var(--frio-700);box-shadow:var(--shadow)}
   .logo-preview-row{display:flex;align-items:center;gap:var(--sp-5)}
   .logo-preview-box{width:96px;height:96px;border-radius:var(--radius-sm);background:var(--frio-900);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
@@ -784,6 +790,10 @@
   .chip .dot{width:9px;height:9px;border-radius:50%}
   .chip button{border:none;background:none;padding:3px;display:flex;color:var(--muted)}
   .chip button:hover{color:var(--danger)}
+  /* La papelera de las categorías: 38px para el dedo. La píldora crece a la
+     misma altura para que el botón no se salga de ella. */
+  #categoriasChipList .chip{min-height:38px;padding:0 0 0 12px}
+  #categoriasChipList .chip button{width:38px;height:38px;align-items:center;justify-content:center;border-radius:999px}
   /* Técnico ya asignado a un trabajo: se distingue de una categoría suelta */
   .chip.persona{background:#EAF3FB;border-color:#CFE2F2;color:var(--frio-700)}
   /* ---- Catálogo ----
@@ -2607,8 +2617,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=80"></script>
-<script src="data.js?v=80"></script>
+<script src="i18n.js?v=81"></script>
+<script src="data.js?v=81"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -2667,6 +2677,11 @@ function irATab(tab){
   if (tab === "finanzas") abrirFinanzas();
   if (tab === "proyectos") abrirProyectos();
   window.scrollTo(0,0);
+  /* La pestaña queda en la dirección (#proyectos): si la página se recarga
+     —a mano o sola al publicar una versión— vuelve a donde estaba y no a
+     Clientes. replaceState y no location.hash: no llena el historial, así
+     el botón Atrás del teléfono no se pone a recorrer pestañas. */
+  history.replaceState(null, "", "#" + tab);
 }
 document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => irATab(b.dataset.tab)));
 
@@ -5289,7 +5304,18 @@ function finRepintar(){
 
 /* ---------- Tocar una fila del libro ---------- */
 function finConectarLista(id){
-  document.getElementById(id).addEventListener("click", (e) => {
+  const caja = document.getElementById(id);
+  /* Una sola vez por caja. #proyDetalle no se destruye nunca y se volvía a
+     conectar en cada repintado: un toque llegó a ejecutarse 6 veces, y el ✓
+     de un movimiento cambiaba y volvía atrás sin que se notara. */
+  if (caja.dataset.finConectada) return;
+  caja.dataset.finConectada = "1";
+  caja.addEventListener("click", (e) => {
+    /* Las cajas van una dentro de otra (el libro dentro del detalle del
+       proyecto, las cuotas dentro del formulario): atiende la de más adentro
+       y las de afuera dejan pasar el mismo toque. */
+    if (e.finAtendido) return;
+    e.finAtendido = true;
     const bEstado = e.target.closest("[data-estado]");
     if (bEstado) {
       const m = DB.movimientos.get(bEstado.dataset.estado);
@@ -5336,6 +5362,9 @@ finConectarLista("finLibro");
 finConectarLista("finCategorias");
 finConectarLista("finCuentas");
 finConectarLista("finChipsCuentas");
+/* El detalle del proyecto se conecta acá, UNA vez, y no al repintarlo: el
+   libro y las cuotas del proyecto van adentro y sus toques le llegan igual. */
+finConectarLista("proyDetalle");
 
 /* Abonar a una cuenta: el formulario queda listo con lo que falta ya puesto,
    que es lo que casi siempre se paga. */
@@ -5747,9 +5776,8 @@ function renderProyectoDetalle(trabajoId){
      libro, y cargar un movimiento es lo que se hace de a ratos. */
   finPlegarFormulario(true);
   renderCuentasEmpresa("proyCuentas", "finChipsCuentas");
-  finConectarLista("proyLibro");
-  finConectarLista("proyCuentas");
-  finConectarLista("proyDetalle");
+  /* Los toques del libro y de las cuotas los atiende #proyDetalle, que se
+     conectó una sola vez al cargar. Conectarlo acá los iba acumulando. */
   proyConectarTrato(trabajoId);
 }
 
@@ -7092,7 +7120,7 @@ function renderCategoriasChips(){
   const cats = DB.categoriasClientes.getAll();
   document.getElementById("categoriasChipList").innerHTML = cats.map(c => `
     <span class="chip"><span class="dot" style="background:${c.color}"></span>${esc(c.nombre)}
-      <button onclick="eliminarCategoria('${c.id}')">${iconTrash()}</button>
+      <button type="button" onclick="eliminarCategoria('${c.id}')" aria-label="${esc(t("eliminar"))}">${iconTrash()}</button>
     </span>`).join("");
 }
 function eliminarCategoria(id){
@@ -7819,24 +7847,50 @@ document.getElementById("respaldoFileInput").addEventListener("change", (e) => {
   renderProveedores();
   renderFiltrosCotizaciones();
   renderCotizaciones();
-  irATab("clientes");
+  /* Arranca en la pestaña que dice la dirección, si es una que existe. */
+  const tabInicial = location.hash.slice(1);
+  const panelInicial = tabInicial && document.getElementById("tab-" + tabInicial);
+  irATab(panelInicial && panelInicial.classList.contains("tabpanel") ? tabInicial : "clientes");
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => { navigator.serviceWorker.register('service-worker.js').catch(() => {}); });
 
     /* Cuando se publica una versión nueva, el service worker la instala y toma
-       el control — pero la pantalla que ya está abierta sigue con el código
-       viejo hasta que alguien recargue a mano. En el teléfono eso puede no
-       pasar nunca: se abre la app desde el ícono y se ve la de la semana
-       pasada. Acá se recarga sola, una única vez.
+       el control — pero una pantalla que llevaba días abierta sigue con el
+       código viejo hasta que alguien recargue a mano. Para ese caso se recarga
+       sola, una única vez.
 
+       Pero SOLO si la pantalla es vieja de verdad, y casi nunca lo es: el HTML
+       va red-primero, así que al abrir ya se bajó el nuevo, y el service
+       worker nuevo termina de instalarse unos segundos DESPUÉS. Recargar igual
+       sacaba a la persona de la pestaña en la que estaba (pasó varias veces,
+       sep 2026) y podía borrarle un formulario a medio llenar.
+       Cómo se sabe: el service worker nuevo borra los cachés viejos ANTES de
+       tomar el control, así que si existe el caché con el número de ESTA
+       pantalla, la pantalla ya es la nueva. Por eso el ?v= de los scripts y
+       el número de CACHE tienen que ser el mismo (regla 8 del CLAUDE.md).
+
+       Si hay que recargar y hay una ventana abierta o un movimiento a medio
+       escribir, espera a que se cierre: lo escrito no se pierde nunca.
        El candado es imprescindible: sin él, la recarga vuelve a disparar el
        cambio de controlador y la app entra en un ciclo de recargas. */
     let yaRecargue = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
+    const versionPantalla = ((document.querySelector('script[src*="data.js?v="]') || {}).src || "").match(/[?&]v=(\d+)/);
+    const hayAlgoAMedias = () =>
+      !!document.querySelector(".modal-backdrop.open") ||
+      ["finDesc", "finMonto"].some(id => { const el = document.getElementById(id); return el && el.value; });
+    const recargarCuandoSePueda = () => {
       if (yaRecargue) return;
+      if (hayAlgoAMedias()) { setTimeout(recargarCuandoSePueda, 2000); return; }
       yaRecargue = true;
       location.reload();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', async () => {
+      if (yaRecargue) return;
+      try {
+        if (versionPantalla && await caches.has('onestop-shell-v' + versionPantalla[1])) return;
+      } catch (e) { /* sin acceso al caché: se recarga, como antes */ }
+      recargarCuandoSePueda();
     });
   }
 })();

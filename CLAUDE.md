@@ -244,6 +244,11 @@ un bundler salvo que el proyecto lo pida de verdad.
    el `innerHTML =` lo DESTRUYE: deja de existir en todo el DOM y la próxima
    vez que se lo busca es `null`. Pasó de verdad al volver a Finanzas después
    de abrir un proyecto.
+   ⚠️ **Los toques del libro se conectan UNA vez por caja**, y
+   `finConectarLista()` lo controla sola. `#proyDetalle` no se destruye nunca:
+   conectarlo en cada repintado acumulaba escuchadores y un toque llegó a
+   ejecutarse 6 veces —el ✓ de un movimiento cambiaba y volvía atrás sin que
+   se notara—. Si una caja queda dentro de otra, atiende la de más adentro.
 
    3u. **Lo cotizado y lo acordado son dos números.** `cobrar_centavos` en
    null = se cobra lo cotizado (`precio_centavos`); con valor = se cerró por
@@ -301,10 +306,19 @@ un bundler salvo que el proyecto lo pida de verdad.
    `ErrorDatos` con una clave de i18n. En la UI se envuelven con `conAviso(...)`,
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
-8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v80**:
+8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v81**:
    1. `const CACHE = 'onestop-shell-vNN'` en `service-worker.js`
    2. el `?v=` de `data.js` e `i18n.js` dentro del `SHELL` del service worker
    3. el `?v=` de los `<script src>` en `index.html`
+   ⚠️ **La recarga automática también los compara.** La pantalla se recarga
+   sola solo si ya no existe el caché `onestop-shell-vNN` con SU número, o sea
+   si es vieja de verdad. Antes se recargaba siempre, unos segundos después de
+   abrir, y eso sacaba a Rene de la pestaña en la que estaba y podía borrarle
+   un formulario a medio llenar. Si igual hay que recargar y hay una ventana
+   abierta o un movimiento a medio escribir, espera a que se cierre. Si CACHE
+   y `?v=` no coinciden, la app se recarga una vez de más en cada publicación.
+   La pestaña abierta vive en la dirección (`#proyectos`), así que cualquier
+   recarga —sola o a mano— vuelve a la misma.
    ⚠️ **Los tres archivos cambian juntos y se necesitan entre ellos.** Si el
    navegador sirve el index nuevo con el data.js viejo, la app arranca a
    medias y **no se ve ningún error**: pasó al publicar Finanzas y a Rene le
@@ -387,10 +401,13 @@ serio hasta que exista D1.**
   ⚠️ El archivo se pide con `?v=` + la hora: el service worker responde desde
   SU caché y se saltea el `cache: "no-cache"`, así que sin eso el botón sigue
   trayendo la lista vieja cada vez que se agregan ejemplos nuevos.
-- **Los botones del pie de los modales miden 37px, no 38.** Está un pixel por
-  debajo del mínimo táctil que pide la guía general, y **Rene lo revisó y
-  decidió dejarlo así** (8 sep 2026). No "arreglarlo" de oficio: si una
-  medición lo vuelve a marcar, es una excepción aceptada, no un defecto.
+- ~~**Los botones del pie de los modales miden 37px, no 38.**~~ Era un error
+  de la MEDICIÓN, no de la app (corregido 11 sep 2026): se medía apenas
+  abierta la ventana, con la animación de entrada todavía achicándola. Con
+  `offsetHeight` —el tamaño real, sin la animación— miden 38, igual que los
+  campos, que también "medían 37". **Al medir dentro de una ventana, usar
+  `offsetHeight` o esperar a que termine de abrir**; con
+  `getBoundingClientRect()` recién abierta, todo sale un pixel más chico.
 
 - **Una colección nueva necesita SU clave en `CLAVES`** (`data.js`). Sin ella
   `localStorage[undefined]` es la misma para todas las que falten y los datos
