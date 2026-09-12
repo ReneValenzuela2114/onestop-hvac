@@ -276,6 +276,20 @@ un bundler salvo que el proyecto lo pida de verdad.
    otro número y ESE manda. **No se pisa el cotizado**: perder ese dato sería
    perder de vista cuánto se cedió, que es justo lo que sirve para saberlo. La
    pantalla muestra el cotizado tachado al lado del acordado, como DES.
+   El recuadro está **copiado del de DES** (12 sep 2026): etiqueta, casilla,
+   cotizado tachado en gris, acordado en verde y un lápiz que pregunta el
+   precio. Al tildar la casilla arranca en el **cotizado menos 3%**, que es
+   con lo que casi siempre se cierra; al destildar vuelve a null.
+   ⚠️ Tres reglas que Rene aprendió a los golpes en DES:
+   1) el lápiz va **pegado** al monto verde, dentro del mismo `inline-flex`
+      con `nowrap`; suelto se cae al renglón de abajo y queda colgado;
+   2) los dos montos llevan `nowrap`, para que no se partan al medio;
+   3) el recuadro necesita **~257px**; más angosto se parte en dos renglones,
+      así que su columna es más ancha que las otras tres. Ojo con la palabra
+      de la etiqueta: "ACORDADO" es ~5px más ancha que "COTIZADO" aunque las
+      dos tengan 8 letras. Si se cambia, medir el ancho real primero.
+   Se prueba con montos largos de verdad ($22,128.98 / $21,465.09), no con
+   $100.00.
    `DB.trabajos.aCobrar(tj)` es la única función que resuelve cuál de los dos
    vale, para que la pantalla, los totales y los reportes digan lo mismo.
    `fecha_entrega` es del trato y `fecha` es de la agenda: uno es el día que
@@ -349,7 +363,7 @@ un bundler salvo que el proyecto lo pida de verdad.
    `ErrorDatos` con una clave de i18n. En la UI se envuelven con `conAviso(...)`,
    que muestra el aviso y frena. Un guardado que falla de fondo llega a
    `DB.alFallarGuardado`.
-8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v89**:
+8. **Al publicar, subir TRES números al mismo valor.** Hoy van en **v90**:
    1. `const CACHE = 'onestop-shell-vNN'` en `service-worker.js`
    2. el `?v=` de `data.js` e `i18n.js` dentro del `SHELL` del service worker
    3. el `?v=` de los `<script src>` en `index.html`

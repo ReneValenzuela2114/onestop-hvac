@@ -515,6 +515,20 @@
   .proy-cajas > div.rojo b{color:var(--danger)}
   .proy-cabecera .proy-cajas > div.verde{background:var(--success-soft)}
   .proy-cabecera .proy-cajas > div.rojo{background:var(--danger-soft)}
+  /* El recuadro del acordado lleva cinco cosas adentro y necesita ~257px: su
+     columna es más ancha que las otras tres. En teléfono no hace falta,
+     porque abajo ya ocupa toda la fila. */
+  @media (min-width: 861px){
+    .proy-cabecera .proy-cajas{grid-template-columns:1.7fr 1fr 1fr 1fr}
+  }
+  /* Medido: con las cuatro cajas en fila, a 768px el recuadro queda en 239px
+     y se parte en dos renglones. Desde 860 para abajo va a toda la fila (y el
+     saldo también, para no dejar un hueco al lado). A 860 mide ~272. */
+  @media (max-width: 860px){
+    .proy-cabecera .proy-cajas{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .proy-cabecera .proy-cajas > div.con-check,
+    .proy-cabecera .proy-cajas > div:last-child{grid-column:1 / -1}
+  }
   /* En la tarjeta de la LISTA, las cajas con las medidas de DES (.vnum-box):
      relleno 3x8, radio 7, etiqueta de 8.5 y monto de 12, todo centrado. Van
      con .proy-card adelante para no tocar las de adentro del proyecto. */
@@ -532,14 +546,26 @@
     .proy-card .proy-cajas > div{padding:3px 6px;gap:4px}
     .proy-card .proy-cajas span{letter-spacing:.02em}
   }
-  /* Si el tachado y el acordado no entran al lado del titulo (tablet, montos
-     de seis cifras) bajan de renglon en vez de salirse de la caja. */
-  .proy-cajas > div.con-check{flex-wrap:wrap;row-gap:2px;align-items:center}
-  .proy-ajuste{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:2px 6px;
-    margin-left:auto;min-width:0;cursor:pointer}
-  .proy-ajuste input{width:16px;height:16px;flex-shrink:0}
-  .proy-ajuste s{font-size:11.5px;color:var(--muted);white-space:nowrap}
-  .proy-ajuste b{margin:0}
+  /* El recuadro del precio acordado, copiado de DES. Tres reglas que Rene
+     aprendió a los golpes allá y que no se pueden romper:
+     1) el lápiz va PEGADO al monto verde, en un mismo inline-flex con nowrap;
+        suelto se cae al renglón de abajo y queda colgado;
+     2) los dos montos con nowrap, para que ninguno se parta al medio;
+     3) el recuadro necesita ~257px de ancho; más angosto se parte en dos
+        renglones. Por eso en el detalle su columna es más ancha que las otras
+        tres, y en el teléfono ocupa toda la fila. */
+  .proy-cajas > div.con-check{justify-content:center;align-items:center;gap:4px;flex-wrap:wrap;row-gap:2px}
+  .con-check .proy-acordado-chk{width:13px;height:13px;flex-shrink:0;margin:0;
+    accent-color:var(--frio-600);cursor:pointer}
+  .con-check s{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;
+    text-decoration-thickness:1px;text-decoration-color:rgba(100,116,139,.65)}
+  .con-check > b{font-size:12.5px;color:var(--frio-900);white-space:nowrap;margin-left:0}
+  .proy-acordado-val{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+  .proy-acordado-val b{font-size:12.5px;font-weight:800;color:var(--success);margin:0}
+  .proy-acordado-lapiz{position:relative;border:none;background:none;padding:0;line-height:1;
+    font-size:12px;color:var(--frio-600);cursor:pointer}
+  /* Zona tocable de 38px sin agrandar el lápiz ni el recuadro. */
+  .proy-acordado-lapiz::after{content:"";position:absolute;inset:-13px}
   /* El campo del acordado vive en la fila del trato, con Entrega y Garantia.
      Adentro de la caja quedaba aplastado en 18px y no se veia lo escrito. */
   .proy-trato input.proy-ajuste-campo[type=number]{width:130px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -572,11 +598,6 @@
     .proy-cajas > div{padding:6px 9px;gap:5px}
     .proy-cajas span{font-size:8.5px;letter-spacing:.03em}
     .proy-cajas b{font-size:13px}
-    /* Dentro del proyecto el cotizado lleva el tachado al lado del acordado:
-       en media caja (143px) no entran y el monto se cortaba. Va a todo lo
-       ancho, y el saldo tambien para no dejar un hueco al lado. */
-    .proy-cabecera .proy-cajas > div.con-check,
-    .proy-cabecera .proy-cajas > div:last-child{grid-column:1 / -1}
   }
 
   /* Titulo y herramientas en una fila, como DES. */
@@ -2713,8 +2734,8 @@
      navegador sirve el index nuevo con el data.js viejo, la app arranca a
      medias y no se ve ningun error. Con la version en la direccion, el
      navegador no puede darte una mezcla. Al publicar: subir los tres numeros. -->
-<script src="i18n.js?v=89"></script>
-<script src="data.js?v=89"></script>
+<script src="i18n.js?v=90"></script>
+<script src="data.js?v=90"></script>
 <script>
 /* =========================================================================
    One Stop Heating and Cooling · Lógica de la app (shell + Clientes + Config)
@@ -6024,13 +6045,21 @@ function renderProyectoDetalle(trabajoId){
            cerró por otro número. El cotizado NO se pisa —queda tachado al
            lado— porque saber cuánto se cedió es justo el dato que importa. -->
       <div class="proy-cajas">
+        <!-- Copiado del recuadro de DES: etiqueta, casilla, el cotizado
+             tachado, el acordado en verde y el lápiz PEGADO al verde. Si el
+             lápiz queda suelto se cae al renglón de abajo (pasó en DES). -->
         <div class="con-check">
           <span>${esc(t("proy_cotizado"))}</span>
-          <label class="proy-ajuste">
-            <input type="checkbox" id="proyAjustar"${ajustado ? " checked" : ""}>
-            ${ajustado ? `<s>${esc(DB.dinero.formato(tj.precio_centavos || 0, CFG_LANG))}</s>` : ""}
+          <input type="checkbox" id="proyAjustar" class="proy-acordado-chk"${ajustado ? " checked" : ""}
+            title="${esc(t("proy_acordado_titulo"))}" aria-label="${esc(t("proy_acordado_titulo"))}">
+          ${ajustado
+            ? `<s>${esc(DB.dinero.formato(tj.precio_centavos || 0, CFG_LANG))}</s>
+          <span class="proy-acordado-val">
             <b>${esc(DB.dinero.formato(DB.trabajos.aCobrar(tj), CFG_LANG))}</b>
-          </label>
+            <button type="button" class="proy-acordado-lapiz" id="btnAcordadoEditar"
+              title="${esc(t("proy_acordado_editar"))}" aria-label="${esc(t("proy_acordado_editar"))}">✎</button>
+          </span>`
+            : `<b>${esc(DB.dinero.formato(tj.precio_centavos || 0, CFG_LANG))}</b>`}
         </div>
         <div class="verde"><span>${esc(t("proy_cobrado"))}</span><b>${esc(DB.dinero.formato(tot.entradas_centavos, CFG_LANG))}</b></div>
         <div class="rojo"><span>${esc(t("proy_gastado"))}</span><b>${esc(DB.dinero.formato(tot.salidas_centavos, CFG_LANG))}</b></div>
@@ -6100,14 +6129,30 @@ function proyConectarTrato(trabajoId){
   const check = document.getElementById("proyAjustar");
   if (check) check.addEventListener("change", () => {
     const tj = DB.trabajos.get(trabajoId);
-    /* Al prender la casilla arranca con lo cotizado: casi siempre se ajusta
-       hacia abajo desde ahí, y así no hay que escribir el número entero. */
-    guardar({ cobrar_centavos: check.checked ? (tj.precio_centavos || 0) : null });
+    /* Arranca en el cotizado MENOS 3%, como DES: casi siempre se cierra con
+       un descuento y ese es el punto de partida. Redondeado a centavos
+       enteros; con el lápiz se escribe cualquier otro número. */
+    guardar({ cobrar_centavos: check.checked ? Math.round((tj.precio_centavos || 0) * 0.97) : null });
   });
 
   const cobrar = document.getElementById("proyCobrar");
   if (cobrar) cobrar.addEventListener("change", () =>
     guardar({ cobrar_centavos: DB.dinero.aCentavos(cobrar.value) || 0 }));
+
+  /* El lápiz del recuadro, como DES: pregunta el precio con el valor actual
+     ya puesto. Vacío o cero se rechaza: guardar 0 diría que el trabajo se
+     regaló, y eso casi siempre es un dedazo. */
+  const lapiz = document.getElementById("btnAcordadoEditar");
+  if (lapiz) lapiz.addEventListener("click", () => {
+    const t2 = DB.trabajos.get(trabajoId); if (!t2) return;
+    const actual = DB.dinero.aTexto(t2.cobrar_centavos != null
+      ? t2.cobrar_centavos : Math.round((t2.precio_centavos || 0) * 0.97));
+    const r = prompt(t("proy_acordado_prompt"), actual);
+    if (r === null) return;
+    const cent = DB.dinero.aCentavos(r);
+    if (!cent || cent <= 0) { toast(t("error_monto_requerido"), true); return; }
+    guardar({ cobrar_centavos: cent });
+  });
 }
 
 /* =========================================================================
